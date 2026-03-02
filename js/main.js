@@ -214,28 +214,3 @@ document.addEventListener("DOMContentLoaded", () => {
     percent.textContent = p + "%";
   }, 180);
 });
-// 💤 IDLE ANIMATION (5 sn hareketsizlik)
-let idleTimer;
-const idleHint = document.getElementById("idleHint");
-const heroTitle = document.querySelector(".hero-left h1");
-const joinTsBtn = document.querySelector(".join-ts");
-
-function resetIdle() {
-  clearTimeout(idleTimer);
-
-  if (idleHint) idleHint.classList.add("hidden");
-  if (heroTitle) heroTitle.classList.remove("idle");
-  if (joinTsBtn) joinTsBtn.classList.remove("idle");
-
-  idleTimer = setTimeout(() => {
-    if (idleHint) idleHint.classList.remove("hidden");
-    if (heroTitle) heroTitle.classList.add("idle");
-    if (joinTsBtn) joinTsBtn.classList.add("idle");
-  }, 5000);
-}
-
-["mousemove", "keydown", "scroll", "touchstart"].forEach(evt => {
-  document.addEventListener(evt, resetIdle);
-});
-
-resetIdle();
