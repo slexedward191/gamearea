@@ -119,3 +119,30 @@ if (themeToggle) {
     }
   });
 }
+// 🎉 CONFETTI EFFECT
+function confettiBurst() {
+  for (let i = 0; i < 40; i++) {
+    const conf = document.createElement("div");
+    conf.className = "confetti";
+    conf.style.left = Math.random() * window.innerWidth + "px";
+    conf.style.top = (window.innerHeight - 120) + "px";
+    conf.style.background = `hsl(${Math.random() * 360}, 90%, 60%)`;
+    conf.style.transform = `scale(${Math.random() * 0.6 + 0.6})`;
+
+    document.body.appendChild(conf);
+
+    const x = (Math.random() - 0.5) * 400;
+    const y = -Math.random() * 300 - 150;
+
+    conf.animate([
+      { transform: `translate(0,0) rotate(0deg)` },
+      { transform: `translate(${x}px, ${y}px) rotate(${Math.random() * 720}deg)` }
+    ], {
+      duration: 900 + Math.random() * 600,
+      easing: "cubic-bezier(.2,.6,.2,1)",
+      fill: "forwards"
+    });
+
+    setTimeout(() => conf.remove(), 1600);
+  }
+}
