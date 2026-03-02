@@ -518,3 +518,13 @@ body.light .theme-btn:hover{
 body.light #snow{
   opacity: .6;
 }
+/* 🎉 CONFETTI */
+.confetti {
+  position: fixed;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 999999;
+  opacity: .95;
+}
