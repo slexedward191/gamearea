@@ -248,8 +248,8 @@ body{
 }
 .music-controls {
   position: fixed;
-  left: 24px;
-  bottom: 24px;
+  left: 16px;
+  bottom: 16px;
   z-index: 9999;
 
   display: flex;
