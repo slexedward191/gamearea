@@ -64,3 +64,22 @@ if (canvas) {
   draw();
 }
 
+const music = document.getElementById("bgMusic");
+const toggleBtn = document.getElementById("musicToggle");
+const volumeControl = document.getElementById("volumeControl");
+
+music.volume = 0.7; // Başlangıç sesi %70
+
+toggleBtn.addEventListener("click", () => {
+  if (music.paused) {
+    music.play();
+    toggleBtn.textContent = "⏸️ Durdur";
+  } else {
+    music.pause();
+    toggleBtn.textContent = "🔊 Müziği Başlat";
+  }
+});
+
+volumeControl.addEventListener("input", (e) => {
+  music.volume = e.target.value / 100;
+});
