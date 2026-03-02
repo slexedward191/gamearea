@@ -3,30 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Test</title>
+  <title>GameArea TS3 Music Bot</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
-<body style="background:#111;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh">
+<body>
+  <header class="navbar">
+    <div class="brand">GameArea</div>
+    <nav>
+      <a href="#">Ana Sayfa</a>
+      <a href="#">Durum</a>
+      <a href="#">Panel</a>
+    </nav>
+  </header>
 
-  <audio id="bgm" src="assets/gamearea.mp3"></audio>
+  <main class="hero-wrap">
+    <section class="hero-left">
+      <span class="pill">TS3 Music Bot • Ultra Düşük Gecikme</span>
+      <h1>Kaliteye Bir <span>GameArea</span> Atın.</h1>
+      <p>
+        En düşük gecikme, yüksek ses kalitesi ve kesintisiz müzik deneyimi.  
+        TeamSpeak 3 sunucunuz için profesyonel müzik botu.
+      </p>
 
-  <button id="testBtn" style="padding:14px 18px;font-size:16px;">
-    Tıkla – Müzik Çalsın
-  </button>
+      <div class="cta">
+        <a class="btn primary" href="#">Botu Ekle</a>
+        <a class="btn ghost" href="#">Durumu Gör</a>
+      </div>
 
-  <script>
-    const btn = document.getElementById("testBtn");
-    const bgm = document.getElementById("bgm");
+      <div class="perks">
+        <span>🚀 Otomatik Kurulum</span>
+        <span>🛡️ Güçlü Koruma</span>
+        <span>🎧 Yüksek Ses Kalitesi</span>
+      </div>
 
-    btn.addEventListener("click", async () => {
-      try {
-        await bgm.play();
-        alert("Çalıyor mu? Eğer duyuyorsan OK");
-      } catch (e) {
-        alert("Hata: " + e);
-        console.log(e);
-      }
-    });
-  </script>
+      <div class="stats">
+        <div class="stat"><b>500+</b><small>Aktif Sunucu</small></div>
+        <div class="stat"><b>20ms</b><small>Düşük Gecikme</small></div>
+        <div class="stat"><b>%99.9</b><small>Uptime</small></div>
+        <div class="stat"><b>7/24</b><small>Destek</small></div>
+      </div>
+    </section>
 
+    <aside class="hero-right">
+      <div class="status-card">
+        <div class="status-head">
+          <div>
+            <small>Canlı Durum</small>
+            <h3>TS3 Altyapı Stabilitesi</h3>
+          </div>
+          <span class="badge online">Online</span>
+        </div>
+
+        <div class="status-grid">
+          <div><strong>Lokasyon</strong><span>Almanya</span></div>
+          <div><strong>Koruma</strong><span>Anti-DDoS</span></div>
+          <div><strong>Aktivasyon</strong><span>Otomatik</span></div>
+          <div><strong>Yedekleme</strong><span>Opsiyonel</span></div>
+        </div>
+
+        <div class="card-actions">
+          <a class="btn primary" href="#">Hizmetleri Gör</a>
+          <a class="btn ghost" href="#">Canlı Destek</a>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- MÜZİK -->
+  <audio id="bgm" src="assets/gamearea.mp3" preload="auto" loop></audio>
+  <div id="soundHint" class="sound-hint">🔊 Müziği Başlat</div>
+
+  <script src="js/main.js"></script>
 </body>
 </html>
