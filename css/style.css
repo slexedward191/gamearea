@@ -541,3 +541,72 @@ body.light #snow{
   80%  { transform: translateX(4px); }
   100% { transform: translateX(0); }
 }
+/* 🎮 Intro Loader */
+.intro-loader {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #120018, #02010a 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  animation: introFadeIn .5s ease;
+}
+
+.intro-box {
+  text-align: center;
+  background: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 30px 34px;
+  border-radius: 18px;
+  box-shadow: 0 0 40px rgba(124,124,255,.35);
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+.intro-title {
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  color: #aefcff;
+}
+
+.intro-bar {
+  width: 240px;
+  height: 10px;
+  background: rgba(255,255,255,.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.intro-bar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00ffd5, #7c7cff, #ff00cc);
+  border-radius: 999px;
+  box-shadow: 0 0 15px rgba(124,124,255,.8);
+  transition: width .2s ease;
+}
+
+.intro-percent {
+  font-size: 12px;
+  opacity: .75;
+}
+
+@keyframes introFadeIn {
+  from { opacity: 0 }
+  to { opacity: 1 }
+}
+
+.intro-hide {
+  animation: introOut .6s ease forwards;
+}
+
+@keyframes introOut {
+  to {
+    opacity: 0;
+    transform: scale(1.05);
+    pointer-events: none;
+  }
+}
