@@ -2,27 +2,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const bgm = document.getElementById("bgm");
   const btn = document.getElementById("playBtn");
 
-  if (!bgm || !btn) {
-    console.error("bgm veya playBtn bulunamadı");
-    return;
-  }
+  if (!bgm || !btn) return;
 
-  let playing = false;
+  let isBusy = false; // üst üste tetiklemeyi engeller
 
   btn.addEventListener("click", async () => {
+    if (isBusy) return;
+    isBusy = true;
+
     try {
-      if (!playing) {
+      if (bgm.paused) {
         await bgm.play();
-        playing = true;
         btn.textContent = "⏸️ Durdur";
+        btn.classList.remove("paused");
       } else {
         bgm.pause();
-        playing = false;
         btn.textContent = "🔊 Müziği Başlat";
+        btn.classList.add("paused");
       }
     } catch (e) {
-      alert("Hata: " + e.name);
       console.log(e);
+      // AbortError bazen ilk izin sırasında olur, sessizce geçiyoruz
+    } finally {
+      // küçük gecikme: tarayıcı state otursun
+      setTimeout(() => (isBusy = false), 150);
     }
   });
 });
@@ -60,31 +63,4 @@ if (canvas) {
   }
   draw();
 }
-document.addEventListener("DOMContentLoaded", () => {
-  const bgm = document.getElementById("bgm");
-  const btn = document.getElementById("playBtn");
 
-  if (!bgm || !btn) return;
-
-  // iOS/Chrome için sesi önceden hazırla
-  bgm.muted = false;
-  bgm.volume = 1;
-
-  btn.addEventListener("click", async () => {
-    try {
-      // İlk tıkta da çalışması için küçük bir "warm-up"
-      if (bgm.paused) {
-        await bgm.play();
-        btn.textContent = "⏸️ Durdur";
-        btn.classList.remove("paused");
-      } else {
-        bgm.pause();
-        btn.textContent = "🔊 Müziği Başlat";
-        btn.classList.add("paused");
-      }
-    } catch (e) {
-      console.log(e);
-      alert("Tarayıcı ilk tıkta izin vermedi. Tekrar tıkla.");
-    }
-  });
-});
