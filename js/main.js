@@ -1,1 +1,1 @@
-console.log("GameArea UI Loaded");
+console.log("GameArea ready.");
