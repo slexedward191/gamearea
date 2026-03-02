@@ -66,8 +66,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!bgm || !btn) return;
 
+  // iOS/Chrome için sesi önceden hazırla
+  bgm.muted = false;
+  bgm.volume = 1;
+
   btn.addEventListener("click", async () => {
     try {
+      // İlk tıkta da çalışması için küçük bir "warm-up"
       if (bgm.paused) {
         await bgm.play();
         btn.textContent = "⏸️ Durdur";
@@ -78,8 +83,8 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.classList.add("paused");
       }
     } catch (e) {
-      alert("Hata: " + e.name);
       console.log(e);
+      alert("Tarayıcı ilk tıkta izin vermedi. Tekrar tıkla.");
     }
   });
 });
