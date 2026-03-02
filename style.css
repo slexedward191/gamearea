@@ -74,11 +74,22 @@ input, textarea {
     color: #22c55e;
 }
 
+/* Hover underline animation */
 .nav-links a {
-    color: white;
-    text-decoration: none;
-    margin-left: 20px;
+    position: relative;
+}
+.nav-links a::after {
+    content: "";
+    position: absolute;
+    width: 0%;
+    height: 2px;
+    bottom: -2px;
+    left: 0;
+    background-color: #22c55e;
     transition: 0.3s;
+}
+.nav-links a:hover::after {
+    width: 100%;
 }
 
 .nav-links a:hover {
