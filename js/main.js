@@ -26,3 +26,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+// ❄️ Snow effect
+const canvas = document.getElementById("snow");
+if (canvas) {
+  const ctx = canvas.getContext("2d");
+  let w, h, flakes = [];
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  flakes = Array.from({ length: 120 }, () => ({
+    x: Math.random() * w,
+    y: Math.random() * h,
+    r: Math.random() * 2 + 1,
+    v: Math.random() * 1 + .5,
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(255,255,255,.8)";
+    flakes.forEach(f => {
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fill();
+      f.y += f.v;
+      if (f.y > h) f.y = -5;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
