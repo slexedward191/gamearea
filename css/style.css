@@ -419,3 +419,47 @@ body{
     opacity: 0;
   }
 }
+/* 🌙 / ☀️ Theme Button */
+.theme-btn {
+  margin-left: 16px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: #0b1220;
+  color: #fff;
+  font-weight: 600;
+  transition: .25s;
+}
+
+.theme-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255,255,255,.25);
+}
+
+/* ☀️ Light Mode */
+body.light {
+  background: #f5f7fb;
+  color: #0b1220;
+}
+
+body.light .navbar {
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(10px);
+}
+
+body.light .hero-wrap {
+  background: linear-gradient(180deg, #ffffff, #eef2ff);
+}
+
+body.light .music-btn,
+body.light .guest-btn {
+  background: #e5e7eb;
+  color: #0b1220;
+}
+
+body.light .owner-card {
+  background: #ffffff;
+  color: #0b1220;
+  box-shadow: 0 10px 30px rgba(0,0,0,.1);
+}
