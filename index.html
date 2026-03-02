@@ -1,77 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>GameArea TS3 Music Bot</title>
-
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GameArea TS3 Music Bot</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
-
 <body>
 
-<div class="navbar">
-    <div class="logo">GameArea</div>
-
-    <div class="nav-links">
-        <a href="#" onclick="showHome()">Home</a>
-        <a href="#" onclick="showStatus()">Status</a>
-    </div>
-</div>
-
-<!-- HOME -->
-<section id="homePage">
-
-<header>
-<h1>GameArea TS3 Music Bot</h1>
-<p>Professional music bots for your TeamSpeak servers.</p>
+<header class="navbar">
+  <div class="logo">GameArea</div>
+  <nav>
+    <a href="#">Ana Sayfa</a>
+    <a href="#">Durum</a>
+    <a href="#">Panel</a>
+  </nav>
 </header>
 
-<div class="features">
+<section class="hero">
+  <div class="hero-left">
+    <span class="badge">TS3 Music Bot • Ultra Düşük Gecikme</span>
+    <h1>Kaliteye Bir <span>GameArea</span> Atın.</h1>
+    <p>
+      En düşük gecikme, yüksek ses kalitesi ve kesintisiz müzik deneyimi.  
+      TeamSpeak 3 sunucunuz için profesyonel müzik botu.
+    </p>
 
-<div class="card">
-<h3>Bot Status</h3>
-<p>Status: <span class="online">Online</span></p>
-</div>
+    <div class="buttons">
+      <a href="#" class="btn primary">Botu Ekle</a>
+      <a href="#" class="btn secondary">Durumu Gör</a>
+    </div>
 
-<div class="card">
-<h3>High Quality Audio</h3>
-<p>Lag-free music experience.</p>
-</div>
+    <div class="features">
+      <div>🚀 Otomatik Kurulum</div>
+      <div>🛡️ Güçlü Koruma</div>
+      <div>🎧 Yüksek Ses Kalitesi</div>
+    </div>
 
-<div class="card">
-<h3>Fast Support</h3>
-<p>Quick setup & active help.</p>
-</div>
+    <div class="stats">
+      <div>
+        <h2>500+</h2>
+        <span>Aktif Sunucu</span>
+      </div>
+      <div>
+        <h2>20ms</h2>
+        <span>Düşük Gecikme</span>
+      </div>
+      <div>
+        <h2>%99.9</h2>
+        <span>Uptime</span>
+      </div>
+      <div>
+        <h2>7/24</h2>
+        <span>Destek</span>
+      </div>
+    </div>
+  </div>
 
-</div>
+  <div class="hero-right">
+    <div class="status-card">
+      <h3>Canlı Durum</h3>
+      <div class="status online">Online</div>
 
-<div class="buttons">
-<a class="btn green">Embrace Ur Pain</a>
-<a class="btn blue" href="ts3server://51.210.203.176:9987">Join TS3</a>
-</div>
+      <div class="status-grid">
+        <div><strong>Lokasyon</strong><span>Almanya</span></div>
+        <div><strong>Koruma</strong><span>Anti-DDoS</span></div>
+        <div><strong>Aktivasyon</strong><span>Otomatik</span></div>
+        <div><strong>Yedekleme</strong><span>Opsiyonel</span></div>
+      </div>
 
+      <div class="status-buttons">
+        <a href="#" class="btn primary">Hizmetleri Gör</a>
+        <a href="#" class="btn secondary">Canlı Destek</a>
+      </div>
+    </div>
+  </div>
 </section>
-
-<!-- STATUS -->
-<section id="statusPage" style="display:none;">
-
-<h2>Bot Status Panel</h2>
-
-<div class="statusBox">
-<p>Status: <span class="online">Online</span></p>
-<p>Ping: 23ms</p>
-<p>Uptime: 99.9%</p>
-</div>
-
-</section>
-
-<footer>
-© 2026 GameArea
-</footer>
 
 <script src="js/main.js"></script>
-
 </body>
 </html>
