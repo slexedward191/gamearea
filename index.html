@@ -7,20 +7,26 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-<button id="openAuth" class="auth-btn">Giriş Yap / Kayıt Ol</button>
 
-<div id="authModal" class="modal hidden">
-  <div class="modal-content">
-    <h2 id="authTitle">Giriş Yap</h2>
-    <input type="text" id="username" placeholder="Kullanıcı adı">
-    <input type="password" id="password" placeholder="Şifre">
-    <button id="loginBtn">Giriş Yap</button>
-    <button id="registerBtn">Kayıt Ol</button>
-    <p id="switchAuth">Hesabın yok mu? Kayıt ol</p>
+  <!-- AUTH -->
+  <div class="auth-bar">
+    <span id="welcomeText"></span>
+    <button id="openAuth" class="auth-btn">Giriş Yap / Kayıt Ol</button>
+    <button id="logoutBtn" class="auth-btn hidden">Çıkış</button>
   </div>
-</div>
 
-<script src="js/main.js"></script>
+  <div id="authModal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="authTitle">Giriş Yap</h2>
+      <input type="text" id="username" placeholder="Kullanıcı adı">
+      <input type="password" id="password" placeholder="Şifre">
+      <button id="loginBtn">Giriş Yap</button>
+      <button id="registerBtn">Kayıt Ol</button>
+      <p id="switchAuth">Hesabın yok mu? Kayıt ol</p>
+    </div>
+  </div>
+
+  <!-- NAV -->
   <header class="navbar">
     <nav>
       <a href="#">Ana Sayfa</a>
@@ -29,6 +35,7 @@
     </nav>
   </header>
 
+  <!-- HERO -->
   <main class="hero-wrap">
     <section class="hero-left">
       <span class="pill">TS3 CONNECT • GET YAZ GİR</span>
@@ -38,19 +45,17 @@
       </p>
 
       <div class="cta">
-        <a class="join-ts" href="ts3server://get:9987">
-  🎧 TS3 Katıl
-</a>
+        <a class="join-ts" href="ts3server://get:9987">🎧 TS3 Katıl</a>
       </div>
-      <div class="ts3-status">
-  <a href="https://www.gametracker.com/server_info/51.210.203.176:9987/" target="_blank" rel="noreferrer">
-    <img 
-      src="https://cache.gametracker.com/server_info/51.210.203.176:9987/b_560_95_1.png"
-      alt="TS3 Server Status"
-    />
-  </a>
-</div>
 
+      <div class="ts3-status">
+        <a href="https://www.gametracker.com/server_info/51.210.203.176:9987/" target="_blank" rel="noreferrer">
+          <img 
+            src="https://cache.gametracker.com/server_info/51.210.203.176:9987/b_560_95_1.png"
+            alt="TS3 Server Status"
+          />
+        </a>
+      </div>
 
       <div class="stats">
         <div class="stat"><b>500+</b><small>Aktif Sunucu</small></div>
@@ -61,36 +66,30 @@
     </section>
 
     <aside class="hero-right">
-     <div class="owners">
-  <div class="owner-card">
-    <img src="assets/owner.png" alt="Owner Avatar">
-    <div class="owner-name">embrace ur pain</div>
-    <div class="owner-role">
-      TS3 Owner <span class="owner-motto">DDoS Protection</span>
-    </div>
-  </div>
-</div>
+      <div class="owners">
+        <div class="owner-card">
+          <img src="assets/owner.png" alt="Owner Avatar">
+          <div class="owner-name">embrace ur pain</div>
+          <div class="owner-role">
+            TS3 Owner <span class="owner-motto">DDoS Protection</span>
+          </div>
+        </div>
       </div>
     </aside>
   </main>
-<canvas id="snow"></canvas>
+
+  <!-- MUSIC -->
+  <div class="music-controls">
+    <button id="musicToggle" class="music-btn">🔊 Müziği Başlat</button>
+    <input type="range" id="volumeControl" min="0" max="100" value="70">
+  </div>
+  <audio id="bgMusic" src="assets/gamearea.mp3" preload="auto"></audio>
+
+  <!-- EFFECT -->
+  <canvas id="snow"></canvas>
+
+  <!-- JS (SADECE 1 KERE) -->
   <script src="js/main.js"></script>
+
 </body>
 </html>
-<div class="music-controls">
-  <button id="musicToggle" class="music-btn">🔊 Müziği Başlat</button>
-
-  <input 
-    type="range" 
-    id="volumeControl" 
-    min="0" 
-    max="100" 
-    value="70"
-  >
-</div>
-
-<audio id="bgMusic" src="assets/gamearea.mp3"></audio>
-</button>
-
-<audio id="bgm" src="assets/gamearea.mp3" preload="auto" loop></audio>
-<script src="js/main.js"></script>
