@@ -93,3 +93,26 @@ document.addEventListener("mousemove", (e) => {
     dot.remove();
   }, 600);
 });
+// 🌙 / ☀️ THEME TOGGLE (MEVCUT KODLARI BOZMAZ)
+const themeToggle = document.getElementById("themeToggle");
+
+if (themeToggle) {
+  const savedTheme = localStorage.getItem("theme");
+
+  if (savedTheme === "light") {
+    document.body.classList.add("light");
+    themeToggle.textContent = "☀️ Gündüz Modu";
+  }
+
+  themeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("light");
+
+    if (document.body.classList.contains("light")) {
+      localStorage.setItem("theme", "light");
+      themeToggle.textContent = "☀️ Gündüz Modu";
+    } else {
+      localStorage.setItem("theme", "dark");
+      themeToggle.textContent = "🌙 Gece Modu";
+    }
+  });
+}
