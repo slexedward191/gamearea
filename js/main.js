@@ -60,3 +60,26 @@ if (canvas) {
   }
   draw();
 }
+document.addEventListener("DOMContentLoaded", () => {
+  const bgm = document.getElementById("bgm");
+  const btn = document.getElementById("playBtn");
+
+  if (!bgm || !btn) return;
+
+  btn.addEventListener("click", async () => {
+    try {
+      if (bgm.paused) {
+        await bgm.play();
+        btn.textContent = "⏸️ Durdur";
+        btn.classList.remove("paused");
+      } else {
+        bgm.pause();
+        btn.textContent = "🔊 Müziği Başlat";
+        btn.classList.add("paused");
+      }
+    } catch (e) {
+      alert("Hata: " + e.name);
+      console.log(e);
+    }
+  });
+});
