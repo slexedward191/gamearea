@@ -32,6 +32,9 @@ guestBtn.addEventListener("click", () => {
   guestWelcome.classList.remove("hidden");
   guestBtn.disabled = true;
   guestBtn.textContent = "Giriş Yapıldı";
+
+  // 🎉 CONFETTI PATLAT
+  confettiBurst();
 });
 
 
