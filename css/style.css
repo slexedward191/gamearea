@@ -246,3 +246,16 @@ body{
   opacity: .65;
   letter-spacing: .4px;
 }
+.music-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+#volumeControl {
+  width: 160px;
+  accent-color: #ff3b3b; /* Kırmızı ton */
+  cursor: pointer;
+}
