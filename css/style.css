@@ -247,15 +247,22 @@ body{
   letter-spacing: .4px;
 }
 .music-controls {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 9999;
+
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 12px;
-  margin-top: 20px;
+
+  background: rgba(10, 10, 20, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 12px 14px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 #volumeControl {
-  width: 160px;
-  accent-color: #ff3b3b; /* Kırmızı ton */
-  cursor: pointer;
+  width: 140px;
 }
