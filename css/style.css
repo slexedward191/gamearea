@@ -72,13 +72,16 @@ body{
 
 /* OWNER */
 .owners{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-top:24px}
-.owner-card{
-  background:rgba(20,24,40,.65);
-  border-radius:16px;
-  padding:18px 14px;
-  text-align:center;
-  backdrop-filter:blur(8px);
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
+.owner-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)),
+    rgba(15, 15, 18, .85);
+  border-radius: 16px;
+  padding: 18px 14px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.12);
 }
 .owner-card img{
   width:86px;height:86px;border-radius:50%;object-fit:cover;margin-bottom:10px;
