@@ -183,3 +183,19 @@ body{
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+.join-ts {
+  display: inline-block;
+  padding: 14px 26px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #00ffcc, #3333ff);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.join-ts:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 14px 40px rgba(0,0,0,.45);
+}
