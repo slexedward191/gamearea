@@ -59,6 +59,25 @@
       </div>
     </aside>
   </main>
+  <div class="auth-bar">
+  <span id="welcomeText"></span>
+  <button id="openAuth" class="auth-btn">Giriş Yap / Kayıt Ol</button>
+  <button id="logoutBtn" class="auth-btn hidden">Çıkış</button>
+</div>
+
+<div id="authModal" class="modal hidden">
+  <div class="modal-content">
+    <h2 id="authTitle">Giriş Yap</h2>
+
+    <input type="text" id="username" placeholder="Kullanıcı adı">
+    <input type="password" id="password" placeholder="Şifre">
+
+    <button id="loginBtn">Giriş Yap</button>
+    <button id="registerBtn">Kayıt Ol</button>
+
+    <p class="switch-auth" id="switchAuth">Hesabın yok mu? Kayıt ol</p>
+  </div>
+</div>
 <canvas id="snow"></canvas>
 </body>
 </html>
