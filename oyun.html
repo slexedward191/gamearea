@@ -13,9 +13,7 @@ body{
   font-family:Arial;
 }
 
-canvas{
-  display:block;
-}
+canvas{ display:block; }
 
 .back-btn{
   position:fixed;
@@ -39,8 +37,8 @@ canvas{
 }
 
 .health-bar{
-  width:200px;
-  height:15px;
+  width:220px;
+  height:16px;
   background:#334155;
   border-radius:8px;
   overflow:hidden;
@@ -52,28 +50,39 @@ canvas{
   background:#22c55e;
 }
 
-.levelup{
+.overlay{
   position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:#1e293b;
-  padding:25px;
-  border-radius:12px;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.8);
   display:none;
-  text-align:center;
-  color:white;
+  justify-content:center;
+  align-items:center;
+  z-index:2000;
 }
 
-.levelup button{
-  display:block;
-  margin:10px auto;
-  padding:8px 15px;
-  background:#22c55e;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+.menu-box{
+  background:#1e293b;
+  padding:40px;
+  border-radius:15px;
+  text-align:center;
   color:white;
+  width:400px;
+}
+
+.menu-box button{
+  display:block;
+  width:100%;
+  margin:12px 0;
+  padding:12px;
+  border:none;
+  background:#22c55e;
+  border-radius:8px;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -85,14 +94,11 @@ canvas{
   <div class="health-bar">
     <div class="health" id="healthBar"></div>
   </div>
-  <div id="info">Skor: 0 | Level: 1</div>
+  <div id="info">Öldürme: 0 | Level: 1</div>
 </div>
 
-<div class="levelup" id="upgradeMenu">
-  <h3>Level Up!</h3>
-  <button onclick="upgrade('speed')">Hız +</button>
-  <button onclick="upgrade('damage')">Hasar +</button>
-  <button onclick="upgrade('fireRate')">Ateş Hızı +</button>
+<div class="overlay" id="menuOverlay">
+  <div class="menu-box" id="menuBox"></div>
 </div>
 
 <canvas id="game"></canvas>
@@ -100,8 +106,13 @@ canvas{
 <script>
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
+
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
+
+const mapSize=1500;
+const mapStartX=(canvas.width-mapSize)/2;
+const mapStartY=(canvas.height-mapSize)/2;
 
 let player={
   x:canvas.width/2,
@@ -118,35 +129,20 @@ let bullets=[];
 let enemies=[];
 let keys={};
 let mouse={x:0,y:0};
-let score=0;
+let kills=0;
 let level=1;
 let exp=0;
-let expToNext=10;
+let expNeed=8;
 let lastShot=0;
-let dashCooldown=0;
+let running=true;
 
 document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
 document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 document.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY});
 document.addEventListener("mousedown",shoot);
 
-function drawGrid(){
-  ctx.strokeStyle="#1e293b";
-  for(let i=0;i<canvas.width;i+=40){
-    ctx.beginPath();
-    ctx.moveTo(i,0);
-    ctx.lineTo(i,canvas.height);
-    ctx.stroke();
-  }
-  for(let i=0;i<canvas.height;i+=40){
-    ctx.beginPath();
-    ctx.moveTo(0,i);
-    ctx.lineTo(canvas.width,i);
-    ctx.stroke();
-  }
-}
-
 function shoot(){
+  if(!running) return;
   let now=Date.now();
   if(now-lastShot<player.fireRate) return;
   lastShot=now;
@@ -156,24 +152,46 @@ function shoot(){
     x:player.x,
     y:player.y,
     dx:Math.cos(angle)*8,
-    dy:Math.sin(angle)*8,
-    damage:player.damage
+    dy:Math.sin(angle)*8
   });
 }
 
 function spawnEnemy(boss=false){
-  let x=Math.random()<0.5?0:canvas.width;
-  let y=Math.random()*canvas.height;
+  let x=Math.random()<0.5?mapStartX:mapStartX+mapSize;
+  let y=Math.random()*mapSize+mapStartY;
   enemies.push({
     x,y,
     radius: boss?50:20,
-    health: boss?30:3,
-    speed: boss?1:2,
+    health: boss?25:3,
+    speed: boss?1.2:2,
     boss:boss
   });
 }
 
+function drawGrid(){
+  ctx.strokeStyle="#1e293b";
+  for(let i=mapStartX;i<=mapStartX+mapSize;i+=40){
+    ctx.beginPath();
+    ctx.moveTo(i,mapStartY);
+    ctx.lineTo(i,mapStartY+mapSize);
+    ctx.stroke();
+  }
+  for(let i=mapStartY;i<=mapStartY+mapSize;i+=40){
+    ctx.beginPath();
+    ctx.moveTo(mapStartX,i);
+    ctx.lineTo(mapStartX+mapSize,i);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle="white";
+  ctx.lineWidth=3;
+  ctx.strokeRect(mapStartX,mapStartY,mapSize,mapSize);
+  ctx.lineWidth=1;
+}
+
 function update(){
+  if(!running) return;
+
   ctx.clearRect(0,0,canvas.width,canvas.height);
   drawGrid();
 
@@ -182,44 +200,51 @@ function update(){
   if(keys["a"]) player.x-=player.speed;
   if(keys["d"]) player.x+=player.speed;
 
-  if(keys["shift"] && dashCooldown<=0){
-    player.x+=Math.cos(Math.atan2(mouse.y-player.y,mouse.x-player.x))*100;
-    player.y+=Math.sin(Math.atan2(mouse.y-player.y,mouse.x-player.x))*100;
-    dashCooldown=100;
+  // Map dışı ölüm
+  if(player.x<mapStartX || player.x>mapStartX+mapSize ||
+     player.y<mapStartY || player.y>mapStartY+mapSize){
+     endGame();
   }
-  dashCooldown--;
 
   ctx.beginPath();
   ctx.arc(player.x,player.y,player.radius,0,Math.PI*2);
   ctx.fillStyle="#22c55e";
   ctx.fill();
 
+  let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+  ctx.beginPath();
+  ctx.moveTo(player.x,player.y);
+  ctx.lineTo(player.x+Math.cos(angle)*40,player.y+Math.sin(angle)*40);
+  ctx.strokeStyle="white";
+  ctx.lineWidth=5;
+  ctx.stroke();
+
   bullets.forEach((b,i)=>{
     b.x+=b.dx;
     b.y+=b.dy;
+
     ctx.beginPath();
     ctx.arc(b.x,b.y,5,0,Math.PI*2);
     ctx.fillStyle="#38bdf8";
     ctx.fill();
 
     enemies.forEach((e,j)=>{
-      let dist=Math.hypot(b.x-e.x,b.y-e.y);
-      if(dist<e.radius){
-        e.health-=b.damage;
+      if(Math.hypot(b.x-e.x,b.y-e.y)<e.radius){
+        e.health--;
         bullets.splice(i,1);
         if(e.health<=0){
           enemies.splice(j,1);
-          score++;
+          kills++;
           exp++;
         }
       }
     });
   });
 
-  enemies.forEach((e,i)=>{
-    let angle=Math.atan2(player.y-e.y,player.x-e.x);
-    e.x+=Math.cos(angle)*e.speed;
-    e.y+=Math.sin(angle)*e.speed;
+  enemies.forEach(e=>{
+    let a=Math.atan2(player.y-e.y,player.x-e.x);
+    e.x+=Math.cos(a)*e.speed;
+    e.y+=Math.sin(a)*e.speed;
 
     ctx.beginPath();
     ctx.arc(e.x,e.y,e.radius,0,Math.PI*2);
@@ -227,40 +252,74 @@ function update(){
     ctx.fill();
 
     if(Math.hypot(player.x-e.x,player.y-e.y)<player.radius+e.radius){
-      player.health-=0.5;
+      player.health-=0.4;
     }
   });
 
-  if(exp>=expToNext){
+  if(exp>=expNeed){
     level++;
     exp=0;
-    expToNext+=5;
-    document.getElementById("upgradeMenu").style.display="block";
+    expNeed+=5;
+    openUpgradeMenu();
   }
 
   document.getElementById("healthBar").style.width=
     (player.health/player.maxHealth*100)+"%";
 
   document.getElementById("info").innerText=
-    "Skor: "+score+" | Level: "+level;
+    "Öldürme: "+kills+" | Level: "+level;
 
-  if(player.health<=0){
-    alert("Oyun Bitti! Skor: "+score);
-    location.reload();
-  }
+  if(player.health<=0) endGame();
 
   requestAnimationFrame(update);
 }
 
-function upgrade(type){
-  if(type==="speed") player.speed+=1;
-  if(type==="damage") player.damage+=1;
-  if(type==="fireRate") player.fireRate-=40;
-  document.getElementById("upgradeMenu").style.display="none";
+function openUpgradeMenu(){
+  running=false;
+  const box=document.getElementById("menuBox");
+  box.innerHTML="<h2>LEVEL "+level+"</h2>"+
+  "<button onclick='chooseUpgrade(\"speed\")'>Hız +</button>"+
+  "<button onclick='chooseUpgrade(\"damage\")'>Hasar +</button>"+
+  "<button onclick='chooseUpgrade(\"fire\")'>Ateş Hızı +</button>";
+  document.getElementById("menuOverlay").style.display="flex";
 }
 
-setInterval(()=>spawnEnemy(),1500);
-setInterval(()=>spawnEnemy(true),20000);
+function chooseUpgrade(type){
+  if(type==="speed") player.speed+=1;
+  if(type==="damage") player.damage=(player.damage||1)+1;
+  if(type==="fire") player.fireRate=Math.max(100,player.fireRate-40);
+
+  document.getElementById("menuOverlay").style.display="none";
+  running=true;
+  update();
+}
+
+function endGame(){
+  running=false;
+  const box=document.getElementById("menuBox");
+  box.innerHTML="<h2>Oyun Bitti</h2>"+
+  "<p>Toplam Öldürme: "+kills+"</p>"+
+  "<button onclick='resetGame()'>Tekrar Oyna</button>";
+  document.getElementById("menuOverlay").style.display="flex";
+}
+
+function resetGame(){
+  player.health=100;
+  player.x=canvas.width/2;
+  player.y=canvas.height/2;
+  bullets=[];
+  enemies=[];
+  kills=0;
+  level=1;
+  exp=0;
+  expNeed=8;
+  document.getElementById("menuOverlay").style.display="none";
+  running=true;
+  update();
+}
+
+setInterval(()=>{ if(running) spawnEnemy(); },1500);
+setInterval(()=>{ if(running) spawnEnemy(true); },20000);
 
 update();
 </script>
