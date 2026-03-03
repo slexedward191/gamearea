@@ -56,7 +56,7 @@ canvas{ display:block; }
   left:0;
   width:100%;
   height:100%;
-  background:rgba(0,0,0,0.8);
+  background:rgba(0,0,0,0.85);
   display:none;
   justify-content:center;
   align-items:center;
@@ -69,7 +69,7 @@ canvas{ display:block; }
   border-radius:15px;
   text-align:center;
   color:white;
-  width:400px;
+  width:420px;
 }
 
 .menu-box button{
@@ -82,6 +82,35 @@ canvas{ display:block; }
   border-radius:8px;
   color:white;
   font-size:16px;
+  cursor:pointer;
+}
+
+.upgrade-panel{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#1e293b;
+  padding:15px;
+  border-radius:10px;
+  color:white;
+  width:190px;
+  box-shadow:0 0 15px rgba(0,0,0,0.4);
+}
+
+.upgrade-panel h4{
+  margin:0 0 8px 0;
+  text-align:center;
+}
+
+.upgrade-toggle{
+  position:fixed;
+  bottom:20px;
+  right:220px;
+  padding:8px 12px;
+  border:none;
+  background:#22c55e;
+  color:white;
+  border-radius:6px;
   cursor:pointer;
 }
 </style>
@@ -97,6 +126,15 @@ canvas{ display:block; }
   <div id="info">Öldürme: 0 | Level: 1</div>
 </div>
 
+<div class="upgrade-panel" id="upgradePanel">
+  <h4>Geliştirmeler</h4>
+  <p>Hız: <span id="uSpeed">0</span></p>
+  <p>Hasar: <span id="uDamage">0</span></p>
+  <p>Ateş Hızı: <span id="uFire">0</span></p>
+</div>
+
+<button class="upgrade-toggle" onclick="toggleUpgradePanel()">▲</button>
+
 <div class="overlay" id="menuOverlay">
   <div class="menu-box" id="menuBox"></div>
 </div>
@@ -110,7 +148,7 @@ const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
-const mapSize=1500;
+const mapSize=1400;
 const mapStartX=(canvas.width-mapSize)/2;
 const mapStartY=(canvas.height-mapSize)/2;
 
@@ -124,6 +162,8 @@ let player={
   damage:1,
   fireRate:300
 };
+
+let upgrades={ speed:0, damage:0, fire:0 };
 
 let bullets=[];
 let enemies=[];
@@ -200,7 +240,11 @@ function update(){
   if(keys["a"]) player.x-=player.speed;
   if(keys["d"]) player.x+=player.speed;
 
-  // Map dışı ölüm
+  if(keys["shift"]){
+    player.x+=Math.cos(Math.atan2(mouse.y-player.y,mouse.x-player.x))*5;
+    player.y+=Math.sin(Math.atan2(mouse.y-player.y,mouse.x-player.x))*5;
+  }
+
   if(player.x<mapStartX || player.x>mapStartX+mapSize ||
      player.y<mapStartY || player.y>mapStartY+mapSize){
      endGame();
@@ -230,7 +274,7 @@ function update(){
 
     enemies.forEach((e,j)=>{
       if(Math.hypot(b.x-e.x,b.y-e.y)<e.radius){
-        e.health--;
+        e.health-=player.damage;
         bullets.splice(i,1);
         if(e.health<=0){
           enemies.splice(j,1);
@@ -285,13 +329,25 @@ function openUpgradeMenu(){
 }
 
 function chooseUpgrade(type){
-  if(type==="speed") player.speed+=1;
-  if(type==="damage") player.damage=(player.damage||1)+1;
-  if(type==="fire") player.fireRate=Math.max(100,player.fireRate-40);
+  if(type==="speed"){ player.speed+=1; upgrades.speed++; }
+  if(type==="damage"){ player.damage++; upgrades.damage++; }
+  if(type==="fire"){ player.fireRate=Math.max(100,player.fireRate-40); upgrades.fire++; }
 
+  updateUpgradeUI();
   document.getElementById("menuOverlay").style.display="none";
   running=true;
   update();
+}
+
+function updateUpgradeUI(){
+  document.getElementById("uSpeed").innerText=upgrades.speed;
+  document.getElementById("uDamage").innerText=upgrades.damage;
+  document.getElementById("uFire").innerText=upgrades.fire;
+}
+
+function toggleUpgradePanel(){
+  const p=document.getElementById("upgradePanel");
+  p.style.display=p.style.display==="none"?"block":"none";
 }
 
 function endGame(){
@@ -313,6 +369,8 @@ function resetGame(){
   level=1;
   exp=0;
   expNeed=8;
+  upgrades={ speed:0, damage:0, fire:0 };
+  updateUpgradeUI();
   document.getElementById("menuOverlay").style.display="none";
   running=true;
   update();
