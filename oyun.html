@@ -4,79 +4,42 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GameArea Arena</title>
-
 <style>
-body{margin:0;overflow:hidden;background:#0f172a;font-family:Arial;}
-canvas{display:block;}
-
-.back-btn{
-position:fixed;top:20px;left:20px;
-background:#22c55e;color:white;
-padding:10px 18px;border-radius:8px;
-text-decoration:none;font-weight:bold;
-z-index:1000;
-}
-
-.ui{position:fixed;top:20px;right:20px;color:white;text-align:right;}
-
-.health-bar,.xp-bar{
-width:220px;height:16px;background:#334155;
-border-radius:8px;overflow:hidden;margin-bottom:8px;
-}
-
-.health{height:100%;background:#22c55e;}
-.xp{height:100%;background:#38bdf8;}
-
-.overlay{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,0.85);
-display:none;justify-content:center;align-items:center;
-z-index:2000;
-}
-
-.menu-box{
-background:#1e293b;padding:40px;border-radius:15px;
-text-align:center;color:white;width:420px;
-}
-
-.menu-box button{
-display:block;width:100%;margin:12px 0;
-padding:12px;border:none;background:#22c55e;
-border-radius:8px;color:white;font-size:16px;
-cursor:pointer;
-}
+body{margin:0;overflow:hidden;background:#0f172a;font-family:Arial}
+canvas{display:block}
+.ui{position:fixed;top:20px;right:20px;color:white;text-align:right}
+.bar{width:220px;height:16px;background:#334155;border-radius:8px;overflow:hidden;margin-bottom:6px}
+.fill{height:100%}
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center}
+.menu{background:#1e293b;padding:30px;border-radius:12px;color:white;text-align:center;width:350px}
+.menu button{display:block;width:100%;margin:8px 0;padding:10px;border:none;background:#22c55e;color:white;border-radius:6px;cursor:pointer}
 </style>
 </head>
 <body>
 
-<a href="index.html" class="back-btn">← Ana Sayfaya Dön</a>
-
 <div class="ui">
-<div class="health-bar"><div class="health" id="healthBar"></div></div>
-<div class="xp-bar"><div class="xp" id="xpBar"></div></div>
-<div id="info">Öldürme: 0 | Level: 1</div>
+<div class="bar"><div id="healthBar" class="fill" style="background:#22c55e;width:100%"></div></div>
+<div class="bar"><div id="xpBar" class="fill" style="background:#38bdf8;width:0%"></div></div>
+<div id="info">Kill: 0 | Level: 1</div>
+<div>Ulti CD: <span id="ultiCD">Hazır</span></div>
 </div>
 
 <div class="overlay" id="menuOverlay">
-<div class="menu-box" id="menuBox"></div>
+<div class="menu" id="menuBox"></div>
 </div>
 
 <canvas id="game"></canvas>
 
 <script>
-const canvas=document.getElementById("game");
+const canvas=game;
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
-const mapSize=1400;
-const mapStartX=(canvas.width-mapSize)/2;
-const mapStartY=(canvas.height-mapSize)/2;
-
 let player={
 x:canvas.width/2,
 y:canvas.height/2,
-radius:20,
+r:20,
 speed:4,
 health:100,
 maxHealth:100,
@@ -84,101 +47,99 @@ damage:1,
 fireRate:250
 };
 
-let bullets=[];
-let enemies=[];
-let keys={};
-let mouse={x:0,y:0};
-let mouseDown=false;
-
-let kills=0;
-let level=1;
-let exp=0;
-let expNeed=8;
-let lastShot=0;
+let bullets=[],enemies=[],packs=[];
+let mouse={x:0,y:0},mouseDown=false;
+let kills=0,level=1,killNeed=10;
+let lastShot=0,lastUlti=0;
 let running=true;
 
-document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 document.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY});
-document.addEventListener("mousedown",()=>mouseDown=true);
+document.addEventListener("mousedown",e=>{
+if(e.button===0) mouseDown=true;
+if(e.button===2) useUlti();
+});
 document.addEventListener("mouseup",()=>mouseDown=false);
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+document.addEventListener("keydown",e=>{
+if(e.key==="w") player.y-=player.speed;
+if(e.key==="s") player.y+=player.speed;
+if(e.key==="a") player.x-=player.speed;
+if(e.key==="d") player.x+=player.speed;
+});
 
 function shoot(){
 let now=Date.now();
 if(now-lastShot<player.fireRate) return;
 lastShot=now;
+let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+bullets.push({x:player.x,y:player.y,dx:Math.cos(a)*8,dy:Math.sin(a)*8});
+}
 
-let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
-bullets.push({
-x:player.x,
-y:player.y,
-dx:Math.cos(angle)*8,
-dy:Math.sin(angle)*8
+function useUlti(){
+let now=Date.now();
+if(now-lastUlti<10000) return;
+lastUlti=now;
+
+enemies=enemies.filter(e=>{
+let d=Math.hypot(player.x-e.x,player.y-e.y);
+return d>150;
 });
 }
 
 function spawnEnemy(){
-let spawnRateBoost=1;
-if(level>=10) spawnRateBoost=1.8;
-else if(level>=5) spawnRateBoost=1.4;
-
-let x=Math.random()<0.5?mapStartX:mapStartX+mapSize;
-let y=Math.random()*mapSize+mapStartY;
-
+let type=Math.floor(level/5);
 enemies.push({
-x,y,
-radius:20,
-health:2 + level*0.3,
-speed:1.8 + level*0.05
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+r:20+type*5,
+health:2+level*0.5,
+speed:1.5+level*0.05
 });
 }
 
-function drawMap(){
-ctx.strokeStyle="white";
-ctx.lineWidth=3;
-ctx.strokeRect(mapStartX,mapStartY,mapSize,mapSize);
-ctx.lineWidth=1;
+function spawnHealthPack(){
+packs.push({
+x:Math.random()*canvas.width,
+y:-20,
+vy:2
+});
+}
+
+function openUpgrade(){
+running=false;
+menuOverlay.style.display="flex";
+menuBox.innerHTML="<h2>LEVEL "+level+"</h2>"+
+"<button onclick='upgrade(1)'>Hasar +</button>"+
+"<button onclick='upgrade(2)'>Hız +</button>"+
+"<button onclick='upgrade(3)'>Can +</button>";
+}
+
+function upgrade(type){
+if(type===1) player.damage++;
+if(type===2) player.speed+=0.5;
+if(type===3){player.maxHealth+=20;player.health=player.maxHealth;}
+menuOverlay.style.display="none";
+running=true;
 }
 
 function update(){
 if(!running) return;
-
 ctx.clearRect(0,0,canvas.width,canvas.height);
-drawMap();
-
-if(keys["w"]) player.y-=player.speed;
-if(keys["s"]) player.y+=player.speed;
-if(keys["a"]) player.x-=player.speed;
-if(keys["d"]) player.x+=player.speed;
 
 if(mouseDown) shoot();
 
-if(player.x<mapStartX||player.x>mapStartX+mapSize||
-player.y<mapStartY||player.y>mapStartY+mapSize){
-endGame();
-}
-
-ctx.beginPath();
-ctx.arc(player.x,player.y,player.radius,0,Math.PI*2);
-ctx.fillStyle="#22c55e";
-ctx.fill();
-
 bullets.forEach((b,i)=>{
-b.x+=b.dx;
-b.y+=b.dy;
-ctx.beginPath();
-ctx.arc(b.x,b.y,5,0,Math.PI*2);
-ctx.fillStyle="#38bdf8";
-ctx.fill();
+b.x+=b.dx;b.y+=b.dy;
+ctx.beginPath();ctx.arc(b.x,b.y,5,0,6.28);ctx.fillStyle="#38bdf8";ctx.fill();
 
 enemies.forEach((e,j)=>{
-if(Math.hypot(b.x-e.x,b.y-e.y)<e.radius){
+if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){
 e.health-=player.damage;
 bullets.splice(i,1);
 if(e.health<=0){
 enemies.splice(j,1);
 kills++;
-exp++;
 }
 }
 });
@@ -188,70 +149,55 @@ enemies.forEach(e=>{
 let a=Math.atan2(player.y-e.y,player.x-e.x);
 e.x+=Math.cos(a)*e.speed;
 e.y+=Math.sin(a)*e.speed;
-
-ctx.beginPath();
-ctx.arc(e.x,e.y,e.radius,0,Math.PI*2);
-ctx.fillStyle="#ef4444";
-ctx.fill();
-
-if(Math.hypot(player.x-e.x,player.y-e.y)<player.radius+e.radius){
+ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,6.28);ctx.fillStyle="red";ctx.fill();
+if(Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r){
 player.health-=0.3;
 }
 });
 
-if(exp>=expNeed){
+packs.forEach((p,i)=>{
+p.y+=p.vy;
+ctx.beginPath();ctx.rect(p.x,p.y,20,20);ctx.fillStyle="lime";ctx.fill();
+if(Math.hypot(player.x-p.x,player.y-p.y)<30){
+player.health=Math.min(player.maxHealth,player.health+30);
+packs.splice(i,1);
+}
+});
+
+ctx.beginPath();
+ctx.arc(player.x,player.y,player.r,0,6.28);
+ctx.fillStyle="#22c55e";
+ctx.fill();
+
+let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+ctx.beginPath();
+ctx.moveTo(player.x,player.y);
+ctx.lineTo(player.x+Math.cos(a)*40,player.y+Math.sin(a)*40);
+ctx.strokeStyle="white";
+ctx.lineWidth=5;
+ctx.stroke();
+
+if(kills>=killNeed){
 level++;
-exp=0;
-expNeed+=6;
+kills=0;
+killNeed+=10;
+openUpgrade();
 }
 
-document.getElementById("healthBar").style.width=
-(player.health/player.maxHealth*100)+"%";
+healthBar.style.width=(player.health/player.maxHealth*100)+"%";
+xpBar.style.width=(kills/killNeed*100)+"%";
+info.innerText="Kill: "+kills+" / "+killNeed+" | Level: "+level;
 
-document.getElementById("xpBar").style.width=
-(exp/expNeed*100)+"%";
+let cd=Math.max(0,10-Math.floor((Date.now()-lastUlti)/1000));
+ultiCD.innerText=cd===0?"Hazır":cd+"s";
 
-document.getElementById("info").innerText=
-"Öldürme: "+kills+" | Level: "+level;
-
-if(player.health<=0) endGame();
+if(player.health<=0){alert("Oyun Bitti");location.reload();}
 
 requestAnimationFrame(update);
 }
 
-function endGame(){
-running=false;
-const box=document.getElementById("menuBox");
-box.innerHTML="<h2>Oyun Bitti</h2>"+
-"<p>Toplam Öldürme: "+kills+"</p>"+
-"<button onclick='resetGame()'>Tekrar Oyna</button>";
-document.getElementById("menuOverlay").style.display="flex";
-}
-
-function resetGame(){
-player.health=100;
-player.x=canvas.width/2;
-player.y=canvas.height/2;
-bullets=[];
-enemies=[];
-kills=0;
-level=1;
-exp=0;
-expNeed=8;
-document.getElementById("menuOverlay").style.display="none";
-running=true;
-update();
-}
-
-setInterval(()=>{
-if(running){
-let spawnCount=1;
-if(level>=10) spawnCount=3;
-else if(level>=5) spawnCount=2;
-
-for(let i=0;i<spawnCount;i++) spawnEnemy();
-}
-},1500);
+setInterval(()=>{if(running) spawnEnemy();},1500);
+setInterval(()=>{if(running) spawnHealthPack();},8000);
 
 update();
 </script>
