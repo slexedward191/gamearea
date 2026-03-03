@@ -2,210 +2,153 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Tofaş Arena Drive</title>
+<title>Zombie Team 3D</title>
 <style>
-body{
-margin:0;
-overflow:hidden;
-background:#0f172a;
-font-family:Arial;
-color:white;
-}
-canvas{display:block}
+body { margin:0; overflow:hidden; background:black; }
 #hud{
 position:fixed;
 top:10px;
 left:10px;
-background:rgba(0,0,0,0.6);
+color:white;
+font-family:Arial;
+background:rgba(0,0,0,0.5);
 padding:10px;
-border-radius:10px;
-font-size:14px;
+border-radius:8px;
 }
-#howto{
+#crosshair{
 position:fixed;
-left:10px;
-top:140px;
-background:#1f2937;
-padding:12px;
-border-radius:10px;
-width:210px;
+left:50%;
+top:50%;
+transform:translate(-50%,-50%);
+font-size:20px;
+color:white;
 }
 </style>
 </head>
 <body>
 
-<div id="hud"></div>
+<div id="hud">HP: 100<br>Score: 0</div>
+<div id="crosshair">+</div>
 
-<div id="howto">
-<b>🚗 NASIL OYNANIR</b><br><br>
-W - Gaz<br>
-S - Fren / Geri<br>
-A - Sola Dön<br>
-D - Sağa Dön<br><br>
-Amaç: Engellere çarpmadan<br>
-olabildiğince uzun süre sür!
-</div>
-
-<canvas id="game"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
 
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+let scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111111);
 
-/* ARENA */
-const arena={
-x:100,
-y:100,
-w:canvas.width-200,
-h:canvas.height-200
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* IŞIK */
+let light = new THREE.DirectionalLight(0xffffff,1);
+light.position.set(5,10,7);
+scene.add(light);
+
+/* ZEMİN */
+let floorGeo = new THREE.PlaneGeometry(200,200);
+let floorMat = new THREE.MeshStandardMaterial({color:0x222222});
+let floor = new THREE.Mesh(floorGeo,floorMat);
+floor.rotation.x = -Math.PI/2;
+scene.add(floor);
+
+/* PLAYER */
+let player = {
+hp:100,
+speed:0.15,
+score:0
 };
 
-/* INPUT */
-let keys={};
+camera.position.set(0,2,5);
+
+/* CONTROLS */
+let keys = {};
 document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
 document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-/* PLAYER (TOFAŞ) */
-let car={
-x:arena.x+arena.w/2,
-y:arena.y+arena.h/2,
-angle:0,
-speed:0,
-maxSpeed:6,
-acceleration:0.15,
-friction:0.05,
-turnSpeed:0.05,
-hp:100,
-width:60,
-height:30
-};
+/* ZOMBIE CLASS */
+let zombies = [];
 
-/* OBSTACLES */
-let obstacles=[];
+function spawnZombie(){
+let geo = new THREE.BoxGeometry(1,2,1);
+let mat = new THREE.MeshStandardMaterial({color:0x00ff00});
+let zombie = new THREE.Mesh(geo,mat);
 
-function rand(a,b){return Math.random()*(b-a)+a;}
+zombie.position.set(
+(Math.random()-0.5)*50,
+1,
+(Math.random()-0.5)*50
+);
 
-function spawnObstacle(){
-let size=rand(40,80);
-obstacles.push({
-x:rand(arena.x+50,arena.x+arena.w-50),
-y:rand(arena.y+50,arena.y+arena.h-50),
-w:size,
-h:size
+zombie.hp = 50;
+scene.add(zombie);
+zombies.push(zombie);
+}
+
+setInterval(spawnZombie,2000);
+
+/* SHOOT */
+document.addEventListener("click",()=>{
+let raycaster = new THREE.Raycaster();
+raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+let intersects = raycaster.intersectObjects(zombies);
+
+if(intersects.length>0){
+let hit = intersects[0].object;
+hit.hp -= 25;
+if(hit.hp<=0){
+scene.remove(hit);
+zombies.splice(zombies.indexOf(hit),1);
+player.score += 10;
+}
+}
 });
-}
-
-for(let i=0;i<20;i++) spawnObstacle();
-
-/* COLLISION */
-function rectCollision(car,obs){
-let dx=Math.abs(car.x-obs.x);
-let dy=Math.abs(car.y-obs.y);
-return dx < obs.w/2+car.width/2 &&
-       dy < obs.h/2+car.height/2;
-}
 
 /* UPDATE */
-let score=0;
-
 function update(){
 
-/* GAS */
-if(keys["w"]) car.speed+=car.acceleration;
-if(keys["s"]) car.speed-=car.acceleration;
+/* Movement */
+if(keys["w"]) camera.position.z -= player.speed;
+if(keys["s"]) camera.position.z += player.speed;
+if(keys["a"]) camera.position.x -= player.speed;
+if(keys["d"]) camera.position.x += player.speed;
 
-/* LIMIT SPEED */
-car.speed=Math.max(-car.maxSpeed/2,Math.min(car.maxSpeed,car.speed));
+/* Zombies follow */
+zombies.forEach(z=>{
+let dx = camera.position.x - z.position.x;
+let dz = camera.position.z - z.position.z;
+let dist = Math.sqrt(dx*dx+dz*dz);
 
-/* FRICTION */
-if(!keys["w"] && !keys["s"]){
-if(car.speed>0) car.speed-=car.friction;
-if(car.speed<0) car.speed+=car.friction;
-}
+z.position.x += dx/dist * 0.03;
+z.position.z += dz/dist * 0.03;
 
-/* TURN */
-if(keys["a"]) car.angle-=car.turnSpeed*car.speed;
-if(keys["d"]) car.angle+=car.turnSpeed*car.speed;
-
-/* MOVE */
-car.x+=Math.cos(car.angle)*car.speed;
-car.y+=Math.sin(car.angle)*car.speed;
-
-/* ARENA LIMIT */
-car.x=Math.max(arena.x+car.width/2,
-Math.min(arena.x+arena.w-car.width/2,car.x));
-car.y=Math.max(arena.y+car.height/2,
-Math.min(arena.y+arena.h-car.height/2,car.y));
-
-/* COLLISION CHECK */
-obstacles.forEach(obs=>{
-if(rectCollision(car,obs)){
-car.hp-=0.5;
-car.speed*=-0.5;
-}
-});
-
-/* GAME OVER */
-if(car.hp<=0){
-alert("🚗 Tofaş pert oldu! Skor: "+Math.floor(score));
+if(dist<1.5){
+player.hp -= 0.1;
+if(player.hp<=0){
+alert("Öldün! Skor: "+player.score);
 location.reload();
 }
-
-score+=Math.abs(car.speed)*0.1;
 }
-
-/* DRAW */
-function draw(){
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-/* Arena */
-ctx.strokeStyle="white";
-ctx.lineWidth=3;
-ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
-
-/* Obstacles */
-ctx.fillStyle="#475569";
-obstacles.forEach(obs=>{
-ctx.fillRect(obs.x-obs.w/2,obs.y-obs.h/2,obs.w,obs.h);
 });
 
-/* Draw Car */
-ctx.save();
-ctx.translate(car.x,car.y);
-ctx.rotate(car.angle);
-
-/* Body */
-ctx.fillStyle="white";
-ctx.fillRect(-car.width/2,-car.height/2,car.width,car.height);
-
-/* Windows */
-ctx.fillStyle="black";
-ctx.fillRect(-15,-10,30,20);
-
-/* Emoji Tofaş vibe */
-ctx.font="20px Arial";
-ctx.fillText("🚗",-12,6);
-
-ctx.restore();
-
 /* HUD */
-document.getElementById("hud").innerHTML=
-"HP: "+Math.floor(car.hp)+"<br>"+
-"Hız: "+car.speed.toFixed(2)+"<br>"+
-"Skor: "+Math.floor(score);
+document.getElementById("hud").innerHTML =
+"HP: "+Math.floor(player.hp)+
+"<br>Score: "+player.score;
+
 }
 
-function loop(){
+/* LOOP */
+function animate(){
+requestAnimationFrame(animate);
 update();
-draw();
-requestAnimationFrame(loop);
+renderer.render(scene,camera);
 }
 
-loop();
+animate();
+
 </script>
 </body>
 </html>
