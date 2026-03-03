@@ -11,10 +11,11 @@ canvas{display:block}
 .fill{height:100%}
 .hpText{position:absolute;width:100%;text-align:center;font-size:12px;top:1px}
 .topLeft{position:fixed;top:20px;left:20px}
+.bottomRight{position:fixed;bottom:20px;right:20px;background:#1e293b;padding:15px;border-radius:10px;color:white}
 button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer}
 .rulesBtn{background:#3b82f6;color:white}
 .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center}
-.panel{background:#1e293b;padding:30px;border-radius:12px;color:white;width:420px;max-height:80vh;overflow:auto;text-align:center}
+.panel{background:#1e293b;padding:30px;border-radius:12px;color:white;width:420px;text-align:center}
 .panel button{background:#22c55e;color:white;margin-top:15px}
 .startBtn{font-size:22px;padding:15px 30px}
 </style>
@@ -35,6 +36,13 @@ button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer}
 <div>Ulti: <span id="ultiCD">Hazır</span></div>
 </div>
 
+<div class="bottomRight">
+<h4>Eklentiler</h4>
+<div>Hasar: <span id="damageStat">1</span></div>
+<div>Ateş Hızı: <span id="fireRateStat">250</span> ms</div>
+</div>
+
+<!-- START -->
 <div class="overlay" id="startOverlay">
 <div class="panel">
 <h1>Hamster Arena</h1>
@@ -42,18 +50,20 @@ button{padding:10px 15px;border:none;border-radius:6px;cursor:pointer}
 </div>
 </div>
 
+<!-- RULES -->
 <div class="overlay" id="rulesOverlay" style="display:none;">
 <div class="panel">
 <h2>Oyun Kuralları</h2>
-<p><b>W A S D</b> → Hareket</p>
-<p><b>Sol Tık</b> → Ateş</p>
-<p><b>Sağ Tık</b> → Ulti (10 saniye cooldown)</p>
-<p>Her 5 levelde Boss süreci başlar.</p>
-<p>Boss öldürünce can çantası düşer.</p>
-<p>Ateş Hızı 3. seviyede çok hızlanır.</p>
-<p>Spawn bölgeleri 4 sabit noktadır.</p>
-<p>Bosslar farklı saldırı patternine sahiptir.</p>
+<p>Sağ Tık Ulti → Hasarın %25’i kadar alan hasarı vurur.</p>
 <button onclick="closeRules()">Kapat</button>
+</div>
+</div>
+
+<!-- GAME OVER -->
+<div class="overlay" id="gameOverOverlay" style="display:none;">
+<div class="panel">
+<h1>ÖLDÜN 💀</h1>
+<button onclick="restartGame()">Tekrar Başlat</button>
 </div>
 </div>
 
@@ -74,14 +84,30 @@ let kills=0,level=1,killNeed=10;
 let lastShot=0,lastUlti=0,ultiEffectTime=0;
 
 function init(){
-player={x:canvas.width/2,y:canvas.height/2,r:22,health:100,maxHealth:100,speed:4,damage:1,fireRate:250};
+player={
+x:canvas.width/2,
+y:canvas.height/2,
+r:22,
+health:100,
+maxHealth:100,
+speed:4,
+damage:1,
+fireRate:250
+};
 kills=0;level=1;killNeed=10;
 bullets=[];enemies=[];healthPacks=[];
+lastShot=0;lastUlti=0;
 }
 init();
 
 function startGame(){
 startOverlay.style.display="none";
+running=true;
+}
+
+function restartGame(){
+gameOverOverlay.style.display="none";
+init();
 running=true;
 }
 
@@ -111,16 +137,18 @@ let now=Date.now();
 if(now-lastUlti<10000)return;
 lastUlti=now;
 ultiEffectTime=20;
-let removed=0;
-enemies=enemies.filter(e=>{
+let ultiDamage=player.damage*0.25;
+
+enemies.forEach((e,i)=>{
 if(Math.hypot(player.x-e.x,player.y-e.y)<200){
-if(e.type==="boss") healthPacks.push({x:e.x,y:e.y,r:12});
-removed++;
-return false;
+e.health-=ultiDamage;
+if(e.health<=0){
+if(e.type==="boss")healthPacks.push({x:e.x,y:e.y,r:12});
+enemies.splice(i,1);
+kills++;
 }
-return true;
+}
 });
-kills+=removed; // XP SAYILIYOR
 }
 
 function spawnEnemy(){
@@ -132,19 +160,6 @@ health:5+level,
 maxHealth:5+level,
 speed:1.5+level*0.05,
 type:"normal"
-});
-}
-
-function spawnBoss(){
-enemies.push({
-x:arena.x+arena.w/2,
-y:arena.y+80,
-r:45,
-health:60+level*8,
-maxHealth:60+level*8,
-speed:2,
-type:"boss",
-phase:0,timer:0
 });
 }
 
@@ -173,7 +188,6 @@ if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){
 e.health-=player.damage;
 bullets.splice(i,1);
 if(e.health<=0){
-if(e.type==="boss")healthPacks.push({x:e.x,y:e.y,r:12});
 enemies.splice(j,1);
 kills++;
 }
@@ -183,57 +197,31 @@ kills++;
 
 enemies.forEach(e=>{
 let ang=Math.atan2(player.y-e.y,player.x-e.x);
-if(e.type==="boss"){
-e.timer++;
-if(e.phase===0){
-e.x+=Math.cos(ang)*6;
-e.y+=Math.sin(ang)*6;
-if(e.timer>40){e.phase=1;e.timer=0;}
-}else{
-e.x+=Math.cos(ang)*1.5;
-e.y+=Math.sin(ang)*1.5;
-if(e.timer>120){e.phase=0;e.timer=0;}
-}
-}else{
 e.x+=Math.cos(ang)*e.speed;
 e.y+=Math.sin(ang)*e.speed;
-}
 
 ctx.beginPath();
 ctx.arc(e.x,e.y,e.r,0,6.28);
-ctx.fillStyle=e.type==="boss"?"purple":"red";
+ctx.fillStyle="red";
 ctx.fill();
 
-ctx.fillStyle="black";
-ctx.fillRect(e.x-30,e.y-e.r-15,60,6);
-ctx.fillStyle="lime";
-ctx.fillRect(e.x-30,e.y-e.r-15,60*(e.health/e.maxHealth),6);
-
 if(Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r){
-player.health-=0.3;
+player.health-=0.4;
 }
 });
 
-healthPacks.forEach((h,i)=>{
-ctx.fillStyle="lime";
-ctx.fillRect(h.x-8,h.y-8,16,16);
-if(Math.hypot(player.x-h.x,player.y-h.y)<player.r+10){
-player.health=Math.min(player.maxHealth,player.health+30);
-healthPacks.splice(i,1);
-}
-});
-
-if(kills>=killNeed){
-level++;
-kills=0;
-killNeed+=10;
-if(level%5===0)spawnBoss();
+if(player.health<=0){
+running=false;
+gameOverOverlay.style.display="flex";
 }
 
 healthBar.style.width=(player.health/player.maxHealth*100)+"%";
-hpText.innerText=Math.floor(player.health)+" HP";
+hpText.innerText=Math.max(0,Math.floor(player.health))+" HP";
 xpBar.style.width=(kills/killNeed*100)+"%";
 info.innerText="Kill: "+kills+" / "+killNeed+" | Level: "+level;
+
+damageStat.innerText=player.damage;
+fireRateStat.innerText=player.fireRate;
 
 let cd=Math.max(0,10-Math.floor((Date.now()-lastUlti)/1000));
 ultiCD.innerText=cd===0?"Hazır":cd+"s";
@@ -248,7 +236,6 @@ ultiEffectTime--;
 }
 }
 
-/* hamster */
 ctx.beginPath();
 ctx.arc(player.x,player.y,22,0,6.28);
 ctx.fillStyle="#d2b48c";
