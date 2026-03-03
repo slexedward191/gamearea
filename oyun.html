@@ -32,7 +32,6 @@ canvas{display:block}
 <b>Eklentiler</b>
 <p>Hasar: <span id="uDamage">0</span></p>
 <p>Hız: <span id="uSpeed">0</span></p>
-<p>Can: <span id="uHealth">0</span></p>
 <p>Ateş Hızı: <span id="uFireRate">0</span></p>
 </div>
 
@@ -50,21 +49,26 @@ canvas.height=window.innerHeight;
 
 const arena={x:100,y:100,w:canvas.width-200,h:canvas.height-200};
 
-let player,bullets,enemies,keys,mouse,mouseDown;
-let kills,level,killNeed,lastShot,lastUlti,ultiEffectTime,running;
-let upgrades;
+const spawnBases=[
+{x:arena.x+40,y:arena.y+40},
+{x:arena.x+arena.w-40,y:arena.y+40},
+{x:arena.x+40,y:arena.y+arena.h-40},
+{x:arena.x+arena.w-40,y:arena.y+arena.h-40}
+];
+
+let healthPacks=[];
+let player,bullets,enemies,keys={},mouse={x:0,y:0},mouseDown=false;
+let kills=0,level=1,killNeed=10,running=true;
+let lastShot=0,lastUlti=0,ultiEffectTime=0;
+let upgrades={damage:0,speed:0,fireRate:0};
+let bossCount=0;
 
 /* INIT */
 function initGame(){
 player={x:canvas.width/2,y:canvas.height/2,r:22,speed:4,health:100,maxHealth:100,damage:1,fireRate:250};
-upgrades={damage:0,speed:0,health:0,fireRate:0};
-bullets=[];enemies=[];
-keys={};mouse={x:0,y:0};mouseDown=false;
-kills=0;level=1;killNeed=10;
-lastShot=0;lastUlti=0;ultiEffectTime=0;
+kills=0;level=1;killNeed=10;bossCount=0;
+bullets=[];enemies=[];healthPacks=[];
 running=true;
-
-updateUpgradeUI();
 }
 initGame();
 
@@ -87,90 +91,73 @@ let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
 bullets.push({x:player.x,y:player.y,dx:Math.cos(a)*9,dy:Math.sin(a)*9});
 }
 
-/* ULTI */
+/* ULTI 10s FIX */
 function useUlti(){
 let now=Date.now();
 if(now-lastUlti<10000) return;
 lastUlti=now;
 ultiEffectTime=20;
-let removed=0;
 enemies=enemies.filter(e=>{
-let d=Math.hypot(player.x-e.x,player.y-e.y);
-if(d<=200){ removed++; return false;}
+if(Math.hypot(player.x-e.x,player.y-e.y)<200){
+if(e.type.includes("boss")) dropHealth(e.x,e.y);
+kills++;
+return false;
+}
 return true;
 });
-kills+=removed;
 }
 
-/* SPAWN */
-function spawnEnemy(type="normal"){
-let e={
-x:arena.x+Math.random()*arena.w,
-y:arena.y+Math.random()*arena.h,
+function dropHealth(x,y){
+healthPacks.push({x,y,r:12});
+}
+
+/* SPAWN NORMAL */
+function spawnEnemy(){
+let base=spawnBases[Math.floor(Math.random()*4)];
+enemies.push({
+x:base.x,y:base.y,
 r:20,
-maxHealth:5+level,
 health:5+level,
+maxHealth:5+level,
 speed:1.5+level*0.05,
-type:type,
+type:"normal"
+});
+}
+
+/* SPAWN BOSS */
+function spawnBoss(){
+if(bossCount>=5) return;
+bossCount++;
+
+let bossTypes=["dash","tank","speed"];
+let type=bossTypes[level/5 % bossTypes.length |0];
+
+enemies.push({
+x:arena.x+arena.w/2,
+y:arena.y+80,
+r:40+level,
+health:60+level*8,
+maxHealth:60+level*8,
+speed:2,
+type:"boss_"+type,
 phase:0,
-dashTimer:0
-};
-
-if(type==="boss"){
-e.r=40+level*1.5;
-e.maxHealth=40+level*6;
-e.health=e.maxHealth;
-e.speed=2;
-}
-if(type==="pentagon"){
-e.r=80;
-e.maxHealth=250;
-e.health=250;
-e.speed=1.5;
+timer:0
+});
 }
 
-enemies.push(e);
-}
-
-/* LEVEL UP */
-function openUpgrade(){
-running=false;
-menuOverlay.style.display="flex";
-menuBox.innerHTML=`
-<h2>LEVEL ${level}</h2>
-<button onclick="upgrade('damage')">Hasar +</button>
-<button onclick="upgrade('speed')">Hız +</button>
-<button onclick="upgrade('health')">Can +</button>
-<button onclick="upgrade('fireRate')">Ateş Hızı +</button>
-`;
-}
-
-function upgrade(type){
-if(type==="damage"){player.damage++;upgrades.damage++;}
-if(type==="speed"){player.speed+=0.5;upgrades.speed++;}
-if(type==="health"){player.maxHealth+=20;player.health=player.maxHealth;upgrades.health++;}
-if(type==="fireRate"){
-if(player.fireRate>80){player.fireRate-=20; upgrades.fireRate++;}
-}
-updateUpgradeUI();
-menuOverlay.style.display="none";
-running=true;
-}
-
-function updateUpgradeUI(){
-uDamage.innerText=upgrades.damage;
-uSpeed.innerText=upgrades.speed;
-uHealth.innerText=upgrades.health;
-uFireRate.innerText=upgrades.fireRate;
-}
-
-/* GAME LOOP */
+/* LOOP */
 function gameLoop(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
-ctx.strokeStyle="white";
-ctx.lineWidth=4;
-ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
+/* DRAW SPAWN BASES */
+spawnBases.forEach(b=>{
+ctx.fillStyle="#1e293b";
+ctx.beginPath();
+ctx.arc(b.x,b.y,25,0,6.28);
+ctx.fill();
+ctx.strokeStyle="#38bdf8";
+ctx.stroke();
+});
 
 if(running){
 
@@ -187,14 +174,18 @@ if(mouseDown) shoot();
 /* BULLETS */
 bullets.forEach((b,i)=>{
 b.x+=b.dx;b.y+=b.dy;
-ctx.fillStyle="#facc15";
+ctx.fillStyle="yellow";
 ctx.beginPath();ctx.arc(b.x,b.y,4,0,6.28);ctx.fill();
 
 enemies.forEach((e,j)=>{
 if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){
 e.health-=player.damage;
 bullets.splice(i,1);
-if(e.health<=0){enemies.splice(j,1);kills++;}
+if(e.health<=0){
+if(e.type.includes("boss")) dropHealth(e.x,e.y);
+enemies.splice(j,1);
+kills++;
+}
 }
 });
 });
@@ -203,17 +194,17 @@ if(e.health<=0){enemies.splice(j,1);kills++;}
 enemies.forEach(e=>{
 let ang=Math.atan2(player.y-e.y,player.x-e.x);
 
-if(e.type==="boss"){
-e.dashTimer++;
+/* boss ai */
+if(e.type==="boss_dash"){
+e.timer++;
 if(e.phase===0){
 e.x+=Math.cos(ang)*6;
 e.y+=Math.sin(ang)*6;
-if(e.dashTimer>40){e.phase=1;e.dashTimer=0;}
-}
-else{
+if(e.timer>40){e.phase=1;e.timer=0;}
+}else{
 e.x+=Math.cos(ang)*1.5;
 e.y+=Math.sin(ang)*1.5;
-if(e.dashTimer>120){e.phase=0;e.dashTimer=0;}
+if(e.timer>120){e.phase=0;e.timer=0;}
 }
 }
 else{
@@ -221,27 +212,13 @@ e.x+=Math.cos(ang)*e.speed;
 e.y+=Math.sin(ang)*e.speed;
 }
 
-/* DRAW */
-if(e.type==="pentagon"){
-ctx.beginPath();
-for(let i=0;i<5;i++){
-let angle=i*2*Math.PI/5;
-let px=e.x+Math.cos(angle)*e.r;
-let py=e.y+Math.sin(angle)*e.r;
-if(i===0) ctx.moveTo(px,py);
-else ctx.lineTo(px,py);
-}
-ctx.closePath();
-ctx.fillStyle="orange";
-ctx.fill();
-}
-else{
+/* draw */
 ctx.beginPath();
 ctx.arc(e.x,e.y,e.r,0,6.28);
-ctx.fillStyle=e.type==="boss"?"purple":"red";
+ctx.fillStyle=e.type.includes("boss")?"purple":"red";
 ctx.fill();
-}
 
+/* hp bar */
 ctx.fillStyle="black";
 ctx.fillRect(e.x-30,e.y-e.r-15,60,6);
 ctx.fillStyle="lime";
@@ -252,24 +229,30 @@ player.health-=0.3;
 }
 });
 
-/* LEVEL CHECK */
+/* HEALTH PACKS */
+healthPacks.forEach((h,i)=>{
+ctx.fillStyle="lime";
+ctx.fillRect(h.x-8,h.y-8,16,16);
+if(Math.hypot(player.x-h.x,player.y-h.y)<player.r+10){
+player.health=Math.min(player.maxHealth,player.health+30);
+healthPacks.splice(i,1);
+}
+});
+
+/* LEVEL */
 if(kills>=killNeed){
 level++;
 kills=0;
 killNeed+=10;
-openUpgrade();
-
-if(level%5===0){
-if(level===10) spawnEnemy("pentagon");
-else spawnEnemy("boss");
-}
+if(level%5===0) spawnBoss();
 }
 
 /* UI */
 healthBar.style.width=(player.health/player.maxHealth*100)+"%";
-hpText.innerText=Math.max(0,Math.floor(player.health))+" HP";
+hpText.innerText=Math.floor(player.health)+" HP";
 xpBar.style.width=(kills/killNeed*100)+"%";
 info.innerText="Kill: "+kills+" / "+killNeed+" | Level: "+level;
+ultiCD.innerText=Math.max(0,10-Math.floor((Date.now()-lastUlti)/1000))+"s";
 }
 
 /* HAMSTER */
@@ -278,13 +261,6 @@ ctx.arc(player.x,player.y,22,0,6.28);
 ctx.fillStyle="#d2b48c";
 ctx.fill();
 
-ctx.fillStyle="black";
-ctx.beginPath();
-ctx.arc(player.x-7,player.y-5,3,0,6.28);ctx.fill();
-ctx.beginPath();
-ctx.arc(player.x+7,player.y-5,3,0,6.28);ctx.fill();
-
-/* GUN */
 let ang=Math.atan2(mouse.y-player.y,mouse.x-player.x);
 ctx.save();
 ctx.translate(player.x,player.y);
@@ -293,36 +269,11 @@ ctx.fillStyle="#444";
 ctx.fillRect(10,-4,28,8);
 ctx.restore();
 
-/* ULTI EFFECT */
-if(ultiEffectTime>0){
-ctx.beginPath();
-ctx.arc(player.x,player.y,200-ultiEffectTime*5,0,6.28);
-ctx.strokeStyle="rgba(0,200,255,0.6)";
-ctx.lineWidth=8;
-ctx.stroke();
-ultiEffectTime--;
-}
-
-/* GAME OVER */
-if(player.health<=0 && running){
-running=false;
-menuOverlay.style.display="flex";
-menuBox.innerHTML="<h2>Oyun Bitti</h2><button onclick='resetGame()'>Tekrar Oyna</button>";
-}
-
 requestAnimationFrame(gameLoop);
 }
 
-function resetGame(){
-menuOverlay.style.display="none";
-initGame();
-}
-
-setInterval(()=>{
-if(running && level%5!==0){
-spawnEnemy();
-}
-},1500);
+setInterval(()=>{if(running) spawnEnemy();},1500);
+setInterval(()=>{if(running && level>=5) spawnBoss();},8000);
 
 gameLoop();
 </script>
