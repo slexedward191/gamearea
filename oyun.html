@@ -2,14 +2,14 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Diep.io Pro: Team Wars</title>
+    <title>Diep.io Pro 10vs10 - Team Wars</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #b9bbbe; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #b9bbbe; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         canvas { display: block; cursor: crosshair; }
-        #ui {
+        #overlay {
             position: absolute; bottom: 20px; left: 20px;
-            background: rgba(0, 0, 0, 0.5); padding: 15px;
-            border-radius: 10px; color: white; pointer-events: none; border: 2px solid #444;
+            background: rgba(0, 0, 0, 0.4); padding: 15px;
+            border-radius: 10px; color: white; pointer-events: none; border: 2px solid #555;
         }
         #minimap {
             position: absolute; bottom: 20px; right: 20px;
@@ -18,19 +18,20 @@
         }
         #announcement {
             position: absolute; top: 10%; left: 50%; transform: translate(-50%, -50%);
-            color: #fff; font-size: 30px; font-weight: bold; text-shadow: 3px 3px #000;
+            color: #fff; font-size: 32px; font-weight: bold; text-shadow: 3px 3px #000;
             text-align: center; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="announcement">MAVİ VS KIRMIZI<br><span style="font-size: 15px;">Boss Ortada Doğdu!</span></div>
+    <div id="announcement">MAVİ VS KIRMIZI<br><span style="font-size: 16px;">Ortada Boss Doğdu!</span></div>
     
-    <div id="ui">
+    <div id="overlay">
         <div id="score">Puan: 0</div>
         <div id="team-info" style="color: #00b2e1; font-weight: bold;">Takım: Mavi</div>
         <div id="class">Sınıf: Basic</div>
+        <div style="font-size: 11px; margin-top: 5px; color: #aaa;">WASD: Hareket | Mouse: Ateş</div>
     </div>
 
     <canvas id="minimap"></canvas>
@@ -42,12 +43,51 @@
         const mCanvas = document.getElementById("minimap");
         const mCtx = mCanvas.getContext("2d");
 
-        // AYARLAR
-        const WORLD_SIZE = 5000;
+        // --- AYARLAR ---
+        const WORLD_SIZE = 4000;
         const TEAM_SIZE = 10;
         let score = 0;
         let level = 1;
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        mCanvas.
+        mCanvas.width = 150;
+        mCanvas.height = 150;
+
+        const keys = {};
+        const mouse = { x: 0, y: 0, down: false };
+        window.addEventListener("keydown", e => keys[e.code] = true);
+        window.addEventListener("keyup", e => keys[e.code] = false);
+        window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener("mousedown", () => mouse.down = true);
+        window.addEventListener("mouseup", () => mouse.down = false);
+
+        // --- SINIFLAR ---
+        class Bullet {
+            constructor(x, y, angle, team, color) {
+                this.x = x; this.y = y; this.angle = angle;
+                this.team = team; this.color = color;
+                this.speed = 12; this.radius = 8; this.life = 100;
+            }
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                this.life--;
+            }
+            draw(camX, camY) {
+                ctx.beginPath();
+                ctx.arc(this.x - camX, this.y - camY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = "#555"; ctx.lineWidth = 3; ctx.stroke();
+            }
+        }
+
+        class Tank {
+            constructor(team, isPlayer = false) {
+                this.team = team;
+                this.isPlayer = isPlayer;
+                this.color = (team === "Blue") ? "#00b2e1" : "#f14e54";
+                this.spawn();
+                this.radius = 25;
+                this.hp = 100;
