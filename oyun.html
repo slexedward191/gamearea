@@ -2,21 +2,33 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Emoji Arena</title>
+<title>Tofaş Arena Drive</title>
 <style>
-body{margin:0;overflow:hidden;background:#0f172a;font-family:Arial;color:white}
-canvas{display:block}
-#hud{position:fixed;top:10px;left:10px;font-size:14px}
-#upgradePanel{
-position:fixed;right:10px;bottom:10px;
-background:rgba(0,0,0,0.7);
-padding:10px;border-radius:10px;width:200px;
+body{
+margin:0;
+overflow:hidden;
+background:#0f172a;
+font-family:Arial;
+color:white;
 }
-.upg{background:#1f2937;margin:5px 0;padding:8px;border-radius:8px;cursor:pointer}
-.upg:hover{background:#374151}
+canvas{display:block}
+#hud{
+position:fixed;
+top:10px;
+left:10px;
+background:rgba(0,0,0,0.6);
+padding:10px;
+border-radius:10px;
+font-size:14px;
+}
 #howto{
-position:fixed;left:10px;top:120px;
-background:#1f2937;padding:10px;border-radius:10px;width:210px;
+position:fixed;
+left:10px;
+top:140px;
+background:#1f2937;
+padding:12px;
+border-radius:10px;
+width:210px;
 }
 </style>
 </head>
@@ -25,248 +37,166 @@ background:#1f2937;padding:10px;border-radius:10px;width:210px;
 <div id="hud"></div>
 
 <div id="howto">
-<b>🎮 HOW TO PLAY</b><br><br>
-WASD - Move<br>
-Mouse - Aim<br>
-Left Click - Shoot<br>
-E - Auto Fire<br>
-Right Click - ULTI 💥<br>
-Shift - Dash<br>
-Every 10 Level = Boss
+<b>🚗 NASIL OYNANIR</b><br><br>
+W - Gaz<br>
+S - Fren / Geri<br>
+A - Sola Dön<br>
+D - Sağa Dön<br><br>
+Amaç: Engellere çarpmadan<br>
+olabildiğince uzun süre sür!
 </div>
 
-<div id="upgradePanel"></div>
 <canvas id="game"></canvas>
 
 <script>
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
+
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
-const arena={x:100,y:100,w:canvas.width-200,h:canvas.height-200};
+/* ARENA */
+const arena={
+x:100,
+y:100,
+w:canvas.width-200,
+h:canvas.height-200
+};
 
-let keys={},mouse={x:0,y:0,down:false,right:false};
-let autoFire=false;
-
-document.addEventListener("keydown",e=>{
-keys[e.key.toLowerCase()]=true;
-if(e.key.toLowerCase()==="e") autoFire=!autoFire;
-});
+/* INPUT */
+let keys={};
+document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
 document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-canvas.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY});
-canvas.addEventListener("mousedown",e=>{
-if(e.button===0)mouse.down=true;
-if(e.button===2){e.preventDefault();mouse.right=true;}
-});
-canvas.addEventListener("mouseup",e=>{
-if(e.button===0)mouse.down=false;
-if(e.button===2)mouse.right=false;
-});
-canvas.addEventListener("contextmenu",e=>e.preventDefault());
+/* PLAYER (TOFAŞ) */
+let car={
+x:arena.x+arena.w/2,
+y:arena.y+arena.h/2,
+angle:0,
+speed:0,
+maxSpeed:6,
+acceleration:0.15,
+friction:0.05,
+turnSpeed:0.05,
+hp:100,
+width:60,
+height:30
+};
+
+/* OBSTACLES */
+let obstacles=[];
 
 function rand(a,b){return Math.random()*(b-a)+a;}
 
-let player={
-x:canvas.width/2,y:canvas.height/2,size:35,
-speed:4,hp:120,maxHp:120,
-damage:25,
-fireRate:350,
-lastShot:0,
-xp:0,level:1,
-ultiCD:0,dashCD:0
-};
-
-let enemies=[],bullets=[],particles=[];
-let bossesAlive=0;
-
-const enemyEmojis=["👹","👾","🤡","💀","👺","👿","😈"];
-
-const spawns=[
-{ x:arena.x+50, y:arena.y+50 },
-{ x:arena.x+arena.w-50, y:arena.y+50 },
-{ x:arena.x+50, y:arena.y+arena.h-50 },
-{ x:arena.x+arena.w-50, y:arena.y+arena.h-50 }
-];
-
-function spawnEnemy(){
-if(player.level%10===0) return;
-if(enemies.length>150) return;
-
-spawns.forEach(s=>{
-for(let i=0;i<3;i++){
-enemies.push({
-x:s.x+rand(-40,40),
-y:s.y+rand(-40,40),
-size:rand(25,40),
-hp:80+player.level*8,
-maxHp:80+player.level*8,
-speed:0.7+player.level*0.015,
-emoji:enemyEmojis[Math.floor(rand(0,enemyEmojis.length))]
-});
-}
-});
-}
-setInterval(spawnEnemy,2000);
-
-function spawnBoss(){
-if(bossesAlive>=3)return;
-bossesAlive++;
-let scale=player.level/10;
-enemies.push({
-x:arena.x+arena.w/2,
-y:arena.y+arena.h/2,
-size:90+scale*15,
-hp:1500*scale,
-maxHp:1500*scale,
-speed:0.6,
-emoji:"👑",
-boss:true
+function spawnObstacle(){
+let size=rand(40,80);
+obstacles.push({
+x:rand(arena.x+50,arena.x+arena.w-50),
+y:rand(arena.y+50,arena.y+arena.h-50),
+w:size,
+h:size
 });
 }
 
-function shoot(){
-let now=Date.now();
-if(now-player.lastShot<player.fireRate)return;
-player.lastShot=now;
+for(let i=0;i<20;i++) spawnObstacle();
 
-let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
-bullets.push({
-x:player.x,y:player.y,
-dx:Math.cos(angle)*10,
-dy:Math.sin(angle)*10
-});
-
-particles.push({x:player.x,y:player.y,life:15});
+/* COLLISION */
+function rectCollision(car,obs){
+let dx=Math.abs(car.x-obs.x);
+let dy=Math.abs(car.y-obs.y);
+return dx < obs.w/2+car.width/2 &&
+       dy < obs.h/2+car.height/2;
 }
 
-function ulti(){
-if(player.ultiCD>0)return;
-player.ultiCD=300;
-enemies.forEach(e=>e.hp*=0.5);
-for(let i=0;i<50;i++){
-particles.push({
-x:player.x,y:player.y,
-dx:rand(-6,6),dy:rand(-6,6),life:40
-});
-}
-}
+/* UPDATE */
+let score=0;
 
 function update(){
 
-if(keys["w"])player.y-=player.speed;
-if(keys["s"])player.y+=player.speed;
-if(keys["a"])player.x-=player.speed;
-if(keys["d"])player.x+=player.speed;
+/* GAS */
+if(keys["w"]) car.speed+=car.acceleration;
+if(keys["s"]) car.speed-=car.acceleration;
 
-if(keys["shift"] && player.dashCD<=0){
-player.x+=(mouse.x-player.x)*0.3;
-player.y+=(mouse.y-player.y)*0.3;
-player.dashCD=100;
+/* LIMIT SPEED */
+car.speed=Math.max(-car.maxSpeed/2,Math.min(car.maxSpeed,car.speed));
+
+/* FRICTION */
+if(!keys["w"] && !keys["s"]){
+if(car.speed>0) car.speed-=car.friction;
+if(car.speed<0) car.speed+=car.friction;
 }
 
-player.x=Math.max(arena.x,Math.min(arena.x+arena.w,player.x));
-player.y=Math.max(arena.y,Math.min(arena.y+arena.h,player.y));
+/* TURN */
+if(keys["a"]) car.angle-=car.turnSpeed*car.speed;
+if(keys["d"]) car.angle+=car.turnSpeed*car.speed;
 
-if(mouse.down || autoFire)shoot();
-if(mouse.right)ulti();
+/* MOVE */
+car.x+=Math.cos(car.angle)*car.speed;
+car.y+=Math.sin(car.angle)*car.speed;
 
-if(player.ultiCD>0)player.ultiCD--;
-if(player.dashCD>0)player.dashCD--;
+/* ARENA LIMIT */
+car.x=Math.max(arena.x+car.width/2,
+Math.min(arena.x+arena.w-car.width/2,car.x));
+car.y=Math.max(arena.y+car.height/2,
+Math.min(arena.y+arena.h-car.height/2,car.y));
 
-bullets.forEach((b,i)=>{
-b.x+=b.dx;b.y+=b.dy;
-if(b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height)
-bullets.splice(i,1);
-});
-
-enemies.forEach((e,ei)=>{
-let angle=Math.atan2(player.y-e.y,player.x-e.x);
-e.x+=Math.cos(angle)*e.speed;
-e.y+=Math.sin(angle)*e.speed;
-
-let dx=e.x-player.x,dy=e.y-player.y;
-if(Math.sqrt(dx*dx+dy*dy)<e.size+player.size){
-player.hp-=0.3;
-if(player.hp<=0)location.reload();
-}
-
-bullets.forEach((b,bi)=>{
-let dx=e.x-b.x,dy=e.y-b.y;
-if(Math.sqrt(dx*dx+dy*dy)<e.size){
-e.hp-=player.damage;
-bullets.splice(bi,1);
-if(e.hp<=0){
-player.xp+=50;
-if(e.boss)bossesAlive--;
-enemies.splice(ei,1);
-}
+/* COLLISION CHECK */
+obstacles.forEach(obs=>{
+if(rectCollision(car,obs)){
+car.hp-=0.5;
+car.speed*=-0.5;
 }
 });
-});
 
-if(player.xp>=player.level*90 && player.level<100){
-player.xp=0;
-player.level++;
-
-player.maxHp+=20;
-player.hp=player.maxHp;
-
-player.damage+=6;      // FIXED damage scaling
-player.fireRate=Math.max(80,player.fireRate-25); // FIXED fire speed scaling
-
-if(player.level%10===0)spawnBoss();
-}
+/* GAME OVER */
+if(car.hp<=0){
+alert("🚗 Tofaş pert oldu! Skor: "+Math.floor(score));
+location.reload();
 }
 
+score+=Math.abs(car.speed)*0.1;
+}
+
+/* DRAW */
 function draw(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
+/* Arena */
 ctx.strokeStyle="white";
+ctx.lineWidth=3;
 ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
 
-/* Player Meme */
-ctx.font="45px Arial";
-ctx.fillText("😎",player.x-20,player.y+15);
-
-/* Bullets */
-ctx.fillStyle="orange";
-bullets.forEach(b=>{
-ctx.beginPath();
-ctx.arc(b.x,b.y,6,0,Math.PI*2);
-ctx.fill();
+/* Obstacles */
+ctx.fillStyle="#475569";
+obstacles.forEach(obs=>{
+ctx.fillRect(obs.x-obs.w/2,obs.y-obs.h/2,obs.w,obs.h);
 });
 
-/* Fire particles */
-particles.forEach((p,i)=>{
-ctx.fillStyle="yellow";
-ctx.beginPath();
-ctx.arc(p.x,p.y,4,0,Math.PI*2);
-ctx.fill();
-if(p.dx){p.x+=p.dx;p.y+=p.dy;}
-p.life--;
-if(p.life<=0)particles.splice(i,1);
-});
+/* Draw Car */
+ctx.save();
+ctx.translate(car.x,car.y);
+ctx.rotate(car.angle);
 
-/* Enemies */
-enemies.forEach(e=>{
-ctx.font=e.size+"px Arial";
-ctx.fillText(e.emoji,e.x-e.size/2,e.y+e.size/2);
+/* Body */
+ctx.fillStyle="white";
+ctx.fillRect(-car.width/2,-car.height/2,car.width,car.height);
 
-ctx.fillStyle="green";
-ctx.fillRect(e.x-e.size,e.y-e.size-10,(e.hp/e.maxHp)*e.size*2,6);
-});
+/* Windows */
+ctx.fillStyle="black";
+ctx.fillRect(-15,-10,30,20);
 
+/* Emoji Tofaş vibe */
+ctx.font="20px Arial";
+ctx.fillText("🚗",-12,6);
+
+ctx.restore();
+
+/* HUD */
 document.getElementById("hud").innerHTML=
-"HP: "+Math.floor(player.hp)+"/"+player.maxHp+
-"<br>Level: "+player.level+
-"<br>XP: "+player.xp+"/"+(player.level*90)+
-"<br>Damage: "+player.damage+
-"<br>FireRate: "+player.fireRate+
-"<br>AutoFire: "+autoFire+
-"<br>UltiCD: "+Math.floor(player.ultiCD/60);
+"HP: "+Math.floor(car.hp)+"<br>"+
+"Hız: "+car.speed.toFixed(2)+"<br>"+
+"Skor: "+Math.floor(score);
 }
 
 function loop(){
