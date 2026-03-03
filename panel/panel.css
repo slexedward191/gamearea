@@ -32,3 +32,19 @@ button {
   border-radius:5px;
   cursor:pointer;
 }
+.back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  text-decoration: none;
+  background: #334155;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.back-btn:hover {
+  background: #22c55e;
+}
