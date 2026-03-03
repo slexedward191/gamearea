@@ -7,7 +7,6 @@
 body{margin:0;overflow:hidden;background:#0f172a;font-family:Arial}
 canvas{display:block}
 
-/* UI */
 .ui{
 position:fixed;
 top:20px;
@@ -98,7 +97,6 @@ const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
-/* ARENA */
 const arena={
 x:100,
 y:100,
@@ -106,7 +104,6 @@ w:canvas.width-200,
 h:canvas.height-200
 };
 
-/* PLAYER */
 let player={
 x:canvas.width/2,
 y:canvas.height/2,
@@ -129,6 +126,7 @@ let killNeed=10;
 
 let lastShot=0;
 let lastUlti=0;
+let ultiEffectTime=0;
 
 let running=true;
 
@@ -163,23 +161,27 @@ function useUlti(){
 let now=Date.now();
 if(now-lastUlti<10000) return;
 lastUlti=now;
+ultiEffectTime=20;
 
 enemies=enemies.filter(e=>{
-return Math.hypot(player.x-e.x,player.y-e.y)>150;
+return Math.hypot(player.x-e.x,player.y-e.y)>180;
 });
 }
 
 /* SPAWN */
 function spawnEnemy(){
-let isBoss = level%5===0;
+let isBoss=level%5===0;
 
-enemies.push({
+let enemy={
 x:arena.x+Math.random()*arena.w,
 y:arena.y+Math.random()*arena.h,
 r:isBoss?40:20,
-health:isBoss?20+level:3+level*0.5,
+maxHealth:isBoss?30+level:5+level,
+health:isBoss?30+level:5+level,
 speed:isBoss?1.2:1.5+level*0.05
-});
+};
+
+enemies.push(enemy);
 }
 
 /* UPGRADE MENU */
@@ -206,9 +208,7 @@ running=true;
 }
 
 /* GAME LOOP */
-function update(){
-if(!running) return;
-
+function gameLoop(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
 /* Arena */
@@ -216,32 +216,19 @@ ctx.strokeStyle="white";
 ctx.lineWidth=4;
 ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
 
+if(running){
+
 /* Movement */
 if(keys["w"]) player.y-=player.speed;
 if(keys["s"]) player.y+=player.speed;
 if(keys["a"]) player.x-=player.speed;
 if(keys["d"]) player.x+=player.speed;
 
-/* Wall collision (çarpıp kalır) */
+/* Wall collision */
 player.x=Math.max(arena.x+player.r,Math.min(arena.x+arena.w-player.r,player.x));
 player.y=Math.max(arena.y+player.r,Math.min(arena.y+arena.h-player.r,player.y));
 
 if(mouseDown) shoot();
-
-/* Player */
-ctx.beginPath();
-ctx.arc(player.x,player.y,player.r,0,6.28);
-ctx.fillStyle="#22c55e";
-ctx.fill();
-
-/* Gun */
-let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
-ctx.beginPath();
-ctx.moveTo(player.x,player.y);
-ctx.lineTo(player.x+Math.cos(a)*40,player.y+Math.sin(a)*40);
-ctx.strokeStyle="white";
-ctx.lineWidth=6;
-ctx.stroke();
 
 /* Bullets */
 bullets.forEach((b,i)=>{
@@ -276,6 +263,12 @@ ctx.arc(e.x,e.y,e.r,0,6.28);
 ctx.fillStyle=e.r>20?"purple":"red";
 ctx.fill();
 
+/* Enemy Health Bar */
+ctx.fillStyle="black";
+ctx.fillRect(e.x-20,e.y-e.r-15,40,5);
+ctx.fillStyle="lime";
+ctx.fillRect(e.x-20,e.y-e.r-15,40*(e.health/e.maxHealth),5);
+
 if(Math.hypot(player.x-e.x,player.y-e.y)<player.r+e.r){
 player.health-=0.3;
 }
@@ -287,6 +280,33 @@ level++;
 kills=0;
 killNeed+=10;
 openUpgrade();
+}
+
+}
+
+/* Player */
+ctx.beginPath();
+ctx.arc(player.x,player.y,player.r,0,6.28);
+ctx.fillStyle="#22c55e";
+ctx.fill();
+
+/* Gun */
+let a=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+ctx.beginPath();
+ctx.moveTo(player.x,player.y);
+ctx.lineTo(player.x+Math.cos(a)*40,player.y+Math.sin(a)*40);
+ctx.strokeStyle="white";
+ctx.lineWidth=6;
+ctx.stroke();
+
+/* Ulti Effect */
+if(ultiEffectTime>0){
+ctx.beginPath();
+ctx.arc(player.x,player.y,200-ultiEffectTime*5,0,6.28);
+ctx.strokeStyle="rgba(0,200,255,0.6)";
+ctx.lineWidth=8;
+ctx.stroke();
+ultiEffectTime--;
 }
 
 /* UI */
@@ -303,21 +323,20 @@ alert("Oyun Bitti");
 location.reload();
 }
 
-requestAnimationFrame(update);
+requestAnimationFrame(gameLoop);
 }
 
-/* Spawn rate scaling */
+/* Spawn scaling */
 setInterval(()=>{
 if(running){
 let count=1;
 if(level>=10) count=3;
 else if(level>=5) count=2;
-
 for(let i=0;i<count;i++) spawnEnemy();
 }
 },1500);
 
-update();
+gameLoop();
 </script>
 </body>
 </html>
