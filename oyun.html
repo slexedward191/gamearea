@@ -2,40 +2,39 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Zombie Team 3D</title>
+<title>3D Supermarket Simulator</title>
 <style>
-body { margin:0; overflow:hidden; background:black; }
+body { margin:0; overflow:hidden; font-family:Arial; }
 #hud{
 position:fixed;
 top:10px;
 left:10px;
+background:rgba(0,0,0,0.7);
 color:white;
-font-family:Arial;
-background:rgba(0,0,0,0.5);
-padding:10px;
-border-radius:8px;
+padding:12px;
+border-radius:10px;
+width:220px;
 }
-#crosshair{
+#centerMsg{
 position:fixed;
-left:50%;
 top:50%;
+left:50%;
 transform:translate(-50%,-50%);
-font-size:20px;
 color:white;
+font-size:24px;
 }
 </style>
 </head>
 <body>
 
-<div id="hud">HP: 100<br>Score: 0</div>
-<div id="crosshair">+</div>
+<div id="hud"></div>
+<div id="centerMsg">Tıklayın ve Başlayın</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-
 let scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111111);
+scene.background = new THREE.Color(0xf0f0f0);
 
 let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 let renderer = new THREE.WebGLRenderer({antialias:true});
@@ -43,101 +42,146 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* IŞIK */
-let light = new THREE.DirectionalLight(0xffffff,1);
-light.position.set(5,10,7);
+let light = new THREE.HemisphereLight(0xffffff,0x444444,1.2);
 scene.add(light);
 
 /* ZEMİN */
-let floorGeo = new THREE.PlaneGeometry(200,200);
-let floorMat = new THREE.MeshStandardMaterial({color:0x222222});
+let floorGeo = new THREE.PlaneGeometry(60,60);
+let floorMat = new THREE.MeshStandardMaterial({color:0xdddddd});
 let floor = new THREE.Mesh(floorGeo,floorMat);
 floor.rotation.x = -Math.PI/2;
 scene.add(floor);
 
+/* RAF OLUŞTUR */
+function createShelf(x,z){
+let shelfGeo = new THREE.BoxGeometry(4,4,1);
+let shelfMat = new THREE.MeshStandardMaterial({color:0x8b5a2b});
+let shelf = new THREE.Mesh(shelfGeo,shelfMat);
+shelf.position.set(x,2,z);
+scene.add(shelf);
+}
+
+/* Rafları diz */
+for(let i=-20;i<=20;i+=10){
+createShelf(i,-10);
+createShelf(i,10);
+}
+
+/* ÜRÜNLER */
+let products=[];
+const productTypes=[
+{ name:"Süt", color:0xffffff },
+{ name:"Elma", color:0xff0000 },
+{ name:"Ekmek", color:0xffd700 },
+{ name:"Su", color:0x3399ff }
+];
+
+function spawnProducts(){
+productTypes.forEach((p,i)=>{
+let geo = new THREE.BoxGeometry(1,1,1);
+let mat = new THREE.MeshStandardMaterial({color:p.color});
+let item = new THREE.Mesh(geo,mat);
+
+item.position.set(-15+i*10,1,-10);
+item.productName = p.name;
+
+scene.add(item);
+products.push(item);
+});
+}
+spawnProducts();
+
+/* KASA */
+let kasaGeo = new THREE.BoxGeometry(4,2,2);
+let kasaMat = new THREE.MeshStandardMaterial({color:0x333333});
+let kasa = new THREE.Mesh(kasaGeo,kasaMat);
+kasa.position.set(0,1,20);
+scene.add(kasa);
+
 /* PLAYER */
-let player = {
-hp:100,
-speed:0.15,
-score:0
-};
+camera.position.set(0,2,30);
 
-camera.position.set(0,2,5);
+let keys={};
+document.addEventListener("keydown",e=>{
+keys[e.key.toLowerCase()]=true;
 
-/* CONTROLS */
-let keys = {};
-document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+if(e.key.toLowerCase()==="e") interact();
+});
 document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-/* ZOMBIE CLASS */
-let zombies = [];
+/* POINTER LOCK */
+document.body.addEventListener("click",()=>{
+renderer.domElement.requestPointerLock();
+document.getElementById("centerMsg").style.display="none";
+});
 
-function spawnZombie(){
-let geo = new THREE.BoxGeometry(1,2,1);
-let mat = new THREE.MeshStandardMaterial({color:0x00ff00});
-let zombie = new THREE.Mesh(geo,mat);
-
-zombie.position.set(
-(Math.random()-0.5)*50,
-1,
-(Math.random()-0.5)*50
-);
-
-zombie.hp = 50;
-scene.add(zombie);
-zombies.push(zombie);
-}
-
-setInterval(spawnZombie,2000);
-
-/* SHOOT */
-document.addEventListener("click",()=>{
-let raycaster = new THREE.Raycaster();
-raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-let intersects = raycaster.intersectObjects(zombies);
-
-if(intersects.length>0){
-let hit = intersects[0].object;
-hit.hp -= 25;
-if(hit.hp<=0){
-scene.remove(hit);
-zombies.splice(zombies.indexOf(hit),1);
-player.score += 10;
-}
+let yaw=0;
+document.addEventListener("mousemove",e=>{
+if(document.pointerLockElement===renderer.domElement){
+yaw -= e.movementX*0.002;
+camera.rotation.y = yaw;
 }
 });
+
+/* GAME LOGIC */
+let shoppingList=["Süt","Elma"];
+let cart=[];
+let timeLeft=120;
+let score=0;
+
+function interact(){
+let raycaster=new THREE.Raycaster();
+raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
+let intersects=raycaster.intersectObjects(products);
+
+if(intersects.length>0){
+let hit=intersects[0].object;
+cart.push(hit.productName);
+scene.remove(hit);
+products.splice(products.indexOf(hit),1);
+}
+
+let kasaDist=camera.position.distanceTo(kasa.position);
+if(kasaDist<3){
+checkOut();
+}
+}
+
+function checkOut(){
+let success=true;
+shoppingList.forEach(item=>{
+if(!cart.includes(item)) success=false;
+});
+if(success){
+score+=100;
+shoppingList=["Su","Ekmek"];
+cart=[];
+alert("Alışveriş Tamamlandı!");
+}else{
+alert("Eksik Ürün Var!");
+}
+}
 
 /* UPDATE */
 function update(){
 
-/* Movement */
-if(keys["w"]) camera.position.z -= player.speed;
-if(keys["s"]) camera.position.z += player.speed;
-if(keys["a"]) camera.position.x -= player.speed;
-if(keys["d"]) camera.position.x += player.speed;
+if(keys["w"]) camera.position.z -= Math.cos(yaw)*0.2;
+if(keys["s"]) camera.position.z += Math.cos(yaw)*0.2;
+if(keys["a"]) camera.position.x -= Math.cos(yaw)*0.2;
+if(keys["d"]) camera.position.x += Math.cos(yaw)*0.2;
 
-/* Zombies follow */
-zombies.forEach(z=>{
-let dx = camera.position.x - z.position.x;
-let dz = camera.position.z - z.position.z;
-let dist = Math.sqrt(dx*dx+dz*dz);
-
-z.position.x += dx/dist * 0.03;
-z.position.z += dz/dist * 0.03;
-
-if(dist<1.5){
-player.hp -= 0.1;
-if(player.hp<=0){
-alert("Öldün! Skor: "+player.score);
+timeLeft-=0.01;
+if(timeLeft<=0){
+alert("Süre Bitti! Skor: "+score);
 location.reload();
 }
-}
-});
 
-/* HUD */
-document.getElementById("hud").innerHTML =
-"HP: "+Math.floor(player.hp)+
-"<br>Score: "+player.score;
-
+document.getElementById("hud").innerHTML=
+"<b>Alışveriş Listesi</b><br>"+shoppingList.join("<br>")+
+"<br><br><b>Sepet</b><br>"+cart.join("<br>")+
+"<br><br>Süre: "+Math.floor(timeLeft)+
+"<br>Skor: "+score+
+"<br><br>E = Al / Kasa";
 }
 
 /* LOOP */
@@ -146,7 +190,6 @@ requestAnimationFrame(animate);
 update();
 renderer.render(scene,camera);
 }
-
 animate();
 
 </script>
