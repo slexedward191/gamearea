@@ -2,259 +2,178 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Market 3D Advanced</title>
+<title>Dino Game</title>
 <style>
-body{margin:0;overflow:hidden;font-family:Arial}
-#hud{
-position:fixed;
-top:10px;
-left:10px;
-background:rgba(0,0,0,0.7);
-color:white;
-padding:12px;
-border-radius:10px;
-width:260px;
+body{
+margin:0;
+overflow:hidden;
+background:#f7f7f7;
+font-family:Arial;
 }
-#msg{
-position:fixed;
+canvas{
+display:block;
+margin:0 auto;
+background:#ffffff;
+}
+#info{
+position:absolute;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+font-size:20px;
+}
+#gameover{
+position:absolute;
 top:50%;
 left:50%;
 transform:translate(-50%,-50%);
-color:white;
-font-size:22px;
-}
-#cardUI{
-position:fixed;
-bottom:40px;
-left:50%;
-transform:translateX(-50%);
-width:220px;
-height:140px;
-background:linear-gradient(135deg,#1e3a8a,#2563eb);
-border-radius:15px;
-color:white;
-padding:15px;
+font-size:28px;
 display:none;
-animation:pop 0.3s ease;
-}
-@keyframes pop{
-from{transform:translateX(-50%) scale(0.5)}
-to{transform:translateX(-50%) scale(1)}
+text-align:center;
 }
 </style>
 </head>
 <body>
 
-<div id="hud"></div>
-<div id="msg">Tıklayın ve Başlayın</div>
-
-<div id="cardUI">
-💳 BANK CARD<br><br>
-**** **** **** 1337<br><br>
-Processing...
+<div id="info">Score: 0</div>
+<div id="gameover">
+GAME OVER<br><br>
+Press SPACE to Restart
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<canvas id="game"></canvas>
+
 <script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
 
-let scene=new THREE.Scene();
-scene.background=new THREE.Color(0x87CEEB);
+canvas.width=800;
+canvas.height=300;
 
-let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
-let renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth,innerHeight);
-document.body.appendChild(renderer.domElement);
+let groundY=250;
 
-/* IŞIK */
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
-let sun=new THREE.DirectionalLight(0xffffff,0.8);
-sun.position.set(20,40,20);
-scene.add(sun);
+/* PLAYER */
+let dino={
+x:80,
+y:groundY,
+width:40,
+height:40,
+vy:0,
+gravity:0.8,
+jumpPower:-15,
+jumping:false
+};
 
-/* ZEMİN */
-let ground=new THREE.Mesh(
-new THREE.PlaneGeometry(200,200),
-new THREE.MeshStandardMaterial({color:0x3c9a3c})
-);
-ground.rotation.x=-Math.PI/2;
-scene.add(ground);
+/* GAME STATE */
+let obstacles=[];
+let speed=6;
+let score=0;
+let gameOver=false;
 
-/* YOL */
-let road=new THREE.Mesh(
-new THREE.PlaneGeometry(200,20),
-new THREE.MeshStandardMaterial({color:0x333333})
-);
-road.rotation.x=-Math.PI/2;
-road.position.z=50;
-scene.add(road);
-
-/* MARKET */
-let market=new THREE.Mesh(
-new THREE.BoxGeometry(30,15,30),
-new THREE.MeshStandardMaterial({color:0xffffff})
-);
-market.position.set(0,7.5,0);
-scene.add(market);
-
-/* KASA + POS */
-let kasa=new THREE.Mesh(
-new THREE.BoxGeometry(4,2,2),
-new THREE.MeshStandardMaterial({color:0x222222})
-);
-kasa.position.set(0,1,10);
-scene.add(kasa);
-
-let pos=new THREE.Mesh(
-new THREE.BoxGeometry(1,0.5,1),
-new THREE.MeshStandardMaterial({color:0x000000})
-);
-pos.position.set(0,2,10);
-scene.add(pos);
-
-/* RAF */
-function shelf(x,z){
-let s=new THREE.Mesh(
-new THREE.BoxGeometry(6,4,2),
-new THREE.MeshStandardMaterial({color:0x8b5a2b})
-);
-s.position.set(x,2,z);
-scene.add(s);
+/* CONTROLS */
+document.addEventListener("keydown",e=>{
+if(e.code==="Space"){
+if(gameOver){
+restart();
+}else if(!dino.jumping){
+dino.vy=dino.jumpPower;
+dino.jumping=true;
 }
-shelf(-8,-5);
-shelf(8,-5);
-
-/* ÜRÜN */
-let product=new THREE.Mesh(
-new THREE.BoxGeometry(1,1,1),
-new THREE.MeshStandardMaterial({color:0xff0000})
-);
-product.position.set(-8,1,-5);
-scene.add(product);
-
-/* ARABA */
-let cars=[];
-function spawnCar(){
-let c=new THREE.Mesh(
-new THREE.BoxGeometry(4,2,2),
-new THREE.MeshStandardMaterial({color:Math.random()*0xffffff})
-);
-c.position.set(-100,1,50);
-c.speed=0.7+Math.random();
-scene.add(c);
-cars.push(c);
-}
-setInterval(spawnCar,3000);
-
-/* MÜŞTERİ */
-let customers=[];
-function spawnCustomer(){
-let npc=new THREE.Mesh(
-new THREE.CapsuleGeometry(0.6,2,4,8),
-new THREE.MeshStandardMaterial({color:Math.random()*0xffffff})
-);
-npc.position.set(Math.random()*10-5,1,15);
-npc.state="shopping";
-npc.paymentTimer=0;
-scene.add(npc);
-customers.push(npc);
-}
-setInterval(spawnCustomer,6000);
-
-/* FPS KAMERA */
-camera.position.set(0,2,20);
-
-let yaw=0,pitch=0;
-let keys={};
-
-document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
-document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
-
-document.body.addEventListener("click",()=>{
-renderer.domElement.requestPointerLock();
-document.getElementById("msg").style.display="none";
-});
-
-document.addEventListener("mousemove",e=>{
-if(document.pointerLockElement===renderer.domElement){
-yaw-=e.movementX*0.002;
-pitch-=e.movementY*0.002;
-pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch));
-camera.rotation.order="YXZ";
-camera.rotation.y=yaw;
-camera.rotation.x=pitch;
 }
 });
 
-/* OYUN */
-let money=0;
+/* OBSTACLE SPAWN */
+function spawnObstacle(){
+let height=40;
+obstacles.push({
+x:canvas.width,
+y:groundY,
+width:20+Math.random()*20,
+height:height
+});
+}
+setInterval(()=>{
+if(!gameOver) spawnObstacle();
+},1500);
 
+/* UPDATE */
 function update(){
 
-/* HAREKET */
-let speed=0.2;
-let dir=new THREE.Vector3();
-camera.getWorldDirection(dir);
+if(gameOver) return;
 
-let right=new THREE.Vector3();
-right.crossVectors(camera.up,dir).normalize();
+/* DINO PHYSICS */
+dino.vy+=dino.gravity;
+dino.y+=dino.vy;
 
-if(keys["w"]) camera.position.addScaledVector(dir,speed);
-if(keys["s"]) camera.position.addScaledVector(dir,-speed);
-if(keys["a"]) camera.position.addScaledVector(right,speed);
-if(keys["d"]) camera.position.addScaledVector(right,-speed);
+if(dino.y>=groundY){
+dino.y=groundY;
+dino.vy=0;
+dino.jumping=false;
+}
 
-/* ARABA */
-cars.forEach((c,i)=>{
-c.position.x+=c.speed;
-if(c.position.x>100){
-scene.remove(c);
-cars.splice(i,1);
+/* OBSTACLES */
+obstacles.forEach((o,i)=>{
+o.x-=speed;
+
+if(o.x+o.width<0){
+obstacles.splice(i,1);
+}
+
+/* COLLISION */
+if(
+dino.x < o.x+o.width &&
+dino.x+dino.width > o.x &&
+dino.y < o.y+o.height &&
+dino.y+dino.height > o.y
+){
+gameOver=true;
+document.getElementById("gameover").style.display="block";
 }
 });
 
-/* MÜŞTERİ AI */
-customers.forEach((npc,i)=>{
+/* SPEED INCREASE */
+speed+=0.002;
 
-if(npc.state==="shopping"){
-npc.position.x+=(product.position.x-npc.position.x)*0.01;
-npc.position.z+=(product.position.z-npc.position.z)*0.01;
-if(npc.position.distanceTo(product.position)<1){
-npc.state="checkout";
-}
-}
-else if(npc.state==="checkout"){
-npc.position.x+=(kasa.position.x-npc.position.x)*0.01;
-npc.position.z+=(kasa.position.z-npc.position.z)*0.01;
-if(npc.position.distanceTo(kasa.position)<1){
-npc.state="paying";
-document.getElementById("cardUI").style.display="block";
-}
-}
-else if(npc.state==="paying"){
-npc.paymentTimer++;
-if(npc.paymentTimer>180){
-money+=20;
-document.getElementById("cardUI").style.display="none";
-scene.remove(npc);
-customers.splice(i,1);
-}
+/* SCORE */
+score++;
+document.getElementById("info").innerText="Score: "+score;
 }
 
+/* DRAW */
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+/* GROUND */
+ctx.fillStyle="black";
+ctx.fillRect(0,groundY+40,canvas.width,3);
+
+/* DINO */
+ctx.fillStyle="black";
+ctx.fillRect(dino.x,dino.y,dino.width,dino.height);
+
+/* OBSTACLES */
+obstacles.forEach(o=>{
+ctx.fillRect(o.x,o.y,o.width,o.height);
 });
-
-document.getElementById("hud").innerHTML=
-"<b>3D Market Advanced</b><br>"+
-"Müşteri: "+customers.length+
-"<br>Kasa Para: "+money;
 }
 
-function animate(){
-requestAnimationFrame(animate);
+/* LOOP */
+function loop(){
 update();
-renderer.render(scene,camera);
+draw();
+requestAnimationFrame(loop);
 }
-animate();
+loop();
 
+/* RESTART */
+function restart(){
+obstacles=[];
+score=0;
+speed=6;
+gameOver=false;
+document.getElementById("gameover").style.display="none";
+}
 </script>
+
 </body>
 </html>
