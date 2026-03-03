@@ -2,68 +2,84 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NEON SIEGE</title>
+<title>VECTOR OBLIVION</title>
 <style>
-body { margin:0; overflow:hidden; background:#0a0a0f; font-family:Arial; }
-canvas { display:block; }
-#ui {
-  position:absolute;
-  top:10px; left:10px;
-  color:white;
-  font-size:14px;
+body{margin:0;overflow:hidden;background:#0b0f1a;font-family:Arial}
+canvas{display:block}
+#ui{
+position:absolute;
+top:10px;left:10px;
+color:white;
+font-size:14px;
 }
-#skillMenu {
-  position:absolute;
-  right:20px; top:20px;
-  background:rgba(0,0,0,0.6);
-  padding:10px;
-  border:1px solid cyan;
+#overlay{
+position:absolute;
+top:0;left:0;
+width:100%;height:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+color:white;
+background:rgba(0,0,0,0.7);
+visibility:hidden;
 }
-button { background:black; color:cyan; border:1px solid cyan; margin:2px; }
+button{
+padding:10px 20px;
+margin:5px;
+background:#111;
+color:#0ff;
+border:1px solid #0ff;
+cursor:pointer;
+}
+button:hover{background:#0ff;color:#000}
 </style>
 </head>
 <body>
+
 <canvas id="game"></canvas>
 <div id="ui"></div>
-<div id="skillMenu"></div>
+<div id="overlay"></div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-let keys = {};
-document.addEventListener("keydown", e=>keys[e.key]=true);
-document.addEventListener("keyup", e=>keys[e.key]=false);
+let keys={};
+addEventListener("keydown",e=>keys[e.key]=true);
+addEventListener("keyup",e=>keys[e.key]=false);
 
-let mouse = {x:0,y:0};
-canvas.addEventListener("mousemove", e=>{
- mouse.x = e.clientX;
- mouse.y = e.clientY;
+let mouse={x:0,y:0};
+canvas.addEventListener("mousemove",e=>{
+mouse.x=e.clientX;
+mouse.y=e.clientY;
 });
 
-function rand(min,max){ return Math.random()*(max-min)+min; }
+function rand(a,b){return Math.random()*(b-a)+a}
 
-let player = {
- x:canvas.width/2,
- y:canvas.height/2,
- radius:15,
- hp:100,
- maxHp:100,
- damage:10,
- fireRate:400,
- bulletSpeed:6,
- speed:3,
- xp:0,
- level:1,
- nextXp:100,
- skillPoints:0,
- crit:0.05,
- xpBoost:1,
- lastShot:0,
- shield:false,
- rapid:false
+let cameraShake=0;
+
+let player={
+x:canvas.width/2,
+y:canvas.height/2,
+r:18,
+hp:120,
+maxHp:120,
+speed:3,
+dashCooldown:0,
+dashPower:120,
+damage:12,
+fireRate:250,
+bulletSpeed:8,
+crit:0.1,
+xp:0,
+level:1,
+nextXp:100,
+skillPoints:0,
+combo:0,
+lastShot:0
 };
 
 let bullets=[];
@@ -71,166 +87,194 @@ let enemies=[];
 let particles=[];
 let wave=1;
 let gameOver=false;
+let paused=false;
 
 function spawnEnemy(){
- let type = Math.random();
- let e = {
-   x: rand(0,canvas.width),
-   y: rand(0,canvas.height),
-   radius: rand(10,25),
-   hp: rand(20,50)*wave,
-   speed: rand(1,2)+wave*0.1,
-   type:type
- };
- enemies.push(e);
+let edge=Math.floor(Math.random()*4);
+let x,y;
+if(edge==0){x=0;y=rand(0,canvas.height)}
+if(edge==1){x=canvas.width;y=rand(0,canvas.height)}
+if(edge==2){x=rand(0,canvas.width);y=0}
+if(edge==3){x=rand(0,canvas.width);y=canvas.height}
+
+let type=Math.random();
+let e={
+x,y,
+r:rand(15,30),
+hp:50+wave*20,
+speed:1.2+wave*0.15,
+type
+};
+if(type>0.85){ e.r=40; e.hp*=4; e.speed*=0.7 }
+enemies.push(e);
 }
 
 function shoot(){
- if(Date.now()-player.lastShot < player.fireRate) return;
- player.lastShot = Date.now();
- bullets.push({
-   x:player.x,
-   y:player.y,
-   angle:Math.atan2(mouse.y-player.y, mouse.x-player.x),
-   speed:player.bulletSpeed
- });
+if(Date.now()-player.lastShot<player.fireRate)return;
+player.lastShot=Date.now();
+let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+bullets.push({
+x:player.x,
+y:player.y,
+dx:Math.cos(angle)*player.bulletSpeed,
+dy:Math.sin(angle)*player.bulletSpeed
+});
+cameraShake=5;
 }
 
-function gainXP(amount){
- player.xp += amount*player.xpBoost;
- if(player.xp >= player.nextXp){
-   player.xp=0;
-   player.level++;
-   player.skillPoints++;
-   player.nextXp *=1.3;
- }
+function gainXP(v){
+player.combo++;
+player.xp+=v*(1+player.combo*0.05);
+if(player.xp>=player.nextXp){
+player.xp=0;
+player.level++;
+player.skillPoints++;
+player.nextXp*=1.35;
+paused=true;
+showSkillMenu();
+}
 }
 
-function update(){
- if(gameOver) return;
+function dash(){
+if(player.dashCooldown>0)return;
+let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+player.x+=Math.cos(angle)*player.dashPower;
+player.y+=Math.sin(angle)*player.dashPower;
+player.dashCooldown=2000;
+cameraShake=15;
+}
 
- // Movement
- if(keys["w"]) player.y -= player.speed;
- if(keys["s"]) player.y += player.speed;
- if(keys["a"]) player.x -= player.speed;
- if(keys["d"]) player.x += player.speed;
+function update(dt){
+if(gameOver||paused)return;
 
- // Shoot
- if(keys[" "]) shoot();
+if(keys["w"])player.y-=player.speed;
+if(keys["s"])player.y+=player.speed;
+if(keys["a"])player.x-=player.speed;
+if(keys["d"])player.x+=player.speed;
+if(keys[" "])dash();
+if(keys["Mouse0"])shoot();
 
- // Bullets
- bullets.forEach((b,i)=>{
-   b.x += Math.cos(b.angle)*b.speed;
-   b.y += Math.sin(b.angle)*b.speed;
- });
+if(keys["f"])shoot();
 
- // Enemies
- enemies.forEach((e,i)=>{
-   let angle = Math.atan2(player.y-e.y, player.x-e.x);
-   e.x += Math.cos(angle)*e.speed;
-   e.y += Math.sin(angle)*e.speed;
+if(player.dashCooldown>0)player.dashCooldown-=dt;
 
-   // Collision
-   let dx=e.x-player.x;
-   let dy=e.y-player.y;
-   let dist=Math.sqrt(dx*dx+dy*dy);
-   if(dist < e.radius+player.radius){
-     if(!player.shield){
-       player.hp -= 1;
-       if(player.hp<=0) gameOver=true;
-     }
-   }
- });
+bullets.forEach((b,i)=>{
+b.x+=b.dx;
+b.y+=b.dy;
+if(b.x<0||b.y<0||b.x>canvas.width||b.y>canvas.height)bullets.splice(i,1);
+});
 
- // Bullet hit
- bullets.forEach((b,bi)=>{
-   enemies.forEach((e,ei)=>{
-     let dx=b.x-e.x;
-     let dy=b.y-e.y;
-     if(Math.sqrt(dx*dx+dy*dy)<e.radius){
-       let dmg=player.damage;
-       if(Math.random()<player.crit) dmg*=2;
-       e.hp-=dmg;
-       bullets.splice(bi,1);
-       if(e.hp<=0){
-         gainXP(20);
-         enemies.splice(ei,1);
-       }
-     }
-   });
- });
+enemies.forEach((e,i)=>{
+let angle=Math.atan2(player.y-e.y,player.x-e.x);
+e.x+=Math.cos(angle)*e.speed;
+e.y+=Math.sin(angle)*e.speed;
 
- if(enemies.length < wave*5){
-   spawnEnemy();
- }
+let dx=e.x-player.x;
+let dy=e.y-player.y;
+let dist=Math.hypot(dx,dy);
+if(dist<e.r+player.r){
+player.hp-=0.5;
+cameraShake=10;
+if(player.hp<=0) endGame();
+}
+});
 
- if(player.level%5==0) wave++;
+bullets.forEach((b,bi)=>{
+enemies.forEach((e,ei)=>{
+if(Math.hypot(b.x-e.x,b.y-e.y)<e.r){
+let dmg=player.damage;
+if(Math.random()<player.crit)dmg*=2;
+e.hp-=dmg;
+bullets.splice(bi,1);
+if(e.hp<=0){
+gainXP(25);
+cameraShake=8;
+enemies.splice(ei,1);
+}
+}
+});
+});
+
+if(enemies.length<wave*3)spawnEnemy();
+if(player.level%5==0)wave++;
 }
 
 function draw(){
- ctx.fillStyle="rgba(10,10,15,0.4)";
- ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.save();
+ctx.translate(rand(-cameraShake,cameraShake),rand(-cameraShake,cameraShake));
+ctx.fillStyle="rgba(11,15,26,0.3)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
 
- // Player
- ctx.beginPath();
- ctx.arc(player.x,player.y,player.radius,0,Math.PI*2);
- ctx.fillStyle=player.shield?"cyan":"white";
- ctx.fill();
+ctx.beginPath();
+ctx.arc(player.x,player.y,player.r,0,Math.PI*2);
+ctx.fillStyle="#0ff";
+ctx.fill();
 
- // Bullets
- ctx.fillStyle="yellow";
- bullets.forEach(b=>{
-   ctx.beginPath();
-   ctx.arc(b.x,b.y,4,0,Math.PI*2);
-   ctx.fill();
- });
+ctx.fillStyle="#ff0";
+bullets.forEach(b=>{
+ctx.beginPath();
+ctx.arc(b.x,b.y,5,0,Math.PI*2);
+ctx.fill();
+});
 
- // Enemies
- enemies.forEach(e=>{
-   ctx.beginPath();
-   ctx.arc(e.x,e.y,e.radius,0,Math.PI*2);
-   ctx.fillStyle="red";
-   ctx.fill();
- });
+enemies.forEach(e=>{
+ctx.beginPath();
+ctx.arc(e.x,e.y,e.r,0,Math.PI*2);
+ctx.fillStyle=e.r>35?"purple":"red";
+ctx.fill();
+});
 
- document.getElementById("ui").innerHTML=
-   "HP: "+Math.floor(player.hp)+"/"+player.maxHp+
-   "<br>Level: "+player.level+
-   "<br>XP: "+Math.floor(player.xp)+"/"+Math.floor(player.nextXp)+
-   "<br>Wave: "+wave+
-   "<br>Skill Points: "+player.skillPoints;
+ctx.restore();
+cameraShake*=0.9;
+
+document.getElementById("ui").innerHTML=
+"HP: "+Math.floor(player.hp)+"/"+player.maxHp+
+"<br>Level: "+player.level+
+"<br>XP: "+Math.floor(player.xp)+"/"+Math.floor(player.nextXp)+
+"<br>Wave: "+wave+
+"<br>Combo: "+player.combo+
+"<br>Skill Points: "+player.skillPoints;
 }
 
-function skillMenu(){
- let div=document.getElementById("skillMenu");
- if(player.skillPoints>0){
-   div.innerHTML=`
-   <button onclick="upgrade('damage')">Damage</button>
-   <button onclick="upgrade('hp')">HP</button>
-   <button onclick="upgrade('fire')">Fire Rate</button>
-   <button onclick="upgrade('speed')">Speed</button>
-   <button onclick="upgrade('crit')">Crit</button>
-   `;
- } else div.innerHTML="";
+function showSkillMenu(){
+let o=document.getElementById("overlay");
+o.style.visibility="visible";
+o.innerHTML="<h2>LEVEL UP</h2>"+
+"<button onclick='upgrade(\"damage\")'>+Damage</button>"+
+"<button onclick='upgrade(\"speed\")'>+Move Speed</button>"+
+"<button onclick='upgrade(\"firerate\")'>+Fire Rate</button>"+
+"<button onclick='upgrade(\"crit\")'>+Crit</button>";
 }
 
-function upgrade(stat){
- if(player.skillPoints<=0) return;
- player.skillPoints--;
- if(stat=="damage") player.damage+=5;
- if(stat=="hp"){ player.maxHp+=20; player.hp+=20; }
- if(stat=="fire") player.fireRate-=30;
- if(stat=="speed") player.speed+=0.5;
- if(stat=="crit") player.crit+=0.02;
+function upgrade(s){
+player.skillPoints--;
+if(s=="damage")player.damage+=5;
+if(s=="speed")player.speed+=0.5;
+if(s=="firerate")player.fireRate-=20;
+if(s=="crit")player.crit+=0.05;
+document.getElementById("overlay").style.visibility="hidden";
+paused=false;
 }
 
-function loop(){
- update();
- draw();
- skillMenu();
- requestAnimationFrame(loop);
+function endGame(){
+gameOver=true;
+localStorage.setItem("highscore",
+Math.max(player.level,localStorage.getItem("highscore")||0));
+let o=document.getElementById("overlay");
+o.style.visibility="visible";
+o.innerHTML="<h1>GAME OVER</h1>"+
+"<p>Level: "+player.level+"</p>"+
+"<p>High Score: "+localStorage.getItem("highscore")+"</p>"+
+"<button onclick='location.reload()'>Restart</button>";
 }
 
+let last=0;
+function loop(t){
+let dt=t-last;last=t;
+update(dt);
+draw();
+requestAnimationFrame(loop);
+}
 loop();
 </script>
 </body>
