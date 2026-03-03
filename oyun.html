@@ -22,21 +22,19 @@ background:#1f2937;padding:10px;border-radius:10px;width:210px;
 </head>
 <body>
 
-<audio autoplay loop>
-<source src="https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGINRADIO.mp3">
-</audio>
-
 <div id="hud"></div>
+
 <div id="howto">
 <b>🎮 HOW TO PLAY</b><br><br>
 WASD - Move<br>
 Mouse - Aim<br>
 Left Click - Shoot<br>
-E - Auto Fire Toggle<br>
+E - Auto Fire<br>
 Right Click - ULTI 💥<br>
 Shift - Dash<br>
 Every 10 Level = Boss
 </div>
+
 <div id="upgradePanel"></div>
 <canvas id="game"></canvas>
 
@@ -71,25 +69,20 @@ canvas.addEventListener("contextmenu",e=>e.preventDefault());
 function rand(a,b){return Math.random()*(b-a)+a;}
 
 let player={
-x:canvas.width/2,y:canvas.height/2,size:30,
-speed:4,hp:100,maxHp:100,
-damage:20,fireRate:350,lastShot:0,
-xp:0,level:1,ultiCD:0,dashCD:0
+x:canvas.width/2,y:canvas.height/2,size:35,
+speed:4,hp:120,maxHp:120,
+damage:25,
+fireRate:350,
+lastShot:0,
+xp:0,level:1,
+ultiCD:0,dashCD:0
 };
 
-let enemies=[],bullets=[],particles=[],trees=[];
+let enemies=[],bullets=[],particles=[];
 let bossesAlive=0;
 
-/* --- TREES (visual only) --- */
-for(let i=0;i<25;i++){
-trees.push({
-x:rand(arena.x,arena.x+arena.w),
-y:rand(arena.y,arena.y+arena.h),
-size:rand(20,40)
-});
-}
+const enemyEmojis=["👹","👾","🤡","💀","👺","👿","😈"];
 
-/* --- 4 KÖŞE 3 SPAWN --- */
 const spawns=[
 { x:arena.x+50, y:arena.y+50 },
 { x:arena.x+arena.w-50, y:arena.y+50 },
@@ -98,70 +91,68 @@ const spawns=[
 ];
 
 function spawnEnemy(){
-if(player.level%10===0) return; // boss zamanı
-if(enemies.length>120) return;
+if(player.level%10===0) return;
+if(enemies.length>150) return;
 
 spawns.forEach(s=>{
 for(let i=0;i<3;i++){
 enemies.push({
 x:s.x+rand(-40,40),
 y:s.y+rand(-40,40),
-size:rand(20,35),
-hp:60+player.level*5,
-maxHp:60+player.level*5,
-speed:0.8+player.level*0.01,
-shape:Math.floor(rand(0,3))
+size:rand(25,40),
+hp:80+player.level*8,
+maxHp:80+player.level*8,
+speed:0.7+player.level*0.015,
+emoji:enemyEmojis[Math.floor(rand(0,enemyEmojis.length))]
 });
 }
 });
 }
 setInterval(spawnEnemy,2000);
 
-/* --- BOSS --- */
 function spawnBoss(){
 if(bossesAlive>=3)return;
 bossesAlive++;
-let difficulty=player.level/10;
+let scale=player.level/10;
 enemies.push({
 x:arena.x+arena.w/2,
 y:arena.y+arena.h/2,
-size:80+difficulty*10,
-hp:800*difficulty,
-maxHp:800*difficulty,
+size:90+scale*15,
+hp:1500*scale,
+maxHp:1500*scale,
 speed:0.6,
-boss:true,
-shape:Math.floor(rand(0,3))
+emoji:"👑",
+boss:true
 });
 }
 
-/* --- SHOOT --- */
 function shoot(){
 let now=Date.now();
 if(now-player.lastShot<player.fireRate)return;
 player.lastShot=now;
+
 let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
 bullets.push({
 x:player.x,y:player.y,
-dx:Math.cos(angle)*9,
-dy:Math.sin(angle)*9
+dx:Math.cos(angle)*10,
+dy:Math.sin(angle)*10
 });
-particles.push({x:player.x,y:player.y,life:10});
+
+particles.push({x:player.x,y:player.y,life:15});
 }
 
-/* --- ULTI --- */
 function ulti(){
 if(player.ultiCD>0)return;
 player.ultiCD=300;
 enemies.forEach(e=>e.hp*=0.5);
-for(let i=0;i<40;i++){
+for(let i=0;i<50;i++){
 particles.push({
 x:player.x,y:player.y,
-dx:rand(-5,5),dy:rand(-5,5),life:40
+dx:rand(-6,6),dy:rand(-6,6),life:40
 });
 }
 }
 
-/* --- UPDATE --- */
 function update(){
 
 if(keys["w"])player.y-=player.speed;
@@ -197,7 +188,7 @@ e.y+=Math.sin(angle)*e.speed;
 
 let dx=e.x-player.x,dy=e.y-player.y;
 if(Math.sqrt(dx*dx+dy*dy)<e.size+player.size){
-player.hp-=0.2;
+player.hp-=0.3;
 if(player.hp<=0)location.reload();
 }
 
@@ -207,7 +198,7 @@ if(Math.sqrt(dx*dx+dy*dy)<e.size){
 e.hp-=player.damage;
 bullets.splice(bi,1);
 if(e.hp<=0){
-player.xp+=40; // XP hızlandı
+player.xp+=50;
 if(e.boss)bossesAlive--;
 enemies.splice(ei,1);
 }
@@ -215,18 +206,20 @@ enemies.splice(ei,1);
 });
 });
 
-if(player.xp>=player.level*80 && player.level<100){
+if(player.xp>=player.level*90 && player.level<100){
 player.xp=0;
 player.level++;
-player.maxHp+=15;
+
+player.maxHp+=20;
 player.hp=player.maxHp;
-player.damage+=3;
-player.fireRate=Math.max(80,player.fireRate-10);
+
+player.damage+=6;      // FIXED damage scaling
+player.fireRate=Math.max(80,player.fireRate-25); // FIXED fire speed scaling
+
 if(player.level%10===0)spawnBoss();
 }
 }
 
-/* --- DRAW --- */
 function draw(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -234,33 +227,23 @@ ctx.clearRect(0,0,canvas.width,canvas.height);
 ctx.strokeStyle="white";
 ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
 
-/* Trees */
-trees.forEach(t=>{
-ctx.fillStyle="#065f46";
-ctx.beginPath();
-ctx.arc(t.x,t.y,t.size,0,Math.PI*2);
-ctx.fill();
-});
+/* Player Meme */
+ctx.font="45px Arial";
+ctx.fillText("😎",player.x-20,player.y+15);
 
-/* Player */
-ctx.font="40px Arial";
-ctx.fillText("😀",player.x-20,player.y+15);
-ctx.font="20px Arial";
-ctx.fillText("🔫",player.x+20,player.y);
-
-/* Bullets + fire */
-bullets.forEach(b=>{
+/* Bullets */
 ctx.fillStyle="orange";
+bullets.forEach(b=>{
 ctx.beginPath();
-ctx.arc(b.x,b.y,5,0,Math.PI*2);
+ctx.arc(b.x,b.y,6,0,Math.PI*2);
 ctx.fill();
 });
 
-/* Particles */
+/* Fire particles */
 particles.forEach((p,i)=>{
 ctx.fillStyle="yellow";
 ctx.beginPath();
-ctx.arc(p.x,p.y,3,0,Math.PI*2);
+ctx.arc(p.x,p.y,4,0,Math.PI*2);
 ctx.fill();
 if(p.dx){p.x+=p.dx;p.y+=p.dy;}
 p.life--;
@@ -269,25 +252,17 @@ if(p.life<=0)particles.splice(i,1);
 
 /* Enemies */
 enemies.forEach(e=>{
-ctx.fillStyle=e.boss?"purple":"red";
-ctx.beginPath();
-if(e.shape===0)ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
-if(e.shape===1)ctx.rect(e.x-e.size,e.y-e.size,e.size*2,e.size*2);
-if(e.shape===2){
-ctx.moveTo(e.x,e.y-e.size);
-ctx.lineTo(e.x-e.size,e.y+e.size);
-ctx.lineTo(e.x+e.size,e.y+e.size);
-}
-ctx.fill();
+ctx.font=e.size+"px Arial";
+ctx.fillText(e.emoji,e.x-e.size/2,e.y+e.size/2);
 
 ctx.fillStyle="green";
-ctx.fillRect(e.x-e.size,e.y-e.size-10,(e.hp/e.maxHp)*e.size*2,5);
+ctx.fillRect(e.x-e.size,e.y-e.size-10,(e.hp/e.maxHp)*e.size*2,6);
 });
 
 document.getElementById("hud").innerHTML=
 "HP: "+Math.floor(player.hp)+"/"+player.maxHp+
 "<br>Level: "+player.level+
-"<br>XP: "+player.xp+"/"+(player.level*80)+
+"<br>XP: "+player.xp+"/"+(player.level*90)+
 "<br>Damage: "+player.damage+
 "<br>FireRate: "+player.fireRate+
 "<br>AutoFire: "+autoFire+
