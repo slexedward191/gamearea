@@ -2,76 +2,28 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Yapay Zekaya Karşı Okey</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelime Avcısı - Seviyeli</title>
     <style>
-        body { background-color: #064e3b; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        #board { display: flex; gap: 10px; margin-top: 50px; background: #3d2b1f; padding: 20px; border-radius: 10px; border: 5px solid #2d1b0f; }
-        .tile { width: 45px; height: 60px; background: #fffbeb; color: black; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 20px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
-        .red { color: red; } .blue { color: blue; } .black { color: black; } .yellow { color: #d97706; }
-        #controls { margin-top: 20px; }
-        button { padding: 10px 20px; cursor: pointer; background: #059669; color: white; border: none; border-radius: 5px; }
+        :root { --p-color: #6366f1; --bg: #0f172a; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .game-card { background: #1e293b; padding: 2rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 350px; }
+        #level-indicator { font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px; }
+        #scrambled-word { font-size: 2.5rem; letter-spacing: 8px; color: #fbbf24; margin: 20px 0; font-weight: bold; text-transform: uppercase; }
+        input { width: 80%; padding: 12px; border-radius: 8px; border: none; font-size: 1.1rem; text-align: center; outline: none; }
+        button { margin-top: 15px; padding: 12px 25px; border: none; border-radius: 8px; background: var(--p-color); color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.8; transform: scale(1.05); }
+        #message { margin-top: 15px; height: 20px; font-weight: bold; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
     </style>
 </head>
 <body>
 
-    <h1>Okey - Botlara Karşı</h1>
-    <div id="info">Taşlar dağıtılmayı bekliyor...</div>
-
-    <div id="board">
-        </div>
-
-    <div id="controls">
-        <button onclick="startGame()">Oyunu Başlat / Dağıt</button>
-    </div>
-
-    <script>
-        const colors = ['red', 'blue', 'black', 'yellow'];
-        let deck = [];
-        let playerHand = [];
-
-        function createDeck() {
-            deck = [];
-            for (let i = 0; i < 2; i++) { // Her taştan 2 adet var
-                for (let color of colors) {
-                    for (let num = 1; num <= 13; num++) {
-                        deck.push({ color, num });
-                    }
-                }
-            }
-            deck.push({ color: 'joker', num: 'SAHTE' }); // Sahte okey
-            deck.push({ color: 'joker', num: 'SAHTE' });
-        }
-
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-        }
-
-        function startGame() {
-            createDeck();
-            shuffle(deck);
-            
-            // Oyuncuya 21, botlara 20'şer (Basit versiyon)
-            playerHand = deck.splice(0, 21);
-            // Elini sırala
-            playerHand.sort((a, b) => a.num - b.num);
-
-            renderHand();
-            document.getElementById('info').innerText = "Senin sıran! Botlar hazır.";
-        }
-
-        function renderHand() {
-            const board = document.getElementById('board');
-            board.innerHTML = '';
-            playerHand.forEach(tile => {
-                const div = document.createElement('div');
-                div.className = `tile ${tile.color}`;
-                div.innerText = tile.num;
-                board.appendChild(div);
-            });
-        }
-    </script>
-</body>
-</html>
+    <div class="game-card">
+        <div id="level-indicator">SEVİYE: 1</div>
+        <div id="scrambled-word">YÜKLENİYOR...</div>
+        <input type="text" id="user-input" placeholder="Kelimeyi tahmin et..." autocomplete="off">
+        <br>
+        <button onclick="checkAnswer()">KONTROL ET</button>
+        <div id
