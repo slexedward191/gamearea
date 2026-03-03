@@ -2,9 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Emoji Arena</title>
+<title>Emoji Arena X</title>
 <style>
-body{margin:0;overflow:hidden;background:#111827;font-family:Arial;color:white}
+body{margin:0;overflow:hidden;background:#0f172a;font-family:Arial;color:white}
 canvas{display:block}
 #hud{position:fixed;top:10px;left:10px;font-size:14px}
 #upgradePanel{
@@ -24,38 +24,43 @@ border-radius:8px;
 cursor:pointer;
 }
 .upg:hover{background:#374151}
-#howto{
+
+#menu{
 position:fixed;
-left:10px;
-top:120px;
-background:#1f2937;
-padding:10px;
-border-radius:10px;
-width:200px;
+inset:0;
+background:#0f172a;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+z-index:10;
 }
+
+button{
+padding:15px 40px;
+font-size:20px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+background:#22c55e;
+color:white;
+}
+button:hover{background:#16a34a}
 </style>
 </head>
 <body>
 
-<audio id="radio" autoplay loop>
+<audio id="radio" loop>
 <source src="https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGINRADIO.mp3">
 </audio>
 
-<div id="hud"></div>
-
-<div id="howto">
-<b>🎮 HOW TO PLAY</b><br><br>
-WASD - Move<br>
-Mouse - Aim<br>
-Left Click - Shoot<br>
-Right Click - ULTI (5s CD)<br>
-Shift - Dash<br>
-Kill enemies = XP<br>
-Level up = Upgrade
+<div id="menu">
+<h1>🔥 Emoji Arena X</h1>
+<button id="startBtn">Başlat</button>
 </div>
 
+<div id="hud"></div>
 <div id="upgradePanel"></div>
-
 <canvas id="game"></canvas>
 
 <script>
@@ -68,6 +73,15 @@ window.addEventListener("resize",()=>{
 canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 });
+
+let gameStarted=false;
+let particles=[];
+
+document.getElementById("startBtn").onclick=function(){
+document.getElementById("menu").style.display="none";
+document.getElementById("radio").play();
+gameStarted=true;
+};
 
 const arena={x:100,y:100,w:canvas.width-200,h:canvas.height-200};
 
@@ -100,7 +114,8 @@ lastShot:0,
 xp:0,
 level:1,
 ultiCD:0,
-dashCD:0
+dashCD:0,
+score:0
 };
 
 let enemies=[];
@@ -108,33 +123,31 @@ let bullets=[];
 let bosses=0;
 
 function spawnEnemy(){
-if(enemies.length>50)return;
-let levelScale=1+player.level*0.05;
+if(enemies.length>80)return;
+let scale=1+player.level*0.2;
 enemies.push({
 x:rand(arena.x,arena.x+arena.w),
 y:rand(arena.y,arena.y+arena.h),
 size:rand(20,40),
-hp:50*levelScale,
-maxHp:50*levelScale,
-speed:1+player.level*0.02,
-shape:Math.floor(rand(0,3))
+hp:80*scale,
+maxHp:80*scale,
+speed:1.5+player.level*0.07,
+boss:false
 });
 }
-setInterval(spawnEnemy,800);
+setInterval(()=>{if(gameStarted)spawnEnemy()},600);
 
 function spawnBoss(){
-if(bosses>=3)return;
 bosses++;
-let scale=player.level*1.5;
+let scale=player.level*2;
 enemies.push({
 x:rand(arena.x,arena.x+arena.w),
 y:rand(arena.y,arena.y+arena.h),
-size:80,
-hp:400*scale,
-maxHp:400*scale,
-speed:1,
-boss:true,
-shape:2
+size:90,
+hp:600*scale,
+maxHp:600*scale,
+speed:1.2,
+boss:true
 });
 }
 
@@ -146,8 +159,8 @@ let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
 bullets.push({
 x:player.x,
 y:player.y,
-dx:Math.cos(angle)*8,
-dy:Math.sin(angle)*8
+dx:Math.cos(angle)*10,
+dy:Math.sin(angle)*10
 });
 }
 
@@ -157,6 +170,17 @@ player.ultiCD=300;
 enemies.forEach(e=>e.hp*=0.5);
 }
 
+function createExplosion(x,y){
+for(let i=0;i<15;i++){
+particles.push({
+x,y,
+dx:rand(-3,3),
+dy:rand(-3,3),
+life:30
+});
+}
+}
+
 function update(){
 if(keys["w"])player.y-=player.speed;
 if(keys["s"])player.y+=player.speed;
@@ -164,8 +188,8 @@ if(keys["a"])player.x-=player.speed;
 if(keys["d"])player.x+=player.speed;
 
 if(keys["shift"] && player.dashCD<=0){
-player.x+= (mouse.x-player.x)*0.3;
-player.y+= (mouse.y-player.y)*0.3;
+player.x+=(mouse.x-player.x)*0.4;
+player.y+=(mouse.y-player.y)*0.4;
 player.dashCD=100;
 }
 
@@ -192,8 +216,8 @@ e.y+=Math.sin(angle)*e.speed;
 
 let dx=e.x-player.x,dy=e.y-player.y;
 if(Math.sqrt(dx*dx+dy*dy)<e.size+player.size){
-player.hp-=0.3;
-if(player.hp<=0)location.reload();
+player.hp-=0.6;
+if(player.hp<=0)gameOver();
 }
 
 bullets.forEach((b,bi)=>{
@@ -202,7 +226,9 @@ if(Math.sqrt(dx*dx+dy*dy)<e.size){
 e.hp-=player.damage;
 bullets.splice(bi,1);
 if(e.hp<=0){
-player.xp+=20;
+createExplosion(e.x,e.y);
+player.xp+=25;
+player.score+=10;
 if(e.boss)bosses--;
 enemies.splice(ei,1);
 }
@@ -210,29 +236,36 @@ enemies.splice(ei,1);
 });
 });
 
-if(player.xp>=player.level*100 && player.level<100){
+particles.forEach((p,i)=>{
+p.x+=p.dx;
+p.y+=p.dy;
+p.life--;
+if(p.life<=0)particles.splice(i,1);
+});
+
+if(player.xp>=player.level*120){
 player.xp=0;
 player.level++;
-player.maxHp+=20;
+player.maxHp+=25;
 player.hp=player.maxHp;
-player.damage+=5;
-player.fireRate=Math.max(100,player.fireRate-20);
-if(player.level%10===0)spawnBoss();
+player.damage+=7;
+player.fireRate=Math.max(80,player.fireRate-25);
+if(player.level%8===0)spawnBoss();
 showUpgrades();
 }
 }
 
 function showUpgrades(){
 let panel=document.getElementById("upgradePanel");
-panel.innerHTML="<b>Choose Upgrade</b>";
-["+20 HP","+5 Damage","Faster Fire"].forEach((u,i)=>{
+panel.innerHTML="<b>Upgrade Seç</b>";
+["+30 HP","+10 Damage","Ultra Fire"].forEach((u,i)=>{
 let div=document.createElement("div");
 div.className="upg";
 div.innerText=u;
 div.onclick=()=>{
-if(i===0){player.maxHp+=20;player.hp+=20;}
-if(i===1)player.damage+=5;
-if(i===2)player.fireRate=Math.max(80,player.fireRate-30);
+if(i===0){player.maxHp+=30;player.hp+=30;}
+if(i===1)player.damage+=10;
+if(i===2)player.fireRate=Math.max(60,player.fireRate-40);
 panel.innerHTML="";
 };
 panel.appendChild(div);
@@ -247,8 +280,6 @@ ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
 
 ctx.font="40px Arial";
 ctx.fillText("😀",player.x-20,player.y+15);
-ctx.font="20px Arial";
-ctx.fillText("🔫",player.x+20,player.y);
 
 bullets.forEach(b=>{
 ctx.fillStyle="yellow";
@@ -260,34 +291,57 @@ ctx.fill();
 enemies.forEach(e=>{
 ctx.fillStyle=e.boss?"purple":"red";
 ctx.beginPath();
-if(e.shape===0)ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
-if(e.shape===1)ctx.rect(e.x-e.size,e.y-e.size,e.size*2,e.size*2);
-if(e.shape===2){
-ctx.moveTo(e.x,e.y-e.size);
-ctx.lineTo(e.x-e.size,e.y+e.size);
-ctx.lineTo(e.x+e.size,e.y+e.size);
-}
+ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
 ctx.fill();
-
 ctx.fillStyle="green";
 ctx.fillRect(e.x-e.size,e.y-e.size-10,(e.hp/e.maxHp)*e.size*2,5);
+});
+
+particles.forEach(p=>{
+ctx.fillStyle="orange";
+ctx.fillRect(p.x,p.y,3,3);
 });
 
 document.getElementById("hud").innerHTML=
 "HP: "+Math.floor(player.hp)+"/"+player.maxHp+
 "<br>Level: "+player.level+
-"<br>XP: "+player.xp+"/"+(player.level*100)+
+"<br>XP: "+player.xp+"/"+(player.level*120)+
 "<br>Damage: "+player.damage+
-"<br>FireRate: "+player.fireRate+
-"<br>Ulti CD: "+Math.floor(player.ultiCD/60);
+"<br>Score: "+player.score+
+"<br>HighScore: "+(localStorage.getItem("highscore")||0);
+}
+
+function gameOver(){
+gameStarted=false;
+
+let high=localStorage.getItem("highscore")||0;
+if(player.score>high){
+localStorage.setItem("highscore",player.score);
+}
+
+document.body.innerHTML+=`
+<div style="
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.9);
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+font-size:30px;">
+💀 GAME OVER<br>
+Score: ${player.score}<br><br>
+<button onclick="location.reload()">Tekrar Oyna</button>
+</div>`;
 }
 
 function loop(){
+if(gameStarted){
 update();
 draw();
+}
 requestAnimationFrame(loop);
 }
-
 loop();
 </script>
 </body>
