@@ -50,8 +50,9 @@ button:hover{background:#16a34a}
 </head>
 <body>
 
-<audio id="radio" loop>
-<source src="https://playerservices.streamtheworld.com/api/livestream-redirect/VIRGINRADIO.mp3">
+<!-- ✅ GERÇEK VIRGIN RADIO UK STREAM -->
+<audio id="radio" preload="none">
+  <source src="https://radio-streaming.virginradio.co.uk/virginradio" type="audio/mpeg">
 </audio>
 
 <div id="menu">
@@ -79,7 +80,11 @@ let particles=[];
 
 document.getElementById("startBtn").onclick=function(){
 document.getElementById("menu").style.display="none";
-document.getElementById("radio").play();
+
+const radio=document.getElementById("radio");
+radio.volume=0.4;
+radio.play().catch(e=>console.log("Radyo başlatılamadı:",e));
+
 gameStarted=true;
 };
 
@@ -274,7 +279,6 @@ panel.appendChild(div);
 
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
-
 ctx.strokeStyle="white";
 ctx.strokeRect(arena.x,arena.y,arena.w,arena.h);
 
