@@ -2,9 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>3D Supermarket Simulator</title>
+<title>Market 3D Advanced</title>
 <style>
-body { margin:0; overflow:hidden; font-family:Arial; }
+body{margin:0;overflow:hidden;font-family:Arial}
 #hud{
 position:fixed;
 top:10px;
@@ -13,178 +13,241 @@ background:rgba(0,0,0,0.7);
 color:white;
 padding:12px;
 border-radius:10px;
-width:220px;
+width:260px;
 }
-#centerMsg{
+#msg{
 position:fixed;
 top:50%;
 left:50%;
 transform:translate(-50%,-50%);
 color:white;
-font-size:24px;
+font-size:22px;
+}
+#cardUI{
+position:fixed;
+bottom:40px;
+left:50%;
+transform:translateX(-50%);
+width:220px;
+height:140px;
+background:linear-gradient(135deg,#1e3a8a,#2563eb);
+border-radius:15px;
+color:white;
+padding:15px;
+display:none;
+animation:pop 0.3s ease;
+}
+@keyframes pop{
+from{transform:translateX(-50%) scale(0.5)}
+to{transform:translateX(-50%) scale(1)}
 }
 </style>
 </head>
 <body>
 
 <div id="hud"></div>
-<div id="centerMsg">Tıklayın ve Başlayın</div>
+<div id="msg">Tıklayın ve Başlayın</div>
+
+<div id="cardUI">
+💳 BANK CARD<br><br>
+**** **** **** 1337<br><br>
+Processing...
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 <script>
-let scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf0f0f0);
 
-let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-let renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
+let scene=new THREE.Scene();
+scene.background=new THREE.Color(0x87CEEB);
+
+let camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+let renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
 /* IŞIK */
-let light = new THREE.HemisphereLight(0xffffff,0x444444,1.2);
-scene.add(light);
+scene.add(new THREE.AmbientLight(0xffffff,0.7));
+let sun=new THREE.DirectionalLight(0xffffff,0.8);
+sun.position.set(20,40,20);
+scene.add(sun);
 
 /* ZEMİN */
-let floorGeo = new THREE.PlaneGeometry(60,60);
-let floorMat = new THREE.MeshStandardMaterial({color:0xdddddd});
-let floor = new THREE.Mesh(floorGeo,floorMat);
-floor.rotation.x = -Math.PI/2;
-scene.add(floor);
+let ground=new THREE.Mesh(
+new THREE.PlaneGeometry(200,200),
+new THREE.MeshStandardMaterial({color:0x3c9a3c})
+);
+ground.rotation.x=-Math.PI/2;
+scene.add(ground);
 
-/* RAF OLUŞTUR */
-function createShelf(x,z){
-let shelfGeo = new THREE.BoxGeometry(4,4,1);
-let shelfMat = new THREE.MeshStandardMaterial({color:0x8b5a2b});
-let shelf = new THREE.Mesh(shelfGeo,shelfMat);
-shelf.position.set(x,2,z);
-scene.add(shelf);
-}
+/* YOL */
+let road=new THREE.Mesh(
+new THREE.PlaneGeometry(200,20),
+new THREE.MeshStandardMaterial({color:0x333333})
+);
+road.rotation.x=-Math.PI/2;
+road.position.z=50;
+scene.add(road);
 
-/* Rafları diz */
-for(let i=-20;i<=20;i+=10){
-createShelf(i,-10);
-createShelf(i,10);
-}
+/* MARKET */
+let market=new THREE.Mesh(
+new THREE.BoxGeometry(30,15,30),
+new THREE.MeshStandardMaterial({color:0xffffff})
+);
+market.position.set(0,7.5,0);
+scene.add(market);
 
-/* ÜRÜNLER */
-let products=[];
-const productTypes=[
-{ name:"Süt", color:0xffffff },
-{ name:"Elma", color:0xff0000 },
-{ name:"Ekmek", color:0xffd700 },
-{ name:"Su", color:0x3399ff }
-];
-
-function spawnProducts(){
-productTypes.forEach((p,i)=>{
-let geo = new THREE.BoxGeometry(1,1,1);
-let mat = new THREE.MeshStandardMaterial({color:p.color});
-let item = new THREE.Mesh(geo,mat);
-
-item.position.set(-15+i*10,1,-10);
-item.productName = p.name;
-
-scene.add(item);
-products.push(item);
-});
-}
-spawnProducts();
-
-/* KASA */
-let kasaGeo = new THREE.BoxGeometry(4,2,2);
-let kasaMat = new THREE.MeshStandardMaterial({color:0x333333});
-let kasa = new THREE.Mesh(kasaGeo,kasaMat);
-kasa.position.set(0,1,20);
+/* KASA + POS */
+let kasa=new THREE.Mesh(
+new THREE.BoxGeometry(4,2,2),
+new THREE.MeshStandardMaterial({color:0x222222})
+);
+kasa.position.set(0,1,10);
 scene.add(kasa);
 
-/* PLAYER */
-camera.position.set(0,2,30);
+let pos=new THREE.Mesh(
+new THREE.BoxGeometry(1,0.5,1),
+new THREE.MeshStandardMaterial({color:0x000000})
+);
+pos.position.set(0,2,10);
+scene.add(pos);
 
+/* RAF */
+function shelf(x,z){
+let s=new THREE.Mesh(
+new THREE.BoxGeometry(6,4,2),
+new THREE.MeshStandardMaterial({color:0x8b5a2b})
+);
+s.position.set(x,2,z);
+scene.add(s);
+}
+shelf(-8,-5);
+shelf(8,-5);
+
+/* ÜRÜN */
+let product=new THREE.Mesh(
+new THREE.BoxGeometry(1,1,1),
+new THREE.MeshStandardMaterial({color:0xff0000})
+);
+product.position.set(-8,1,-5);
+scene.add(product);
+
+/* ARABA */
+let cars=[];
+function spawnCar(){
+let c=new THREE.Mesh(
+new THREE.BoxGeometry(4,2,2),
+new THREE.MeshStandardMaterial({color:Math.random()*0xffffff})
+);
+c.position.set(-100,1,50);
+c.speed=0.7+Math.random();
+scene.add(c);
+cars.push(c);
+}
+setInterval(spawnCar,3000);
+
+/* MÜŞTERİ */
+let customers=[];
+function spawnCustomer(){
+let npc=new THREE.Mesh(
+new THREE.CapsuleGeometry(0.6,2,4,8),
+new THREE.MeshStandardMaterial({color:Math.random()*0xffffff})
+);
+npc.position.set(Math.random()*10-5,1,15);
+npc.state="shopping";
+npc.paymentTimer=0;
+scene.add(npc);
+customers.push(npc);
+}
+setInterval(spawnCustomer,6000);
+
+/* FPS KAMERA */
+camera.position.set(0,2,20);
+
+let yaw=0,pitch=0;
 let keys={};
-document.addEventListener("keydown",e=>{
-keys[e.key.toLowerCase()]=true;
 
-if(e.key.toLowerCase()==="e") interact();
-});
+document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
 document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-/* POINTER LOCK */
 document.body.addEventListener("click",()=>{
 renderer.domElement.requestPointerLock();
-document.getElementById("centerMsg").style.display="none";
+document.getElementById("msg").style.display="none";
 });
 
-let yaw=0;
 document.addEventListener("mousemove",e=>{
 if(document.pointerLockElement===renderer.domElement){
-yaw -= e.movementX*0.002;
-camera.rotation.y = yaw;
+yaw-=e.movementX*0.002;
+pitch-=e.movementY*0.002;
+pitch=Math.max(-Math.PI/2,Math.min(Math.PI/2,pitch));
+camera.rotation.order="YXZ";
+camera.rotation.y=yaw;
+camera.rotation.x=pitch;
 }
 });
 
-/* GAME LOGIC */
-let shoppingList=["Süt","Elma"];
-let cart=[];
-let timeLeft=120;
-let score=0;
+/* OYUN */
+let money=0;
 
-function interact(){
-let raycaster=new THREE.Raycaster();
-raycaster.setFromCamera(new THREE.Vector2(0,0),camera);
-let intersects=raycaster.intersectObjects(products);
-
-if(intersects.length>0){
-let hit=intersects[0].object;
-cart.push(hit.productName);
-scene.remove(hit);
-products.splice(products.indexOf(hit),1);
-}
-
-let kasaDist=camera.position.distanceTo(kasa.position);
-if(kasaDist<3){
-checkOut();
-}
-}
-
-function checkOut(){
-let success=true;
-shoppingList.forEach(item=>{
-if(!cart.includes(item)) success=false;
-});
-if(success){
-score+=100;
-shoppingList=["Su","Ekmek"];
-cart=[];
-alert("Alışveriş Tamamlandı!");
-}else{
-alert("Eksik Ürün Var!");
-}
-}
-
-/* UPDATE */
 function update(){
 
-if(keys["w"]) camera.position.z -= Math.cos(yaw)*0.2;
-if(keys["s"]) camera.position.z += Math.cos(yaw)*0.2;
-if(keys["a"]) camera.position.x -= Math.cos(yaw)*0.2;
-if(keys["d"]) camera.position.x += Math.cos(yaw)*0.2;
+/* HAREKET */
+let speed=0.2;
+let dir=new THREE.Vector3();
+camera.getWorldDirection(dir);
 
-timeLeft-=0.01;
-if(timeLeft<=0){
-alert("Süre Bitti! Skor: "+score);
-location.reload();
+let right=new THREE.Vector3();
+right.crossVectors(camera.up,dir).normalize();
+
+if(keys["w"]) camera.position.addScaledVector(dir,speed);
+if(keys["s"]) camera.position.addScaledVector(dir,-speed);
+if(keys["a"]) camera.position.addScaledVector(right,speed);
+if(keys["d"]) camera.position.addScaledVector(right,-speed);
+
+/* ARABA */
+cars.forEach((c,i)=>{
+c.position.x+=c.speed;
+if(c.position.x>100){
+scene.remove(c);
+cars.splice(i,1);
 }
+});
+
+/* MÜŞTERİ AI */
+customers.forEach((npc,i)=>{
+
+if(npc.state==="shopping"){
+npc.position.x+=(product.position.x-npc.position.x)*0.01;
+npc.position.z+=(product.position.z-npc.position.z)*0.01;
+if(npc.position.distanceTo(product.position)<1){
+npc.state="checkout";
+}
+}
+else if(npc.state==="checkout"){
+npc.position.x+=(kasa.position.x-npc.position.x)*0.01;
+npc.position.z+=(kasa.position.z-npc.position.z)*0.01;
+if(npc.position.distanceTo(kasa.position)<1){
+npc.state="paying";
+document.getElementById("cardUI").style.display="block";
+}
+}
+else if(npc.state==="paying"){
+npc.paymentTimer++;
+if(npc.paymentTimer>180){
+money+=20;
+document.getElementById("cardUI").style.display="none";
+scene.remove(npc);
+customers.splice(i,1);
+}
+}
+
+});
 
 document.getElementById("hud").innerHTML=
-"<b>Alışveriş Listesi</b><br>"+shoppingList.join("<br>")+
-"<br><br><b>Sepet</b><br>"+cart.join("<br>")+
-"<br><br>Süre: "+Math.floor(timeLeft)+
-"<br>Skor: "+score+
-"<br><br>E = Al / Kasa";
+"<b>3D Market Advanced</b><br>"+
+"Müşteri: "+customers.length+
+"<br>Kasa Para: "+money;
 }
 
-/* LOOP */
 function animate(){
 requestAnimationFrame(animate);
 update();
