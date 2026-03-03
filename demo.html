@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Chaos Arena</title>
+<style>
+body{margin:0;overflow:hidden;background:#0f1220;font-family:Arial;color:white}
+canvas{display:block}
+#hud{
+position:fixed;
+top:10px;
+left:10px;
+font-size:14px;
+}
+</style>
+</head>
+<body>
+
+<div id="hud"></div>
+<canvas id="game"></canvas>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+window.addEventListener("resize",()=>{
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+});
+
+let keys={};
+document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+
+function rand(a,b){return Math.random()*(b-a)+a;}
+
+let player={
+x:canvas.width/2,
+y:canvas.height/2,
+size:20,
+speed:4,
+hp:100,
+maxHp:100,
+xp:0,
+level:1,
+dashCD:0
+};
+
+let bullets=[];
+let enemies=[];
+let score=0;
+let shake=0;
+let gameOver=false;
+
+function spawnEnemy(){
+enemies.push({
+x:rand(0,canvas.width),
+y:rand(0,canvas.height),
+size:rand(15,40),
+speed:rand(1,2.5),
+hp:rand(20,60)
+});
+}
+setInterval(spawnEnemy,1000);
+
+function shoot(){
+let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+bullets.push({
+x:player.x,
+y:player.y,
+dx:Math.cos(angle)*8,
+dy:Math.sin(angle)*8,
+life:100
+});
+}
+
+setInterval(shoot,300);
+
+let mouse={x:0,y:0};
+canvas.addEventListener("mousemove",e=>{
+mouse.x=e.clientX;
+mouse.y=e.clientY;
+});
+
+function update(){
+if(gameOver)return;
+
+if(keys["w"])player.y-=player.speed;
+if(keys["s"])player.y+=player.speed;
+if(keys["a"])player.x-=player.speed;
+if(keys["d"])player.x+=player.speed;
+
+if(keys["shift"] && player.dashCD<=0){
+let angle=Math.atan2(mouse.y-player.y,mouse.x-player.x);
+player.x+=Math.cos(angle)*100;
+player.y+=Math.sin(angle)*100;
+player.dashCD=100;
+}
+
+if(player.dashCD>0)player.dashCD--;
+
+bullets.forEach((b,i)=>{
+b.x+=b.dx;
+b.y+=b.dy;
+b.life--;
+if(b.life<=0)bullets.splice(i,1);
+});
+
+enemies.forEach((e,ei)=>{
+let angle=Math.atan2(player.y-e.y,player.x-e.x);
+e.x+=Math.cos(angle)*e.speed;
+e.y+=Math.sin(angle)*e.speed;
+
+let dx=e.x-player.x;
+let dy=e.y-player.y;
+if(Math.sqrt(dx*dx+dy*dy)<e.size+player.size){
+player.hp-=0.5;
+shake=10;
+if(player.hp<=0){
+gameOver=true;
+}
+}
+
+bullets.forEach((b,bi)=>{
+let dx=e.x-b.x;
+let dy=e.y-b.y;
+if(Math.sqrt(dx*dx+dy*dy)<e.size){
+e.hp-=20;
+bullets.splice(bi,1);
+if(e.hp<=0){
+score+=10;
+player.xp+=10;
+enemies.splice(ei,1);
+shake=5;
+}
+}
+});
+});
+
+if(player.xp>=player.level*100){
+player.xp=0;
+player.level++;
+player.maxHp+=20;
+player.hp=player.maxHp;
+player.speed+=0.5;
+}
+}
+
+function draw(){
+ctx.save();
+if(shake>0){
+ctx.translate(rand(-shake,shake),rand(-shake,shake));
+shake--;
+}
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ctx.fillStyle="lime";
+ctx.beginPath();
+ctx.arc(player.x,player.y,player.size,0,Math.PI*2);
+ctx.fill();
+
+ctx.fillStyle="yellow";
+bullets.forEach(b=>{
+ctx.beginPath();
+ctx.arc(b.x,b.y,5,0,Math.PI*2);
+ctx.fill();
+});
+
+ctx.fillStyle="red";
+enemies.forEach(e=>{
+ctx.beginPath();
+ctx.arc(e.x,e.y,e.size,0,Math.PI*2);
+ctx.fill();
+});
+
+ctx.restore();
+
+document.getElementById("hud").innerHTML=
+"HP: "+Math.floor(player.hp)+"/"+player.maxHp+
+"<br>Level: "+player.level+
+"<br>XP: "+player.xp+"/"+(player.level*100)+
+"<br>Score: "+score+
+"<br><br>WASD Move<br>Mouse Aim<br>Shift Dash<br>R Restart";
+
+if(gameOver){
+ctx.fillStyle="white";
+ctx.font="50px Arial";
+ctx.fillText("GAME OVER",canvas.width/2-150,canvas.height/2);
+ctx.font="20px Arial";
+ctx.fillText("Press R to Restart",canvas.width/2-100,canvas.height/2+40);
+}
+
+if(keys["r"] && gameOver){
+location.reload();
+}
+}
+
+function loop(){
+update();
+draw();
+requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
