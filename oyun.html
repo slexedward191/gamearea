@@ -1,74 +1,3 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<title>Arena Zombi v3.0</title>
-<style>
-body{
-    margin:0;
-    background:#0f0f0f;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    font-family:Arial, sans-serif;
-    color:white;
-}
-canvas{
-    background:#181818;
-    border:4px solid #333;
-}
-#overlay{
-    position:absolute;
-    width:1200px;
-    height:700px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    background:rgba(0,0,0,0.9);
-    visibility:hidden;
-    text-align:center;
-}
-button{
-    padding:10px 20px;
-    margin:8px;
-    font-size:16px;
-    cursor:pointer;
-}
-#infoBtn{
-    position:absolute;
-    top:10px;
-    left:10px;
-}
-#upgradePanel{
-    position:absolute;
-    left:10px;
-    bottom:10px;
-    background:rgba(0,0,0,0.6);
-    padding:10px;
-    font-size:14px;
-}
-#perkPanel{
-    position:absolute;
-    right:10px;
-    bottom:10px;
-    background:rgba(0,0,0,0.6);
-    padding:10px;
-    font-size:14px;
-}
-</style>
-</head>
-<body>
-
-<button id="infoBtn">Oyun Hakkında</button>
-
-<canvas id="game" width="1200" height="700"></canvas>
-
-<div id="overlay"></div>
-<div id="upgradePanel"><b>Upgrades:</b><br></div>
-<div id="perkPanel"><b>Perk Slotları (0/3)</b><br></div>
-
 <script>
 
 /* ================= CORE ================= */
@@ -86,28 +15,28 @@ let lastTime = 0;
 let deltaTime = 0;
 let gameOver = false;
 let paused = false;
+let restartTimer = 0;
 
-/* ================= AUDIO ================= */
+/* ================= MODERN SHOOT SOUND ================= */
 
-const shootSound = new Audio("https://actions.google.com/sounds/v1/impacts/wood_plank_flicks.ogg");
-shootSound.volume = 0.2;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-const hitSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
-hitSound.volume = 0.2;
+function playShootSound(){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
 
-/* ================= INPUT ================= */
+    osc.type = "square";
+    osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.08);
 
-let keys = {};
-let mouse = {x:0,y:0};
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
 
-document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-
-canvas.addEventListener("mousemove", e=>{
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-});
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.08);
+}
 
 /* ================= WAVE ================= */
 
@@ -115,24 +44,6 @@ let wave = 1;
 let zombiesToSpawn = 10;
 let spawnTimer = 0;
 let spawnDelay = 2;
-
-/* ================= PERK SYSTEM ================= */
-
-let perks = [];
-let maxPerks = 3;
-
-function addPerk(name, apply){
-    if(perks.length>=maxPerks) return;
-    if(perks.includes(name)) return;
-    perks.push(name);
-    apply();
-    updatePerkPanel();
-}
-
-function updatePerkPanel(){
-    perkPanel.innerHTML = "<b>Perk Slotları ("+perks.length+"/3)</b><br>";
-    perks.forEach(p=> perkPanel.innerHTML += p+"<br>");
-}
 
 /* ================= PLAYER ================= */
 
@@ -151,11 +62,9 @@ class Player{
         this.fireRate = 0.2;
         this.fireTimer = 0;
         this.damage = 20;
-        this.critChance = 0.15;
         this.level = 1;
         this.xp = 0;
         this.xpNeeded = 100;
-        this.riskMode = false;
     }
 
     update(dt){
@@ -195,8 +104,7 @@ class Player{
 
     shoot(){
         this.ammo--;
-        shootSound.currentTime=0;
-        shootSound.play();
+        playShootSound();
 
         let angle = Math.atan2(mouse.y-this.y, mouse.x-this.x);
         bullets.push(new Bullet(this.x,this.y,Math.cos(angle),Math.sin(angle),this.damage));
@@ -208,7 +116,6 @@ class Player{
             this.level++;
             this.xp=0;
             this.xpNeeded+=80;
-            levelUp();
         }
     }
 
@@ -217,6 +124,12 @@ class Player{
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
+
+        // PLAYER HP BAR
+        ctx.fillStyle="red";
+        ctx.fillRect(this.x-25,this.y-30,50,6);
+        ctx.fillStyle="lime";
+        ctx.fillRect(this.x-25,this.y-30,50*(this.hp/this.maxHp),6);
     }
 }
 
@@ -246,36 +159,27 @@ class Bullet{
 
 let bullets=[];
 
-/* ================= ZOMBIE TYPES ================= */
+/* ================= ZOMBIE ================= */
 
 class Zombie{
     constructor(type="normal"){
         this.type=type;
-
         this.x=Math.random()<0.5?0:WIDTH;
         this.y=Math.random()*HEIGHT;
 
-        if(type==="fast"){
-            this.speed=180;
-            this.maxHp=500;
-            this.color="orange";
-        }else if(type==="tank"){
-            this.speed=60;
-            this.maxHp=5000;
-            this.color="purple";
-        }else if(type==="boss"){
+        if(type==="boss"){
             this.speed=40;
             this.maxHp=20000;
             this.color="red";
+            this.r=40;
         }else{
             this.speed=100;
-            this.maxHp=250;
+            this.maxHp=250*Math.pow(2,wave-1);
             this.color="green";
+            this.r=18;
         }
 
-        this.maxHp *= Math.pow(2,wave-1);
         this.hp=this.maxHp;
-        this.r=18;
     }
 
     update(dt){
@@ -284,9 +188,7 @@ class Zombie{
         this.y+=Math.sin(angle)*this.speed*dt;
 
         if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
-            let dmg=30*dt;
-            if(player.riskMode) dmg*=1.1;
-            player.hp-=dmg;
+            player.hp-=30*dt;
             if(player.hp<=0){
                 triggerGameOver();
             }
@@ -298,58 +200,31 @@ class Zombie{
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
+
+        // ZOMBIE HP BAR
+        ctx.fillStyle="red";
+        ctx.fillRect(this.x-20,this.y-30,40,5);
+        ctx.fillStyle="lime";
+        ctx.fillRect(this.x-20,this.y-30,40*(this.hp/this.maxHp),5);
     }
 }
 
 let zombies=[];
 
-/* ================= LEVEL UP ================= */
-
-function levelUp(){
-    paused=true;
-    overlay.style.visibility="visible";
-    overlay.innerHTML="<h1>LEVEL UP!</h1>";
-
-    let upgrades=[
-        {text:"+20 Hasar",apply:()=>player.damage+=20},
-        {text:"+%20 Ateş Hızı",apply:()=>player.fireRate*=0.8},
-        {text:"+30 Max HP",apply:()=>{player.maxHp+=30;player.hp+=30}},
-        {text:"+%10 Kritik",apply:()=>player.critChance+=0.1},
-        {text:"+2 Max Mermi",apply:()=>player.maxAmmo+=2}
-    ];
-
-    upgrades.sort(()=>0.5-Math.random());
-    upgrades.slice(0,3).forEach(up=>{
-        let btn=document.createElement("button");
-        btn.textContent=up.text;
-        btn.onclick=()=>{
-            up.apply();
-            upgradePanel.innerHTML+="<br>"+up.text;
-            overlay.style.visibility="hidden";
-            paused=false;
-        };
-        overlay.appendChild(btn);
-    });
-}
-
 /* ================= GAME OVER ================= */
 
 function triggerGameOver(){
     gameOver=true;
-    overlay.style.visibility="visible";
-    overlay.innerHTML="<h1>GAME OVER</h1>";
+    restartTimer=3; // 3 saniye sonra restart
 }
 
-/* ================= WAVE SYSTEM ================= */
-
-function nextWave(){
-    wave++;
-    zombiesToSpawn=10+wave*5;
-    spawnDelay=Math.max(0.5,2-wave*0.1);
-
-    if(wave%10===0){
-        zombies.push(new Zombie("boss"));
-    }
+function restartGame(){
+    wave=1;
+    player.hp=player.maxHp;
+    player.xp=0;
+    zombies=[];
+    bullets=[];
+    gameOver=false;
 }
 
 /* ================= LOOP ================= */
@@ -358,23 +233,21 @@ function update(timestamp){
     deltaTime=(timestamp-lastTime)/1000;
     lastTime=timestamp;
 
-    if(!gameOver && !paused){
+    if(gameOver){
+        restartTimer-=deltaTime;
+        if(restartTimer<=0){
+            restartGame();
+        }
+    }
+
+    if(!gameOver){
 
         player.update(deltaTime);
 
         spawnTimer-=deltaTime;
-        if(spawnTimer<=0 && zombiesToSpawn>0){
-            let rand=Math.random();
-            if(rand<0.2) zombies.push(new Zombie("fast"));
-            else if(rand<0.3) zombies.push(new Zombie("tank"));
-            else zombies.push(new Zombie("normal"));
-
-            zombiesToSpawn--;
+        if(spawnTimer<=0){
+            zombies.push(new Zombie());
             spawnTimer=spawnDelay;
-        }
-
-        if(zombiesToSpawn<=0 && zombies.length===0){
-            nextWave();
         }
 
         bullets.forEach((b,i)=>{
@@ -391,8 +264,6 @@ function update(timestamp){
                     z.hp-=b.damage;
                     bullets.splice(bi,1);
                     if(z.hp<=0){
-                        hitSound.currentTime=0;
-                        hitSound.play();
                         player.gainXP(40);
                         zombies.splice(zi,1);
                     }
@@ -409,7 +280,7 @@ function draw(){
 
     ctx.clearRect(0,0,WIDTH,HEIGHT);
 
-    /* TÜRK BAYRAĞI */
+    // Saydam Türk Bayrağı
     ctx.save();
     ctx.globalAlpha=0.07;
     ctx.fillStyle="red";
@@ -424,18 +295,23 @@ function draw(){
     ctx.fillText("Wave: "+wave,550,30);
     ctx.fillText("Level: "+player.level,20,20);
     ctx.fillText("Ammo: "+player.ammo,20,40);
+
+    // XP BAR ALTTA
+    ctx.fillStyle="#333";
+    ctx.fillRect(200,660,800,20);
+    ctx.fillStyle="#9b59b6";
+    ctx.fillRect(200,660,800*(player.xp/player.xpNeeded),20);
+
+    ctx.fillStyle="white";
+    ctx.fillText("Sonraki Level için: "+(player.xpNeeded-player.xp)+" XP",480,655);
+
+    if(gameOver){
+        ctx.fillStyle="white";
+        ctx.font="40px Arial";
+        ctx.fillText("GAME OVER",500,350);
+    }
 }
 
 requestAnimationFrame(update);
 
-/* ================= INFO BUTTON ================= */
-
-document.getElementById("infoBtn").onclick=function(){
-    paused=true;
-    overlay.style.visibility="visible";
-    overlay.innerHTML="<h2>Oyun Bilgisi</h2>WASD ile hareket<br>Mouse ile ateş<br>Wave ilerledikçe zorlaşır<br>3 Perk seçebilirsin<br><br><button onclick='overlay.style.visibility=\"hidden\";paused=false;'>Kapat</button>";
-};
-
 </script>
-</body>
-</html>
