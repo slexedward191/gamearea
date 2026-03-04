@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Arena Zombi v2.2</title>
+<title>Arena Zombi v3.0</title>
 <style>
 body{
     margin:0;
@@ -26,22 +26,48 @@ canvas{
     justify-content:center;
     align-items:center;
     flex-direction:column;
-    background:rgba(0,0,0,0.85);
+    background:rgba(0,0,0,0.9);
     visibility:hidden;
+    text-align:center;
 }
 button{
-    padding:12px 25px;
-    margin:10px;
-    font-size:18px;
+    padding:10px 20px;
+    margin:8px;
+    font-size:16px;
     cursor:pointer;
+}
+#infoBtn{
+    position:absolute;
+    top:10px;
+    left:10px;
+}
+#upgradePanel{
+    position:absolute;
+    left:10px;
+    bottom:10px;
+    background:rgba(0,0,0,0.6);
+    padding:10px;
+    font-size:14px;
+}
+#perkPanel{
+    position:absolute;
+    right:10px;
+    bottom:10px;
+    background:rgba(0,0,0,0.6);
+    padding:10px;
+    font-size:14px;
 }
 </style>
 </head>
 <body>
 
+<button id="infoBtn">Oyun Hakkında</button>
+
 <canvas id="game" width="1200" height="700"></canvas>
 
 <div id="overlay"></div>
+<div id="upgradePanel"><b>Upgrades:</b><br></div>
+<div id="perkPanel"><b>Perk Slotları (0/3)</b><br></div>
 
 <script>
 
@@ -50,6 +76,8 @@ button{
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const overlay = document.getElementById("overlay");
+const upgradePanel = document.getElementById("upgradePanel");
+const perkPanel = document.getElementById("perkPanel");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -58,6 +86,14 @@ let lastTime = 0;
 let deltaTime = 0;
 let gameOver = false;
 let paused = false;
+
+/* ================= AUDIO ================= */
+
+const shootSound = new Audio("https://actions.google.com/sounds/v1/impacts/wood_plank_flicks.ogg");
+shootSound.volume = 0.2;
+
+const hitSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+hitSound.volume = 0.2;
 
 /* ================= INPUT ================= */
 
@@ -73,10 +109,29 @@ canvas.addEventListener("mousemove", e=>{
     mouse.y = e.clientY - rect.top;
 });
 
-/* ================= UTILS ================= */
+/* ================= WAVE ================= */
 
-function clamp(value,min,max){
-    return Math.max(min,Math.min(max,value));
+let wave = 1;
+let zombiesToSpawn = 10;
+let spawnTimer = 0;
+let spawnDelay = 2;
+
+/* ================= PERK SYSTEM ================= */
+
+let perks = [];
+let maxPerks = 3;
+
+function addPerk(name, apply){
+    if(perks.length>=maxPerks) return;
+    if(perks.includes(name)) return;
+    perks.push(name);
+    apply();
+    updatePerkPanel();
+}
+
+function updatePerkPanel(){
+    perkPanel.innerHTML = "<b>Perk Slotları ("+perks.length+"/3)</b><br>";
+    perks.forEach(p=> perkPanel.innerHTML += p+"<br>");
 }
 
 /* ================= PLAYER ================= */
@@ -86,33 +141,26 @@ class Player{
         this.x = WIDTH/2;
         this.y = HEIGHT/2;
         this.r = 16;
-
         this.speed = 220;
-
         this.maxHp = 100;
         this.hp = 100;
-
         this.maxAmmo = 30;
         this.ammo = 30;
-
         this.reloadTime = 1.2;
         this.reloadTimer = 0;
-
-        this.fireRate = 0.15;
+        this.fireRate = 0.2;
         this.fireTimer = 0;
-
-        this.damage = 15;
+        this.damage = 20;
         this.critChance = 0.15;
-
         this.level = 1;
         this.xp = 0;
         this.xpNeeded = 100;
+        this.riskMode = false;
     }
 
     update(dt){
 
         let vx=0, vy=0;
-
         if(keys["w"]) vy-=1;
         if(keys["s"]) vy+=1;
         if(keys["a"]) vx-=1;
@@ -124,8 +172,8 @@ class Player{
         this.x += vx*this.speed*dt;
         this.y += vy*this.speed*dt;
 
-        this.x = clamp(this.x,this.r,WIDTH-this.r);
-        this.y = clamp(this.y,this.r,HEIGHT-this.r);
+        this.x = Math.max(this.r,Math.min(WIDTH-this.r,this.x));
+        this.y = Math.max(this.r,Math.min(HEIGHT-this.r,this.y));
 
         if(this.reloadTimer>0){
             this.reloadTimer-=dt;
@@ -147,25 +195,19 @@ class Player{
 
     shoot(){
         this.ammo--;
-        let angle = Math.atan2(mouse.y-this.y, mouse.x-this.x);
-        let crit = Math.random()<this.critChance;
+        shootSound.currentTime=0;
+        shootSound.play();
 
-        bullets.push(new Bullet(
-            this.x,
-            this.y,
-            Math.cos(angle),
-            Math.sin(angle),
-            this.damage*(crit?2:1),
-            crit
-        ));
+        let angle = Math.atan2(mouse.y-this.y, mouse.x-this.x);
+        bullets.push(new Bullet(this.x,this.y,Math.cos(angle),Math.sin(angle),this.damage));
     }
 
     gainXP(amount){
-        this.xp += amount;
-        if(this.xp >= this.xpNeeded){
+        this.xp+=amount;
+        if(this.xp>=this.xpNeeded){
             this.level++;
-            this.xp = 0;
-            this.xpNeeded += 50;
+            this.xp=0;
+            this.xpNeeded+=80;
             levelUp();
         }
     }
@@ -175,12 +217,6 @@ class Player{
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
-
-        // HP bar
-        ctx.fillStyle="red";
-        ctx.fillRect(this.x-25,this.y-30,50,6);
-        ctx.fillStyle="lime";
-        ctx.fillRect(this.x-25,this.y-30,50*(this.hp/this.maxHp),6);
     }
 }
 
@@ -189,24 +225,19 @@ const player = new Player();
 /* ================= BULLET ================= */
 
 class Bullet{
-    constructor(x,y,dx,dy,damage,crit){
-        this.x=x;
-        this.y=y;
-        this.dx=dx;
-        this.dy=dy;
+    constructor(x,y,dx,dy,damage){
+        this.x=x; this.y=y;
+        this.dx=dx; this.dy=dy;
         this.speed=600;
-        this.r=crit?6:4;
+        this.r=4;
         this.damage=damage;
-        this.crit=crit;
     }
-
     update(dt){
         this.x+=this.dx*this.speed*dt;
         this.y+=this.dy*this.speed*dt;
     }
-
     draw(){
-        ctx.fillStyle=this.crit?"gold":"yellow";
+        ctx.fillStyle="yellow";
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
@@ -215,16 +246,36 @@ class Bullet{
 
 let bullets=[];
 
-/* ================= ZOMBIE ================= */
+/* ================= ZOMBIE TYPES ================= */
 
 class Zombie{
-    constructor(){
+    constructor(type="normal"){
+        this.type=type;
+
         this.x=Math.random()<0.5?0:WIDTH;
         this.y=Math.random()*HEIGHT;
+
+        if(type==="fast"){
+            this.speed=180;
+            this.maxHp=500;
+            this.color="orange";
+        }else if(type==="tank"){
+            this.speed=60;
+            this.maxHp=5000;
+            this.color="purple";
+        }else if(type==="boss"){
+            this.speed=40;
+            this.maxHp=20000;
+            this.color="red";
+        }else{
+            this.speed=100;
+            this.maxHp=250;
+            this.color="green";
+        }
+
+        this.maxHp *= Math.pow(2,wave-1);
+        this.hp=this.maxHp;
         this.r=18;
-        this.speed=100;
-        this.maxHp=50;
-        this.hp=50;
     }
 
     update(dt){
@@ -233,29 +284,24 @@ class Zombie{
         this.y+=Math.sin(angle)*this.speed*dt;
 
         if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
-            player.hp-=30*dt;
+            let dmg=30*dt;
+            if(player.riskMode) dmg*=1.1;
+            player.hp-=dmg;
             if(player.hp<=0){
-                player.hp=0;
                 triggerGameOver();
             }
         }
     }
 
     draw(){
-        ctx.fillStyle="green";
+        ctx.fillStyle=this.color;
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
-
-        ctx.fillStyle="red";
-        ctx.fillRect(this.x-20,this.y-25,40,4);
-        ctx.fillStyle="lime";
-        ctx.fillRect(this.x-20,this.y-25,40*(this.hp/this.maxHp),4);
     }
 }
 
 let zombies=[];
-let spawnTimer=0;
 
 /* ================= LEVEL UP ================= */
 
@@ -265,10 +311,11 @@ function levelUp(){
     overlay.innerHTML="<h1>LEVEL UP!</h1>";
 
     let upgrades=[
-        {text:"+20 Hasar", apply:()=>player.damage+=20},
-        {text:"+%20 Ateş Hızı", apply:()=>player.fireRate*=0.8},
-        {text:"+30 Max HP", apply:()=>{player.maxHp+=30; player.hp+=30}},
-        {text:"+%10 Kritik", apply:()=>player.critChance+=0.1}
+        {text:"+20 Hasar",apply:()=>player.damage+=20},
+        {text:"+%20 Ateş Hızı",apply:()=>player.fireRate*=0.8},
+        {text:"+30 Max HP",apply:()=>{player.maxHp+=30;player.hp+=30}},
+        {text:"+%10 Kritik",apply:()=>player.critChance+=0.1},
+        {text:"+2 Max Mermi",apply:()=>player.maxAmmo+=2}
     ];
 
     upgrades.sort(()=>0.5-Math.random());
@@ -277,6 +324,7 @@ function levelUp(){
         btn.textContent=up.text;
         btn.onclick=()=>{
             up.apply();
+            upgradePanel.innerHTML+="<br>"+up.text;
             overlay.style.visibility="hidden";
             paused=false;
         };
@@ -290,25 +338,18 @@ function triggerGameOver(){
     gameOver=true;
     overlay.style.visibility="visible";
     overlay.innerHTML="<h1>GAME OVER</h1>";
-
-    let btn=document.createElement("button");
-    btn.textContent="Yeniden Başlat";
-    btn.onclick=restartGame;
-    overlay.appendChild(btn);
 }
 
-function restartGame(){
-    player.hp=player.maxHp;
-    player.x=WIDTH/2;
-    player.y=HEIGHT/2;
-    player.level=1;
-    player.xp=0;
-    player.xpNeeded=100;
-    zombies=[];
-    bullets=[];
-    gameOver=false;
-    paused=false;
-    overlay.style.visibility="hidden";
+/* ================= WAVE SYSTEM ================= */
+
+function nextWave(){
+    wave++;
+    zombiesToSpawn=10+wave*5;
+    spawnDelay=Math.max(0.5,2-wave*0.1);
+
+    if(wave%10===0){
+        zombies.push(new Zombie("boss"));
+    }
 }
 
 /* ================= LOOP ================= */
@@ -322,9 +363,18 @@ function update(timestamp){
         player.update(deltaTime);
 
         spawnTimer-=deltaTime;
-        if(spawnTimer<=0){
-            zombies.push(new Zombie());
-            spawnTimer=2;
+        if(spawnTimer<=0 && zombiesToSpawn>0){
+            let rand=Math.random();
+            if(rand<0.2) zombies.push(new Zombie("fast"));
+            else if(rand<0.3) zombies.push(new Zombie("tank"));
+            else zombies.push(new Zombie("normal"));
+
+            zombiesToSpawn--;
+            spawnTimer=spawnDelay;
+        }
+
+        if(zombiesToSpawn<=0 && zombies.length===0){
+            nextWave();
         }
 
         bullets.forEach((b,i)=>{
@@ -336,12 +386,13 @@ function update(timestamp){
 
         zombies.forEach((z,zi)=>{
             z.update(deltaTime);
-
             bullets.forEach((b,bi)=>{
                 if(Math.hypot(b.x-z.x,b.y-z.y)<z.r){
                     z.hp-=b.damage;
                     bullets.splice(bi,1);
                     if(z.hp<=0){
+                        hitSound.currentTime=0;
+                        hitSound.play();
                         player.gainXP(40);
                         zombies.splice(zi,1);
                     }
@@ -355,24 +406,35 @@ function update(timestamp){
 }
 
 function draw(){
+
     ctx.clearRect(0,0,WIDTH,HEIGHT);
+
+    /* TÜRK BAYRAĞI */
+    ctx.save();
+    ctx.globalAlpha=0.07;
+    ctx.fillStyle="red";
+    ctx.fillRect(0,0,WIDTH,HEIGHT);
+    ctx.restore();
 
     bullets.forEach(b=>b.draw());
     zombies.forEach(z=>z.draw());
     player.draw();
 
-    // XP BAR
-    ctx.fillStyle="#333";
-    ctx.fillRect(200,660,800,20);
-    ctx.fillStyle="#9b59b6";
-    ctx.fillRect(200,660,800*(player.xp/player.xpNeeded),20);
-
     ctx.fillStyle="white";
+    ctx.fillText("Wave: "+wave,550,30);
     ctx.fillText("Level: "+player.level,20,20);
     ctx.fillText("Ammo: "+player.ammo,20,40);
 }
 
 requestAnimationFrame(update);
+
+/* ================= INFO BUTTON ================= */
+
+document.getElementById("infoBtn").onclick=function(){
+    paused=true;
+    overlay.style.visibility="visible";
+    overlay.innerHTML="<h2>Oyun Bilgisi</h2>WASD ile hareket<br>Mouse ile ateş<br>Wave ilerledikçe zorlaşır<br>3 Perk seçebilirsin<br><br><button onclick='overlay.style.visibility=\"hidden\";paused=false;'>Kapat</button>";
+};
 
 </script>
 </body>
