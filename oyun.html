@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Arena Zombi v3.2</title>
+<title>Arena Zombi v4.1</title>
 <style>
 body{
     margin:0;
@@ -18,11 +18,29 @@ canvas{
     background:#181818;
     border:4px solid #333;
 }
+#overlay{
+    position:absolute;
+    width:1200px;
+    height:700px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    background:rgba(0,0,0,0.9);
+    visibility:hidden;
+}
+button{
+    padding:12px 25px;
+    margin:10px;
+    font-size:18px;
+    cursor:pointer;
+}
 </style>
 </head>
 <body>
 
 <canvas id="game" width="1200" height="700"></canvas>
+<div id="overlay"></div>
 
 <script>
 
@@ -30,6 +48,7 @@ canvas{
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const overlay = document.getElementById("overlay");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -37,7 +56,7 @@ const HEIGHT = canvas.height;
 let lastTime = 0;
 let deltaTime = 0;
 let gameOver = false;
-let restartTimer = 0;
+let paused = false;
 
 /* ================= INPUT ================= */
 
@@ -53,76 +72,75 @@ canvas.addEventListener("mousemove", e=>{
     mouse.y = e.clientY - rect.top;
 });
 
-/* ================= SHOOT SOUND ================= */
+/* ================= SOUND ================= */
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
 function playShootSound(){
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-
-    osc.type = "square";
-    osc.frequency.setValueAtTime(250, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.08);
-
-    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-
+    osc.type="square";
+    osc.frequency.setValueAtTime(250,audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80,audioCtx.currentTime+0.08);
+    gain.gain.setValueAtTime(0.15,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.08);
+    osc.stop(audioCtx.currentTime+0.08);
 }
+
+/* ================= WAVE ================= */
+
+let wave = 1;
+let zombiesToSpawn = 10;
+let spawnTimer = 0;
+let spawnDelay = 1.5;
 
 /* ================= PLAYER ================= */
 
 class Player{
     constructor(){
-        this.x = WIDTH/2;
-        this.y = HEIGHT/2;
-        this.r = 16;
-        this.speed = 220;
-        this.maxHp = 100;
-        this.hp = 100;
-        this.maxAmmo = 30;
-        this.ammo = 30;
-        this.reloadTime = 1.2;
-        this.reloadTimer = 0;
-        this.fireRate = 0.2;
-        this.fireTimer = 0;
-        this.damage = 20;
-        this.level = 1;
-        this.xp = 0;
-        this.xpNeeded = 100;
+        this.x=WIDTH/2;
+        this.y=HEIGHT/2;
+        this.r=16;
+        this.speed=220;
+        this.maxHp=100;
+        this.hp=100;
+        this.maxAmmo=30;
+        this.ammo=30;
+        this.reloadTime=1.2;
+        this.reloadTimer=0;
+        this.fireRate=0.2;
+        this.fireTimer=0;
+        this.damage=20;
+        this.level=1;
+        this.xp=0;
+        this.xpNeeded=100;
     }
 
     update(dt){
-
-        let vx=0, vy=0;
+        let vx=0,vy=0;
         if(keys["w"]) vy-=1;
         if(keys["s"]) vy+=1;
         if(keys["a"]) vx-=1;
         if(keys["d"]) vx+=1;
 
-        let len = Math.hypot(vx,vy);
-        if(len>0){ vx/=len; vy/=len; }
+        let len=Math.hypot(vx,vy);
+        if(len>0){vx/=len;vy/=len;}
 
-        this.x += vx*this.speed*dt;
-        this.y += vy*this.speed*dt;
+        this.x+=vx*this.speed*dt;
+        this.y+=vy*this.speed*dt;
 
-        this.x = Math.max(this.r,Math.min(WIDTH-this.r,this.x));
-        this.y = Math.max(this.r,Math.min(HEIGHT-this.r,this.y));
+        this.x=Math.max(this.r,Math.min(WIDTH-this.r,this.x));
+        this.y=Math.max(this.r,Math.min(HEIGHT-this.r,this.y));
 
         if(this.reloadTimer>0){
             this.reloadTimer-=dt;
-            if(this.reloadTimer<=0){
-                this.ammo=this.maxAmmo;
-            }
+            if(this.reloadTimer<=0) this.ammo=this.maxAmmo;
         }
 
-        if(this.ammo<=0 && this.reloadTimer<=0){
+        if(this.ammo<=0 && this.reloadTimer<=0)
             this.reloadTimer=this.reloadTime;
-        }
 
         this.fireTimer-=dt;
         if(this.fireTimer<=0 && this.ammo>0 && this.reloadTimer<=0){
@@ -134,8 +152,7 @@ class Player{
     shoot(){
         this.ammo--;
         playShootSound();
-
-        let angle = Math.atan2(mouse.y-this.y, mouse.x-this.x);
+        let angle=Math.atan2(mouse.y-this.y,mouse.x-this.x);
         bullets.push(new Bullet(this.x,this.y,Math.cos(angle),Math.sin(angle),this.damage));
     }
 
@@ -145,6 +162,7 @@ class Player{
             this.level++;
             this.xp=0;
             this.xpNeeded+=80;
+            levelUp();
         }
     }
 
@@ -154,7 +172,6 @@ class Player{
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
 
-        // HP BAR
         ctx.fillStyle="red";
         ctx.fillRect(this.x-25,this.y-30,50,6);
         ctx.fillStyle="lime";
@@ -162,14 +179,14 @@ class Player{
     }
 }
 
-const player = new Player();
+const player=new Player();
 
 /* ================= BULLET ================= */
 
 class Bullet{
     constructor(x,y,dx,dy,damage){
-        this.x=x; this.y=y;
-        this.dx=dx; this.dy=dy;
+        this.x=x;this.y=y;
+        this.dx=dx;this.dy=dy;
         this.speed=600;
         this.r=4;
         this.damage=damage;
@@ -195,8 +212,8 @@ class Zombie{
         this.x=Math.random()<0.5?0:WIDTH;
         this.y=Math.random()*HEIGHT;
         this.r=18;
-        this.speed=100;
-        this.maxHp=250;
+        this.speed=100+wave*10;
+        this.maxHp=200+wave*50;
         this.hp=this.maxHp;
     }
 
@@ -207,10 +224,7 @@ class Zombie{
 
         if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
             player.hp-=30*dt;
-            if(player.hp<=0){
-                gameOver=true;
-                restartTimer=3;
-            }
+            if(player.hp<=0) triggerGameOver();
         }
     }
 
@@ -220,7 +234,6 @@ class Zombie{
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
 
-        // ZOMBIE HP BAR
         ctx.fillStyle="red";
         ctx.fillRect(this.x-20,this.y-25,40,5);
         ctx.fillStyle="lime";
@@ -229,37 +242,99 @@ class Zombie{
 }
 
 let zombies=[];
-let spawnTimer=0;
+
+/* ================= LEVEL UP ================= */
+
+function levelUp(){
+    paused=true;
+    overlay.style.visibility="visible";
+    overlay.innerHTML="<h1>LEVEL UP!</h1>";
+
+    let upgrades=[
+        {text:"+20 Hasar",apply:()=>player.damage+=20},
+        {text:"+%20 Ateş Hızı",apply:()=>player.fireRate*=0.8},
+        {text:"+30 Max HP",apply:()=>{player.maxHp+=30;player.hp+=30}},
+        {text:"+2 Max Mermi",apply:()=>player.maxAmmo+=2}
+    ];
+
+    upgrades.sort(()=>0.5-Math.random());
+    upgrades.slice(0,3).forEach(up=>{
+        let btn=document.createElement("button");
+        btn.textContent=up.text;
+        btn.onclick=()=>{
+            up.apply();
+            overlay.style.visibility="hidden";
+            paused=false;
+        };
+        overlay.appendChild(btn);
+    });
+}
+
+/* ================= GAME OVER + RESET ================= */
+
+function triggerGameOver(){
+    gameOver = true;
+    paused = true;
+
+    overlay.style.visibility = "visible";
+    overlay.innerHTML = "<h1>OYUN BİTTİ</h1><button id='restartBtn'>Yeniden Başla</button>";
+
+    document.getElementById("restartBtn").onclick = resetGame;
+}
+
+function resetGame(){
+
+    player.x = WIDTH/2;
+    player.y = HEIGHT/2;
+    player.maxHp = 100;
+    player.hp = 100;
+    player.maxAmmo = 30;
+    player.ammo = 30;
+    player.level = 1;
+    player.xp = 0;
+    player.xpNeeded = 100;
+    player.damage = 20;
+    player.fireRate = 0.2;
+
+    wave = 1;
+    zombiesToSpawn = 10;
+    spawnTimer = 0;
+
+    zombies = [];
+    bullets = [];
+
+    gameOver = false;
+    paused = false;
+
+    overlay.style.visibility = "hidden";
+}
 
 /* ================= LOOP ================= */
 
 function update(timestamp){
-
     deltaTime=(timestamp-lastTime)/1000;
     lastTime=timestamp;
 
-    if(gameOver){
-        restartTimer-=deltaTime;
-        if(restartTimer<=0){
-            location.reload();
-        }
-    }
-
-    if(!gameOver){
+    if(!gameOver && !paused){
 
         player.update(deltaTime);
 
         spawnTimer-=deltaTime;
-        if(spawnTimer<=0){
+        if(spawnTimer<=0 && zombiesToSpawn>0){
             zombies.push(new Zombie());
-            spawnTimer=2;
+            zombiesToSpawn--;
+            spawnTimer=spawnDelay;
+        }
+
+        if(zombiesToSpawn<=0 && zombies.length===0){
+            wave++;
+            zombiesToSpawn=10+wave*5;
         }
 
         bullets.forEach((b,i)=>{
             b.update(deltaTime);
-            if(b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT){
+            if(b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT)
                 bullets.splice(i,1);
-            }
         });
 
         zombies.forEach((z,zi)=>{
@@ -282,37 +357,21 @@ function update(timestamp){
 }
 
 function draw(){
-
     ctx.clearRect(0,0,WIDTH,HEIGHT);
-
-    // Saydam Türk bayrağı arka plan
-    ctx.save();
-    ctx.globalAlpha=0.06;
-    ctx.fillStyle="red";
-    ctx.fillRect(0,0,WIDTH,HEIGHT);
-    ctx.restore();
 
     bullets.forEach(b=>b.draw());
     zombies.forEach(z=>z.draw());
     player.draw();
 
     ctx.fillStyle="white";
+    ctx.fillText("Wave: "+wave,550,30);
     ctx.fillText("Level: "+player.level,20,20);
     ctx.fillText("Ammo: "+player.ammo,20,40);
 
-    // XP BAR
     ctx.fillStyle="#333";
     ctx.fillRect(200,660,800,20);
     ctx.fillStyle="#9b59b6";
     ctx.fillRect(200,660,800*(player.xp/player.xpNeeded),20);
-
-    ctx.fillStyle="white";
-    ctx.fillText("Sonraki Level için: "+(player.xpNeeded-player.xp)+" XP",480,655);
-
-    if(gameOver){
-        ctx.font="40px Arial";
-        ctx.fillText("GAME OVER",480,350);
-    }
 }
 
 requestAnimationFrame(update);
