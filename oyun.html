@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Arena Zombi v2.3</title>
+<title>Arena Zombi v2.4 Scaling Tank</title>
 <style>
 body{
     margin:0;
@@ -55,8 +55,6 @@ button{
 
 <script>
 
-/* ================= CORE ================= */
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const overlay = document.getElementById("overlay");
@@ -70,7 +68,7 @@ let deltaTime = 0;
 let gameOver = false;
 let paused = false;
 
-/* ================= WAVE SYSTEM ================= */
+/* WAVE */
 
 let wave = 1;
 let zombiesToSpawn = 0;
@@ -79,7 +77,7 @@ let spawnTimer = 0;
 let waveDelay = 3;
 let waveCooldown = 0;
 
-/* ================= INPUT ================= */
+/* INPUT */
 
 let keys = {};
 let mouse = {x:0,y:0};
@@ -95,7 +93,7 @@ canvas.addEventListener("mousemove", e=>{
 
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
-/* ================= PLAYER ================= */
+/* PLAYER */
 
 class Player{
     constructor(){
@@ -192,7 +190,7 @@ class Player{
 
 const player = new Player();
 
-/* ================= BULLET ================= */
+/* BULLET */
 
 class Bullet{
     constructor(x,y,dx,dy,damage,crit){
@@ -217,28 +215,38 @@ class Bullet{
 
 let bullets=[];
 
-/* ================= ZOMBIE ================= */
+/* ZOMBIE */
 
 class Zombie{
     constructor(type){
 
         this.type=type;
+        this.damageReduction = 0;
 
         if(type==="normal"){
             this.r=18; this.speed=100; this.maxHp=50;
             this.color="green"; this.damage=30;
         }
+
         if(type==="fast"){
             this.r=14; this.speed=170; this.maxHp=35;
             this.color="#2ecc71"; this.damage=20;
         }
+
         if(type==="tank"){
-            this.r=26; this.speed=60; this.maxHp=150;
-            this.color="#145a32"; this.damage=45;
+
+            let scaling = Math.floor(wave/4); // her 4 wave'de artış
+            let hpBoost = scaling * 500;
+
+            this.r=32;
+            this.speed=45;
+            this.maxHp=1000 + hpBoost;
+            this.color="#063d06";
+            this.damage=55 + scaling*5;
+            this.damageReduction=0.35;
         }
 
         this.hp=this.maxHp;
-
         this.x=Math.random()<0.5?0:WIDTH;
         this.y=Math.random()*HEIGHT;
     }
@@ -264,15 +272,15 @@ class Zombie{
         ctx.fill();
 
         ctx.fillStyle="red";
-        ctx.fillRect(this.x-20,this.y-this.r-10,40,4);
+        ctx.fillRect(this.x-30,this.y-this.r-14,60,6);
         ctx.fillStyle="lime";
-        ctx.fillRect(this.x-20,this.y-this.r-10,40*(this.hp/this.maxHp),4);
+        ctx.fillRect(this.x-30,this.y-this.r-14,60*(this.hp/this.maxHp),6);
     }
 }
 
 let zombies=[];
 
-/* ================= SPAWN LOGIC ================= */
+/* SPAWN */
 
 function startWave(){
     zombiesToSpawn = 5 + wave*3;
@@ -284,14 +292,12 @@ function startWave(){
 
 function spawnZombie(){
     let type="normal";
-
     if(wave>=2 && Math.random()<0.3) type="fast";
-    if(wave>=4 && Math.random()<0.2) type="tank";
-
+    if(wave>=4 && Math.random()<0.25) type="tank";
     zombies.push(new Zombie(type));
 }
 
-/* ================= LEVEL UP & GAME OVER ================= */
+/* LEVEL UP & GAME OVER */
 
 function levelUp(){
     paused=true;
@@ -340,7 +346,7 @@ function restartGame(){
     startWave();
 }
 
-/* ================= LOOP ================= */
+/* LOOP */
 
 function update(timestamp){
     deltaTime=(timestamp-lastTime)/1000;
@@ -380,10 +386,20 @@ function update(timestamp){
 
             bullets.forEach((b,bi)=>{
                 if(Math.hypot(b.x-z.x,b.y-z.y)<z.r){
-                    z.hp-=b.damage;
+
+                    let finalDamage = b.damage;
+
+                    if(z.type==="tank"){
+                        finalDamage *= (1 - z.damageReduction);
+                    }
+
+                    z.hp-=finalDamage;
                     bullets.splice(bi,1);
+
                     if(z.hp<=0){
-                        player.gainXP(30+wave*5);
+                        let xpReward = 30 + wave*5;
+                        if(z.type==="tank") xpReward*=2;
+                        player.gainXP(xpReward);
                         zombies.splice(zi,1);
                     }
                 }
