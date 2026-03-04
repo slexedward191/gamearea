@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Arena Zombi v2.2</title>
+<title>Arena Zombi v2.3</title>
 <style>
 body{
     margin:0;
@@ -35,12 +35,22 @@ button{
     font-size:18px;
     cursor:pointer;
 }
+#waveText{
+    position:absolute;
+    top:20px;
+    width:1200px;
+    text-align:center;
+    font-size:40px;
+    font-weight:bold;
+    color:#f1c40f;
+    pointer-events:none;
+}
 </style>
 </head>
 <body>
 
+<div id="waveText"></div>
 <canvas id="game" width="1200" height="700"></canvas>
-
 <div id="overlay"></div>
 
 <script>
@@ -50,6 +60,7 @@ button{
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const overlay = document.getElementById("overlay");
+const waveText = document.getElementById("waveText");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -58,6 +69,15 @@ let lastTime = 0;
 let deltaTime = 0;
 let gameOver = false;
 let paused = false;
+
+/* ================= WAVE SYSTEM ================= */
+
+let wave = 1;
+let zombiesToSpawn = 0;
+let zombiesSpawned = 0;
+let spawnTimer = 0;
+let waveDelay = 3;
+let waveCooldown = 0;
 
 /* ================= INPUT ================= */
 
@@ -73,11 +93,7 @@ canvas.addEventListener("mousemove", e=>{
     mouse.y = e.clientY - rect.top;
 });
 
-/* ================= UTILS ================= */
-
-function clamp(value,min,max){
-    return Math.max(min,Math.min(max,value));
-}
+function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
 /* ================= PLAYER ================= */
 
@@ -86,7 +102,6 @@ class Player{
         this.x = WIDTH/2;
         this.y = HEIGHT/2;
         this.r = 16;
-
         this.speed = 220;
 
         this.maxHp = 100;
@@ -94,7 +109,6 @@ class Player{
 
         this.maxAmmo = 30;
         this.ammo = 30;
-
         this.reloadTime = 1.2;
         this.reloadTimer = 0;
 
@@ -112,26 +126,23 @@ class Player{
     update(dt){
 
         let vx=0, vy=0;
-
         if(keys["w"]) vy-=1;
         if(keys["s"]) vy+=1;
         if(keys["a"]) vx-=1;
         if(keys["d"]) vx+=1;
 
-        let len = Math.hypot(vx,vy);
-        if(len>0){ vx/=len; vy/=len; }
+        let len=Math.hypot(vx,vy);
+        if(len>0){vx/=len;vy/=len;}
 
-        this.x += vx*this.speed*dt;
-        this.y += vy*this.speed*dt;
+        this.x+=vx*this.speed*dt;
+        this.y+=vy*this.speed*dt;
 
-        this.x = clamp(this.x,this.r,WIDTH-this.r);
-        this.y = clamp(this.y,this.r,HEIGHT-this.r);
+        this.x=clamp(this.x,this.r,WIDTH-this.r);
+        this.y=clamp(this.y,this.r,HEIGHT-this.r);
 
         if(this.reloadTimer>0){
             this.reloadTimer-=dt;
-            if(this.reloadTimer<=0){
-                this.ammo=this.maxAmmo;
-            }
+            if(this.reloadTimer<=0) this.ammo=this.maxAmmo;
         }
 
         if(this.ammo<=0 && this.reloadTimer<=0){
@@ -147,25 +158,21 @@ class Player{
 
     shoot(){
         this.ammo--;
-        let angle = Math.atan2(mouse.y-this.y, mouse.x-this.x);
-        let crit = Math.random()<this.critChance;
-
+        let angle=Math.atan2(mouse.y-this.y,mouse.x-this.x);
+        let crit=Math.random()<this.critChance;
         bullets.push(new Bullet(
-            this.x,
-            this.y,
-            Math.cos(angle),
-            Math.sin(angle),
-            this.damage*(crit?2:1),
-            crit
+            this.x,this.y,
+            Math.cos(angle),Math.sin(angle),
+            this.damage*(crit?2:1),crit
         ));
     }
 
     gainXP(amount){
-        this.xp += amount;
-        if(this.xp >= this.xpNeeded){
+        this.xp+=amount;
+        if(this.xp>=this.xpNeeded){
             this.level++;
-            this.xp = 0;
-            this.xpNeeded += 50;
+            this.xp=0;
+            this.xpNeeded+=50;
             levelUp();
         }
     }
@@ -176,7 +183,6 @@ class Player{
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
 
-        // HP bar
         ctx.fillStyle="red";
         ctx.fillRect(this.x-25,this.y-30,50,6);
         ctx.fillStyle="lime";
@@ -190,21 +196,17 @@ const player = new Player();
 
 class Bullet{
     constructor(x,y,dx,dy,damage,crit){
-        this.x=x;
-        this.y=y;
-        this.dx=dx;
-        this.dy=dy;
+        this.x=x;this.y=y;
+        this.dx=dx;this.dy=dy;
         this.speed=600;
         this.r=crit?6:4;
         this.damage=damage;
         this.crit=crit;
     }
-
     update(dt){
         this.x+=this.dx*this.speed*dt;
         this.y+=this.dy*this.speed*dt;
     }
-
     draw(){
         ctx.fillStyle=this.crit?"gold":"yellow";
         ctx.beginPath();
@@ -218,13 +220,27 @@ let bullets=[];
 /* ================= ZOMBIE ================= */
 
 class Zombie{
-    constructor(){
+    constructor(type){
+
+        this.type=type;
+
+        if(type==="normal"){
+            this.r=18; this.speed=100; this.maxHp=50;
+            this.color="green"; this.damage=30;
+        }
+        if(type==="fast"){
+            this.r=14; this.speed=170; this.maxHp=35;
+            this.color="#2ecc71"; this.damage=20;
+        }
+        if(type==="tank"){
+            this.r=26; this.speed=60; this.maxHp=150;
+            this.color="#145a32"; this.damage=45;
+        }
+
+        this.hp=this.maxHp;
+
         this.x=Math.random()<0.5?0:WIDTH;
         this.y=Math.random()*HEIGHT;
-        this.r=18;
-        this.speed=100;
-        this.maxHp=50;
-        this.hp=50;
     }
 
     update(dt){
@@ -233,7 +249,7 @@ class Zombie{
         this.y+=Math.sin(angle)*this.speed*dt;
 
         if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
-            player.hp-=30*dt;
+            player.hp-=this.damage*dt;
             if(player.hp<=0){
                 player.hp=0;
                 triggerGameOver();
@@ -242,22 +258,40 @@ class Zombie{
     }
 
     draw(){
-        ctx.fillStyle="green";
+        ctx.fillStyle=this.color;
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
 
         ctx.fillStyle="red";
-        ctx.fillRect(this.x-20,this.y-25,40,4);
+        ctx.fillRect(this.x-20,this.y-this.r-10,40,4);
         ctx.fillStyle="lime";
-        ctx.fillRect(this.x-20,this.y-25,40*(this.hp/this.maxHp),4);
+        ctx.fillRect(this.x-20,this.y-this.r-10,40*(this.hp/this.maxHp),4);
     }
 }
 
 let zombies=[];
-let spawnTimer=0;
 
-/* ================= LEVEL UP ================= */
+/* ================= SPAWN LOGIC ================= */
+
+function startWave(){
+    zombiesToSpawn = 5 + wave*3;
+    zombiesSpawned = 0;
+    spawnTimer = 0;
+    waveText.textContent="WAVE "+wave;
+    setTimeout(()=>waveText.textContent="",1500);
+}
+
+function spawnZombie(){
+    let type="normal";
+
+    if(wave>=2 && Math.random()<0.3) type="fast";
+    if(wave>=4 && Math.random()<0.2) type="tank";
+
+    zombies.push(new Zombie(type));
+}
+
+/* ================= LEVEL UP & GAME OVER ================= */
 
 function levelUp(){
     paused=true;
@@ -265,10 +299,10 @@ function levelUp(){
     overlay.innerHTML="<h1>LEVEL UP!</h1>";
 
     let upgrades=[
-        {text:"+20 Hasar", apply:()=>player.damage+=20},
-        {text:"+%20 Ateş Hızı", apply:()=>player.fireRate*=0.8},
-        {text:"+30 Max HP", apply:()=>{player.maxHp+=30; player.hp+=30}},
-        {text:"+%10 Kritik", apply:()=>player.critChance+=0.1}
+        {text:"+20 Hasar",apply:()=>player.damage+=20},
+        {text:"+%20 Ateş Hızı",apply:()=>player.fireRate*=0.8},
+        {text:"+30 Max HP",apply:()=>{player.maxHp+=30;player.hp+=30}},
+        {text:"+%10 Kritik",apply:()=>player.critChance+=0.1}
     ];
 
     upgrades.sort(()=>0.5-Math.random());
@@ -284,8 +318,6 @@ function levelUp(){
     });
 }
 
-/* ================= GAME OVER ================= */
-
 function triggerGameOver(){
     gameOver=true;
     overlay.style.visibility="visible";
@@ -298,17 +330,14 @@ function triggerGameOver(){
 }
 
 function restartGame(){
-    player.hp=player.maxHp;
-    player.x=WIDTH/2;
-    player.y=HEIGHT/2;
-    player.level=1;
-    player.xp=0;
-    player.xpNeeded=100;
-    zombies=[];
-    bullets=[];
+    Object.assign(player,new Player());
+    zombies=[]; bullets=[];
+    wave=1;
+    waveCooldown=0;
     gameOver=false;
     paused=false;
     overlay.style.visibility="hidden";
+    startWave();
 }
 
 /* ================= LOOP ================= */
@@ -321,17 +350,29 @@ function update(timestamp){
 
         player.update(deltaTime);
 
-        spawnTimer-=deltaTime;
-        if(spawnTimer<=0){
-            zombies.push(new Zombie());
-            spawnTimer=2;
+        if(zombiesSpawned<zombiesToSpawn){
+            spawnTimer-=deltaTime;
+            if(spawnTimer<=0){
+                spawnZombie();
+                zombiesSpawned++;
+                spawnTimer=1.2 - wave*0.05;
+                if(spawnTimer<0.3) spawnTimer=0.3;
+            }
+        }
+
+        if(zombiesSpawned===zombiesToSpawn && zombies.length===0){
+            waveCooldown+=deltaTime;
+            if(waveCooldown>=waveDelay){
+                wave++;
+                waveCooldown=0;
+                startWave();
+            }
         }
 
         bullets.forEach((b,i)=>{
             b.update(deltaTime);
-            if(b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT){
+            if(b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT)
                 bullets.splice(i,1);
-            }
         });
 
         zombies.forEach((z,zi)=>{
@@ -342,7 +383,7 @@ function update(timestamp){
                     z.hp-=b.damage;
                     bullets.splice(bi,1);
                     if(z.hp<=0){
-                        player.gainXP(40);
+                        player.gainXP(30+wave*5);
                         zombies.splice(zi,1);
                     }
                 }
@@ -361,7 +402,6 @@ function draw(){
     zombies.forEach(z=>z.draw());
     player.draw();
 
-    // XP BAR
     ctx.fillStyle="#333";
     ctx.fillRect(200,660,800,20);
     ctx.fillStyle="#9b59b6";
@@ -369,9 +409,10 @@ function draw(){
 
     ctx.fillStyle="white";
     ctx.fillText("Level: "+player.level,20,20);
-    ctx.fillText("Ammo: "+player.ammo,20,40);
+    ctx.fillText("Wave: "+wave,20,40);
 }
 
+startWave();
 requestAnimationFrame(update);
 
 </script>
