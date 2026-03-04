@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Arena Zombi v4.1</title>
+<title>Arena Zombi v5.0</title>
 <style>
 body{
     margin:0;
@@ -11,7 +11,7 @@ body{
     justify-content:center;
     align-items:center;
     height:100vh;
-    font-family:Arial, sans-serif;
+    font-family:Arial;
     color:white;
 }
 canvas{
@@ -22,12 +22,12 @@ canvas{
     position:absolute;
     width:1200px;
     height:700px;
+    background:rgba(0,0,0,0.92);
     display:flex;
     justify-content:center;
     align-items:center;
     flex-direction:column;
-    background:rgba(0,0,0,0.9);
-    visibility:hidden;
+    text-align:center;
 }
 button{
     padding:12px 25px;
@@ -35,12 +35,30 @@ button{
     font-size:18px;
     cursor:pointer;
 }
+#upgradePanel{
+    position:absolute;
+    bottom:10px;
+    left:10px;
+    width:260px;
+    background:rgba(0,0,0,0.7);
+    padding:10px;
+}
+#statsPanel{
+    position:absolute;
+    bottom:10px;
+    right:10px;
+    width:260px;
+    background:rgba(0,0,0,0.7);
+    padding:10px;
+}
 </style>
 </head>
 <body>
 
 <canvas id="game" width="1200" height="700"></canvas>
 <div id="overlay"></div>
+<div id="upgradePanel"></div>
+<div id="statsPanel"></div>
 
 <script>
 
@@ -49,134 +67,116 @@ button{
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const overlay = document.getElementById("overlay");
+const upgradePanel = document.getElementById("upgradePanel");
+const statsPanel = document.getElementById("statsPanel");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
 
-let lastTime = 0;
-let deltaTime = 0;
-let gameOver = false;
-let paused = false;
+let lastTime=0, deltaTime=0;
+let gameStarted=false;
+let gameOver=false;
+let paused=true;
+
+/* ================= START SCREEN ================= */
+
+overlay.innerHTML = `
+<h1>ARENA ZOMBİ</h1>
+<p>WASD ile hareket</p>
+<p>Mouse ile ateş</p>
+<p>Her level atladığında güç seçersin</p>
+<p>Her 5 wave'de BOSS gelir</p>
+<button onclick="startGame()">BAŞLA</button>
+`;
+
+function startGame(){
+    overlay.style.display="none";
+    paused=false;
+    gameStarted=true;
+}
 
 /* ================= INPUT ================= */
 
-let keys = {};
-let mouse = {x:0,y:0};
+let keys={};
+let mouse={x:0,y:0};
 
-document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 
-canvas.addEventListener("mousemove", e=>{
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
+canvas.addEventListener("mousemove",e=>{
+    const rect=canvas.getBoundingClientRect();
+    mouse.x=e.clientX-rect.left;
+    mouse.y=e.clientY-rect.top;
 });
-
-/* ================= SOUND ================= */
-
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playShootSound(){
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type="square";
-    osc.frequency.setValueAtTime(250,audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(80,audioCtx.currentTime+0.08);
-    gain.gain.setValueAtTime(0.15,audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01,audioCtx.currentTime+0.08);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime+0.08);
-}
-
-/* ================= WAVE ================= */
-
-let wave = 1;
-let zombiesToSpawn = 10;
-let spawnTimer = 0;
-let spawnDelay = 1.5;
 
 /* ================= PLAYER ================= */
 
 class Player{
-    constructor(){
-        this.x=WIDTH/2;
-        this.y=HEIGHT/2;
-        this.r=16;
-        this.speed=220;
-        this.maxHp=100;
-        this.hp=100;
-        this.maxAmmo=30;
-        this.ammo=30;
-        this.reloadTime=1.2;
-        this.reloadTimer=0;
-        this.fireRate=0.2;
-        this.fireTimer=0;
-        this.damage=20;
-        this.level=1;
-        this.xp=0;
-        this.xpNeeded=100;
-    }
+constructor(){
+this.reset();
+}
 
-    update(dt){
-        let vx=0,vy=0;
-        if(keys["w"]) vy-=1;
-        if(keys["s"]) vy+=1;
-        if(keys["a"]) vx-=1;
-        if(keys["d"]) vx+=1;
+reset(){
+this.x=WIDTH/2;
+this.y=HEIGHT/2;
+this.r=16;
+this.speed=230;
+this.maxHp=100;
+this.hp=100;
+this.hearts=5;
+this.maxAmmo=30;
+this.ammo=30;
+this.damage=20;
+this.fireRate=0.25;
+this.fireTimer=0;
+this.level=1;
+this.xp=0;
+this.xpNeeded=100;
+this.upgrades=[];
+}
 
-        let len=Math.hypot(vx,vy);
-        if(len>0){vx/=len;vy/=len;}
+update(dt){
+let vx=0,vy=0;
+if(keys["w"])vy-=1;
+if(keys["s"])vy+=1;
+if(keys["a"])vx-=1;
+if(keys["d"])vx+=1;
+let len=Math.hypot(vx,vy);
+if(len>0){vx/=len;vy/=len;}
+this.x+=vx*this.speed*dt;
+this.y+=vy*this.speed*dt;
+this.x=Math.max(this.r,Math.min(WIDTH-this.r,this.x));
+this.y=Math.max(this.r,Math.min(HEIGHT-this.r,this.y));
 
-        this.x+=vx*this.speed*dt;
-        this.y+=vy*this.speed*dt;
+this.fireTimer-=dt;
+if(this.fireTimer<=0){
+this.shoot();
+this.fireTimer=this.fireRate;
+}
+}
 
-        this.x=Math.max(this.r,Math.min(WIDTH-this.r,this.x));
-        this.y=Math.max(this.r,Math.min(HEIGHT-this.r,this.y));
+shoot(){
+this.ammo--;
+let angle=Math.atan2(mouse.y-this.y,mouse.x-this.x);
+bullets.push(new Bullet(this.x,this.y,Math.cos(angle),Math.sin(angle),this.damage));
+}
 
-        if(this.reloadTimer>0){
-            this.reloadTimer-=dt;
-            if(this.reloadTimer<=0) this.ammo=this.maxAmmo;
-        }
+gainXP(amount){
+this.xp+=amount;
+if(this.xp>=this.xpNeeded){
+this.level++;
+this.xp=0;
+this.xpNeeded+=80;
+showUpgradeMenu();
+}
+}
 
-        if(this.ammo<=0 && this.reloadTimer<=0)
-            this.reloadTimer=this.reloadTime;
-
-        this.fireTimer-=dt;
-        if(this.fireTimer<=0 && this.ammo>0 && this.reloadTimer<=0){
-            this.shoot();
-            this.fireTimer=this.fireRate;
-        }
-    }
-
-    shoot(){
-        this.ammo--;
-        playShootSound();
-        let angle=Math.atan2(mouse.y-this.y,mouse.x-this.x);
-        bullets.push(new Bullet(this.x,this.y,Math.cos(angle),Math.sin(angle),this.damage));
-    }
-
-    gainXP(amount){
-        this.xp+=amount;
-        if(this.xp>=this.xpNeeded){
-            this.level++;
-            this.xp=0;
-            this.xpNeeded+=80;
-            levelUp();
-        }
-    }
-
-    draw(){
-        ctx.fillStyle="#3498db";
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle="red";
-        ctx.fillRect(this.x-25,this.y-30,50,6);
-        ctx.fillStyle="lime";
-        ctx.fillRect(this.x-25,this.y-30,50*(this.hp/this.maxHp),6);
-    }
+draw(){
+ctx.fillStyle="#3498db";
+ctx.beginPath();
+ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+ctx.fill();
+}
 }
 
 const player=new Player();
@@ -184,194 +184,201 @@ const player=new Player();
 /* ================= BULLET ================= */
 
 class Bullet{
-    constructor(x,y,dx,dy,damage){
-        this.x=x;this.y=y;
-        this.dx=dx;this.dy=dy;
-        this.speed=600;
-        this.r=4;
-        this.damage=damage;
-    }
-    update(dt){
-        this.x+=this.dx*this.speed*dt;
-        this.y+=this.dy*this.speed*dt;
-    }
-    draw(){
-        ctx.fillStyle="yellow";
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill();
-    }
+constructor(x,y,dx,dy,damage){
+this.x=x;this.y=y;
+this.dx=dx;this.dy=dy;
+this.speed=600;
+this.r=4;
+this.damage=damage;
+}
+update(dt){
+this.x+=this.dx*this.speed*dt;
+this.y+=this.dy*this.speed*dt;
+}
+draw(){
+ctx.fillStyle="yellow";
+ctx.beginPath();
+ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+ctx.fill();
+}
 }
 
 let bullets=[];
 
-/* ================= ZOMBIE ================= */
+/* ================= ENEMY ================= */
 
 class Zombie{
-    constructor(){
-        this.x=Math.random()<0.5?0:WIDTH;
-        this.y=Math.random()*HEIGHT;
-        this.r=18;
-        this.speed=100+wave*10;
-        this.maxHp=200+wave*50;
-        this.hp=this.maxHp;
-    }
+constructor(isBoss=false){
+this.isBoss=isBoss;
+this.r=isBoss?45:18;
+this.speed=isBoss?80:100+wave*10;
+this.maxHp=isBoss?2000:200+wave*50;
+this.hp=this.maxHp;
+this.x=Math.random()<0.5?0:WIDTH;
+this.y=Math.random()*HEIGHT;
+}
 
-    update(dt){
-        let angle=Math.atan2(player.y-this.y,player.x-this.x);
-        this.x+=Math.cos(angle)*this.speed*dt;
-        this.y+=Math.sin(angle)*this.speed*dt;
+update(dt){
+let angle=Math.atan2(player.y-this.y,player.x-this.x);
+this.x+=Math.cos(angle)*this.speed*dt;
+this.y+=Math.sin(angle)*this.speed*dt;
 
-        if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
-            player.hp-=30*dt;
-            if(player.hp<=0) triggerGameOver();
-        }
-    }
+if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
+player.hp-=40*dt;
+if(player.hp<=0)loseHeart();
+}
+}
 
-    draw(){
-        ctx.fillStyle="green";
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle="red";
-        ctx.fillRect(this.x-20,this.y-25,40,5);
-        ctx.fillStyle="lime";
-        ctx.fillRect(this.x-20,this.y-25,40*(this.hp/this.maxHp),5);
-    }
+draw(){
+ctx.fillStyle=this.isBoss?"purple":"green";
+ctx.beginPath();
+ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+ctx.fill();
+}
 }
 
 let zombies=[];
 
-/* ================= LEVEL UP ================= */
+/* ================= HEART SYSTEM ================= */
 
-function levelUp(){
-    paused=true;
-    overlay.style.visibility="visible";
-    overlay.innerHTML="<h1>LEVEL UP!</h1>";
-
-    let upgrades=[
-        {text:"+20 Hasar",apply:()=>player.damage+=20},
-        {text:"+%20 Ateş Hızı",apply:()=>player.fireRate*=0.8},
-        {text:"+30 Max HP",apply:()=>{player.maxHp+=30;player.hp+=30}},
-        {text:"+2 Max Mermi",apply:()=>player.maxAmmo+=2}
-    ];
-
-    upgrades.sort(()=>0.5-Math.random());
-    upgrades.slice(0,3).forEach(up=>{
-        let btn=document.createElement("button");
-        btn.textContent=up.text;
-        btn.onclick=()=>{
-            up.apply();
-            overlay.style.visibility="hidden";
-            paused=false;
-        };
-        overlay.appendChild(btn);
-    });
+function loseHeart(){
+player.hearts--;
+player.hp=player.maxHp;
+if(player.hearts<=0)triggerGameOver();
 }
 
-/* ================= GAME OVER + RESET ================= */
+/* ================= WAVE ================= */
+
+let wave=1;
+let zombiesToSpawn=10;
+let spawnTimer=0;
+
+function nextWave(){
+wave++;
+zombiesToSpawn=10+wave*5;
+if(wave%5===0){
+zombies.push(new Zombie(true));
+}
+}
+
+/* ================= UPGRADE MENU ================= */
+
+function showUpgradeMenu(){
+paused=true;
+overlay.style.display="flex";
+overlay.innerHTML="<h1>GÜÇ SEÇ</h1>";
+
+let upgrades=[
+{text:"+10 Hasar",apply:()=>player.damage+=10},
+{text:"Ateş Hızı Artır",apply:()=>player.fireRate*=0.85},
+{text:"+1 Kalp",apply:()=>player.hearts++},
+{text:"+20 Max HP",apply:()=>player.maxHp+=20}
+];
+
+upgrades.sort(()=>0.5-Math.random());
+upgrades.slice(0,3).forEach(u=>{
+let btn=document.createElement("button");
+btn.textContent=u.text;
+btn.onclick=()=>{
+u.apply();
+player.upgrades.push(u.text);
+overlay.style.display="none";
+paused=false;
+};
+overlay.appendChild(btn);
+});
+}
+
+/* ================= GAME OVER ================= */
 
 function triggerGameOver(){
-    gameOver = true;
-    paused = true;
-
-    overlay.style.visibility = "visible";
-    overlay.innerHTML = "<h1>OYUN BİTTİ</h1><button id='restartBtn'>Yeniden Başla</button>";
-
-    document.getElementById("restartBtn").onclick = resetGame;
+gameOver=true;
+paused=true;
+overlay.style.display="flex";
+overlay.innerHTML="<h1>OYUN BİTTİ</h1><button onclick='restartGame()'>Yeniden Başla</button>";
 }
 
-function resetGame(){
-
-    player.x = WIDTH/2;
-    player.y = HEIGHT/2;
-    player.maxHp = 100;
-    player.hp = 100;
-    player.maxAmmo = 30;
-    player.ammo = 30;
-    player.level = 1;
-    player.xp = 0;
-    player.xpNeeded = 100;
-    player.damage = 20;
-    player.fireRate = 0.2;
-
-    wave = 1;
-    zombiesToSpawn = 10;
-    spawnTimer = 0;
-
-    zombies = [];
-    bullets = [];
-
-    gameOver = false;
-    paused = false;
-
-    overlay.style.visibility = "hidden";
+function restartGame(){
+player.reset();
+wave=1;
+zombies=[];
+bullets=[];
+zombiesToSpawn=10;
+spawnTimer=0;
+gameOver=false;
+paused=false;
+overlay.style.display="none";
 }
 
 /* ================= LOOP ================= */
 
 function update(timestamp){
-    deltaTime=(timestamp-lastTime)/1000;
-    lastTime=timestamp;
+deltaTime=(timestamp-lastTime)/1000;
+lastTime=timestamp;
 
-    if(!gameOver && !paused){
+if(!paused && gameStarted){
 
-        player.update(deltaTime);
+player.update(deltaTime);
 
-        spawnTimer-=deltaTime;
-        if(spawnTimer<=0 && zombiesToSpawn>0){
-            zombies.push(new Zombie());
-            zombiesToSpawn--;
-            spawnTimer=spawnDelay;
-        }
+spawnTimer-=deltaTime;
+if(spawnTimer<=0 && zombiesToSpawn>0){
+zombies.push(new Zombie());
+zombiesToSpawn--;
+spawnTimer=1.5;
+}
 
-        if(zombiesToSpawn<=0 && zombies.length===0){
-            wave++;
-            zombiesToSpawn=10+wave*5;
-        }
+if(zombiesToSpawn<=0 && zombies.length===0){
+nextWave();
+}
 
-        bullets.forEach((b,i)=>{
-            b.update(deltaTime);
-            if(b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT)
-                bullets.splice(i,1);
-        });
+bullets.forEach((b,bi)=>{
+b.update(deltaTime);
+zombies.forEach((z,zi)=>{
+if(Math.hypot(b.x-z.x,b.y-z.y)<z.r){
+z.hp-=b.damage;
+bullets.splice(bi,1);
+if(z.hp<=0){
+player.gainXP(z.isBoss?300:40);
+zombies.splice(zi,1);
+}
+}
+});
+});
+}
 
-        zombies.forEach((z,zi)=>{
-            z.update(deltaTime);
-            bullets.forEach((b,bi)=>{
-                if(Math.hypot(b.x-z.x,b.y-z.y)<z.r){
-                    z.hp-=b.damage;
-                    bullets.splice(bi,1);
-                    if(z.hp<=0){
-                        player.gainXP(40);
-                        zombies.splice(zi,1);
-                    }
-                }
-            });
-        });
-    }
-
-    draw();
-    requestAnimationFrame(update);
+draw();
+requestAnimationFrame(update);
 }
 
 function draw(){
-    ctx.clearRect(0,0,WIDTH,HEIGHT);
+ctx.clearRect(0,0,WIDTH,HEIGHT);
+bullets.forEach(b=>b.draw());
+zombies.forEach(z=>z.draw());
+player.draw();
 
-    bullets.forEach(b=>b.draw());
-    zombies.forEach(z=>z.draw());
-    player.draw();
+/* Hearts */
+ctx.fillStyle="red";
+for(let i=0;i<player.hearts;i++){
+ctx.fillRect(10+i*25,10,20,20);
+}
 
-    ctx.fillStyle="white";
-    ctx.fillText("Wave: "+wave,550,30);
-    ctx.fillText("Level: "+player.level,20,20);
-    ctx.fillText("Ammo: "+player.ammo,20,40);
+/* XP */
+ctx.fillStyle="purple";
+ctx.fillRect(200,660,800*(player.xp/player.xpNeeded),20);
 
-    ctx.fillStyle="#333";
-    ctx.fillRect(200,660,800,20);
-    ctx.fillStyle="#9b59b6";
-    ctx.fillRect(200,660,800*(player.xp/player.xpNeeded),20);
+/* Wave */
+ctx.fillStyle="white";
+ctx.fillText("Wave: "+wave,550,30);
+
+/* Panels */
+upgradePanel.innerHTML="<b>Güçler:</b><br>"+player.upgrades.join("<br>");
+statsPanel.innerHTML=`
+<b>İstatistik</b><br>
+Hasar: ${player.damage}<br>
+Ateş Hızı: ${(1/player.fireRate).toFixed(1)}<br>
+Max HP: ${player.maxHp}<br>
+Kalp: ${player.hearts}
+`;
 }
 
 requestAnimationFrame(update);
