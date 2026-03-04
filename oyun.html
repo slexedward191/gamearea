@@ -2,354 +2,297 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Arena Zombi</title>
+<title>Arena: Mutasyon Protokolü</title>
 <style>
-body{
-    margin:0;
-    background:#0f0f0f;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    font-family:Arial, sans-serif;
-    color:white;
-}
-canvas{
-    background:#181818;
-    border:4px solid #333;
-}
-#overlay{
-    position:absolute;
-    width:1200px;
-    height:700px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    background:rgba(0,0,0,0.85);
-    visibility:hidden;
-}
-button{
-    padding:12px 25px;
-    margin:10px;
-    font-size:18px;
-    cursor:pointer;
-}
-#waveText{
-    position:absolute;
-    top:20px;
-    width:1200px;
-    text-align:center;
-    font-size:40px;
-    font-weight:bold;
-    color:#f1c40f;
-    pointer-events:none;
-}
+body{margin:0;overflow:hidden;background:#05070d;font-family:Arial;color:white}
+canvas{display:block}
+#ui{position:absolute;top:10px;left:10px;z-index:5}
+.bar{height:18px;background:#222;margin-bottom:5px;width:220px;border-radius:10px;overflow:hidden}
+.fill{height:100%;background:lime;width:100%}
+#xpFill{background:cyan}
+#waveText{margin-top:5px}
+#guideBtn{position:absolute;top:15px;right:15px;padding:8px 14px;background:#111;border:1px solid cyan;color:cyan;cursor:pointer;z-index:10;border-radius:8px}
+#guideModal{position:fixed;top:0;left:0;width:100%;height:100%;backdrop-filter:blur(8px);background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:20}
+#guideContent{width:70%;max-height:80%;overflow-y:auto;background:rgba(20,20,30,0.95);padding:25px;border-radius:15px;border:1px solid cyan}
+#closeGuide{float:right;cursor:pointer;color:red;font-weight:bold}
+#upgradeScreen{position:fixed;top:0;left:0;width:100%;height:100%;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.8);z-index:30}
+.upgradeBox{background:#111;padding:30px;border:1px solid cyan;border-radius:15px;text-align:center}
+.upgradeOption{margin:10px;padding:10px;border:1px solid cyan;cursor:pointer}
 </style>
 </head>
 <body>
+<canvas id="gameCanvas"></canvas>
 
-<div id="waveText"></div>
-<canvas id="game" width="1200" height="700"></canvas>
-<div id="overlay"></div>
+<div id="ui">
+<div>Can</div>
+<div class="bar"><div id="healthFill" class="fill"></div></div>
+<div>XP</div>
+<div class="bar"><div id="xpFill" class="fill"></div></div>
+<div id="waveText">Dalga: 1</div>
+<div>Silah: <span id="weaponText">Tabanca</span></div>
+</div>
+
+<button id="guideBtn">Oyun Kılavuzu</button>
+
+<div id="guideModal">
+<div id="guideContent">
+<span id="closeGuide">X</span>
+<h2>Oyun Amacı</h2>
+<p>Dalga dalga gelen zombileri öldür ve hayatta kal.</p>
+<h2>Kontroller</h2>
+<p>WASD → Hareket<br>Mouse → Ateş<br>Shift → Dash<br>1/2 → Silah değiştir</p>
+<h2>Boss</h2>
+<p>5. dalga Mini Boss<br>10. dalga Ana Boss</p>
+<h2>DNA</h2>
+<p>Kırmızı: Hasar<br>Mavi: Hız<br>Yeşil: Regen</p>
+</div>
+</div>
+
+<div id="upgradeScreen">
+<div class="upgradeBox">
+<h2>Yükseltme Seç</h2>
+<div id="upgradeOptions"></div>
+</div>
+</div>
 
 <script>
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const overlay = document.getElementById("overlay");
-const waveText = document.getElementById("waveText");
+let keys={},bullets=[],zombies=[],particles=[],dnas=[];
+let wave=1,spawnTimer=0,spawnInterval=60,xp=0,level=1;
+let arenaRadius=Math.min(canvas.width,canvas.height)/2-50;
+let screenShake=0,bossDarken=0;
 
-const WIDTH = canvas.width;
-const HEIGHT = canvas.height;
-
-let lastTime = 0;
-let deltaTime = 0;
-let gameOver = false;
-let paused = false;
-
-let wave = 1;
-let zombiesToSpawn = 0;
-let zombiesSpawned = 0;
-let spawnTimer = 0;
-let waveDelay = 3;
-let waveCooldown = 0;
-
-let keys = {};
-let mouse = {x:0,y:0};
-
-document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-
-canvas.addEventListener("mousemove", e=>{
-    const rect = canvas.getBoundingClientRect();
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
-});
-
-function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-
-/* PLAYER */
+document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener("click",shoot);
 
 class Player{
-    constructor(){
-        this.x = WIDTH/2;
-        this.y = HEIGHT/2;
-        this.r = 16;
-        this.speed = 220;
-
-        this.maxHp = 100;
-        this.hp = 100;
-
-        this.maxAmmo = 30;
-        this.ammo = 30;
-        this.reloadTime = 1.2;
-        this.reloadTimer = 0;
-
-        this.fireRate = 0.15;
-        this.fireTimer = 0;
-
-        this.damage = 15;
-        this.critChance = 0.15;
-
-        this.level = 1;
-        this.xp = 0;
-        this.xpNeeded = 100;
-    }
-
-    update(dt){
-        let vx=0, vy=0;
-        if(keys["w"]) vy-=1;
-        if(keys["s"]) vy+=1;
-        if(keys["a"]) vx-=1;
-        if(keys["d"]) vx+=1;
-
-        let len=Math.hypot(vx,vy);
-        if(len>0){vx/=len;vy/=len;}
-
-        this.x+=vx*this.speed*dt;
-        this.y+=vy*this.speed*dt;
-
-        this.x=clamp(this.x,this.r,WIDTH-this.r);
-        this.y=clamp(this.y,this.r,HEIGHT-this.r);
-
-        if(this.reloadTimer>0){
-            this.reloadTimer-=dt;
-            if(this.reloadTimer<=0) this.ammo=this.maxAmmo;
-        }
-
-        if(this.ammo<=0 && this.reloadTimer<=0){
-            this.reloadTimer=this.reloadTime;
-        }
-
-        this.fireTimer-=dt;
-        if(this.fireTimer<=0 && this.ammo>0 && this.reloadTimer<=0){
-            this.shoot();
-            this.fireTimer=this.fireRate;
-        }
-    }
-
-    shoot(){
-        this.ammo--;
-        let angle=Math.atan2(mouse.y-this.y,mouse.x-this.x);
-        let crit=Math.random()<this.critChance;
-        bullets.push(new Bullet(
-            this.x,this.y,
-            Math.cos(angle),Math.sin(angle),
-            this.damage*(crit?2:1),crit
-        ));
-    }
-
-    gainXP(amount){
-        this.xp+=amount;
-        if(this.xp>=this.xpNeeded){
-            this.level++;
-            this.xp=0;
-            this.xpNeeded+=50;
-            levelUp();
-        }
-    }
-
-    draw(){
-        ctx.fillStyle="#3498db";
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle="red";
-        ctx.fillRect(this.x-25,this.y-30,50,6);
-        ctx.fillStyle="lime";
-        ctx.fillRect(this.x-25,this.y-30,50*(this.hp/this.maxHp),6);
-    }
+constructor(){
+this.x=canvas.width/2;
+this.y=canvas.height/2;
+this.size=15;
+this.speed=3;
+this.health=100;
+this.maxHealth=100;
+this.damage=20;
+this.weapon=1;
+this.dashCooldown=0;
+this.regen=0;
 }
-
-class Bullet{
-    constructor(x,y,dx,dy,damage,crit){
-        this.x=x;this.y=y;
-        this.dx=dx;this.dy=dy;
-        this.speed=600;
-        this.r=crit?6:4;
-        this.damage=damage;
-        this.crit=crit;
-    }
-    update(dt){
-        this.x+=this.dx*this.speed*dt;
-        this.y+=this.dy*this.speed*dt;
-    }
-    draw(){
-        ctx.fillStyle=this.crit?"gold":"yellow";
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill();
-    }
+move(){
+if(keys["w"])this.y-=this.speed;
+if(keys["s"])this.y+=this.speed;
+if(keys["a"])this.x-=this.speed;
+if(keys["d"])this.x+=this.speed;
+if(keys["shift"]&&this.dashCooldown<=0){
+this.speed*=3;
+this.dashCooldown=100;
 }
-
+if(this.dashCooldown>0)this.dashCooldown--;
+if(this.dashCooldown===80)this.speed/=3;
+}
+draw(){
+ctx.fillStyle=this.health<25?"red":"cyan";
+ctx.beginPath();
+ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+ctx.fill();
+}
+}
 class Zombie{
-    constructor(type){
-
-        this.type=type;
-        this.damageReduction = 0;
-
-        if(type==="normal"){
-            this.r=18; this.speed=100; this.maxHp=50;
-            this.color="green"; this.damage=30;
-        }
-
-        if(type==="fast"){
-            this.r=14; this.speed=170; this.maxHp=35;
-            this.color="#2ecc71"; this.damage=20;
-        }
-
-        if(type==="tank"){
-            this.r=32; 
-            this.speed=45; 
-            this.color="#063d06"; 
-            this.damage=60;
-
-            let hpTier = Math.floor((wave-4) / 5);
-            if(hpTier < 0) hpTier = 0;
-
-            this.maxHp = 3000 + (hpTier * 5000);
-
-            let reductionBonus = Math.floor(wave / 10) * 0.05;
-            this.damageReduction = 0.35 + reductionBonus;
-            if(this.damageReduction > 0.60)
-                this.damageReduction = 0.60;
-        }
-
-        this.hp=this.maxHp;
-        this.x=Math.random()<0.5?0:WIDTH;
-        this.y=Math.random()*HEIGHT;
-    }
-
-    update(dt){
-        let angle=Math.atan2(player.y-this.y,player.x-this.x);
-        this.x+=Math.cos(angle)*this.speed*dt;
-        this.y+=Math.sin(angle)*this.speed*dt;
-
-        if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
-            player.hp-=this.damage*dt;
-            if(player.hp<=0){
-                player.hp=0;
-                triggerGameOver();
-            }
-        }
-    }
-
-    draw(){
-        ctx.fillStyle=this.color;
-        ctx.beginPath();
-        ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-        ctx.fill();
-
-        ctx.fillStyle="red";
-        ctx.fillRect(this.x-30,this.y-this.r-14,60,6);
-        ctx.fillStyle="lime";
-        ctx.fillRect(this.x-30,this.y-this.r-14,60*(this.hp/this.maxHp),6);
-    }
+constructor(type){
+this.type=type;
+this.size=15;
+this.speed=1;
+this.health=30;
+this.color="lime";
+if(type==="mini"){this.size=30;this.health=300;this.speed=1;color="orange";}
+if(type==="boss"){this.size=45;this.health=1000;this.speed=0.8;color="red";bossDarken=200;}
+this.spawn();
+}
+spawn(){
+let angle=Math.random()*Math.PI*2;
+this.x=canvas.width/2+Math.cos(angle)*arenaRadius;
+this.y=canvas.height/2+Math.sin(angle)*arenaRadius;
+}
+move(){
+let dx=player.x-this.x;
+let dy=player.y-this.y;
+let dist=Math.hypot(dx,dy);
+this.x+=dx/dist*this.speed;
+this.y+=dy/dist*this.speed;
+}
+draw(){
+ctx.fillStyle=this.color||"lime";
+ctx.beginPath();
+ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+ctx.fill();
+}
 }
 
-const player = new Player();
-let bullets=[];
-let zombies=[];
-
-/* GAME LOOP TAM */
-
-function startWave(){
-    zombiesToSpawn = 5 + wave*3;
-    zombiesSpawned = 0;
-    spawnTimer = 0;
+function shoot(e){
+let rect=canvas.getBoundingClientRect();
+let mx=e.clientX-rect.left;
+let my=e.clientY-rect.top;
+let angle=Math.atan2(my-player.y,mx-player.x);
+if(player.weapon===1){
+bullets.push({x:player.x,y:player.y,dx:Math.cos(angle)*7,dy:Math.sin(angle)*7,damage:player.damage});
+}
+if(player.weapon===2){
+for(let i=-2;i<=2;i++){
+let a=angle+i*0.1;
+bullets.push({x:player.x,y:player.y,dx:Math.cos(a)*6,dy:Math.sin(a)*6,damage:player.damage*0.7});
+}
+}
 }
 
-function spawnZombie(){
-    let type="normal";
-    if(wave>=2 && Math.random()<0.3) type="fast";
-    if(wave>=4 && Math.random()<0.25) type="tank";
-    zombies.push(new Zombie(type));
+function updateBullets(){
+for(let i=bullets.length-1;i>=0;i--){
+let b=bullets[i];
+b.x+=b.dx;b.y+=b.dy;
+ctx.fillStyle="white";
+ctx.beginPath();
+ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
+if(b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height)bullets.splice(i,1);
+}
 }
 
-function update(timestamp){
-    deltaTime=(timestamp-lastTime)/1000;
-    lastTime=timestamp;
-
-    if(!gameOver){
-
-        player.update(deltaTime);
-
-        if(zombiesSpawned<zombiesToSpawn){
-            spawnTimer-=deltaTime;
-            if(spawnTimer<=0){
-                spawnZombie();
-                zombiesSpawned++;
-                spawnTimer=1;
-            }
-        }
-
-        bullets.forEach((b,i)=>{
-            b.update(deltaTime);
-            if(b.x<0||b.x>WIDTH||b.y<0||b.y>HEIGHT)
-                bullets.splice(i,1);
-        });
-
-        zombies.forEach((z,zi)=>{
-            z.update(deltaTime);
-
-            bullets.forEach((b,bi)=>{
-                if(Math.hypot(b.x-z.x,b.y-z.y)<z.r){
-                    let finalDamage=b.damage;
-                    if(z.type==="tank")
-                        finalDamage*= (1 - z.damageReduction);
-
-                    z.hp-=finalDamage;
-                    bullets.splice(bi,1);
-
-                    if(z.hp<=0){
-                        zombies.splice(zi,1);
-                    }
-                }
-            });
-        });
-
-        if(zombiesSpawned===zombiesToSpawn && zombies.length===0){
-            wave++;
-            startWave();
-        }
-    }
-
-    draw();
-    requestAnimationFrame(update);
+function updateZombies(){
+for(let i=zombies.length-1;i>=0;i--){
+let z=zombies[i];z.move();z.draw();
+if(Math.hypot(z.x-player.x,z.y-player.y)<z.size+player.size){
+player.health-=0.3;screenShake=10;
+}
+for(let j=bullets.length-1;j>=0;j--){
+let b=bullets[j];
+if(Math.hypot(z.x-b.x,z.y-b.y)<z.size){
+z.health-=b.damage;
+bullets.splice(j,1);
+particles.push({x:z.x,y:z.y,life:20});
+if(z.health<=0){
+if(Math.random()<0.3)dnas.push({x:z.x,y:z.y,type:["red","blue","green"][Math.floor(Math.random()*3)]});
+zombies.splice(i,1);
+xp+=20;
+}
+}
+}
+}
 }
 
-function draw(){
-    ctx.clearRect(0,0,WIDTH,HEIGHT);
-    bullets.forEach(b=>b.draw());
-    zombies.forEach(z=>z.draw());
-    player.draw();
+function drawParticles(){
+for(let i=particles.length-1;i>=0;i--){
+let p=particles[i];
+ctx.fillStyle="red";
+ctx.fillRect(p.x,p.y,3,3);
+p.life--;
+if(p.life<=0)particles.splice(i,1);
+}
 }
 
-startWave();
-requestAnimationFrame(update);
+function drawArena(){
+ctx.strokeStyle="cyan";
+ctx.beginPath();
+ctx.arc(canvas.width/2,canvas.height/2,arenaRadius,0,Math.PI*2);
+ctx.stroke();
+if(Math.hypot(player.x-canvas.width/2,player.y-canvas.height/2)>arenaRadius){
+player.health-=0.5;screenShake=5;
+}
+arenaRadius-=0.005;
+}
 
+function spawnZombies(){
+spawnTimer++;
+if(spawnTimer>=spawnInterval){
+spawnTimer=0;
+zombies.push(new Zombie("normal"));
+}
+if(wave===5&&!zombies.some(z=>z.type==="mini"))zombies.push(new Zombie("mini"));
+if(wave===10&&!zombies.some(z=>z.type==="boss"))zombies.push(new Zombie("boss"));
+}
+
+function updateDNA(){
+for(let i=dnas.length-1;i>=0;i--){
+let d=dnas[i];
+ctx.fillStyle=d.type;
+ctx.fillRect(d.x,d.y,8,8);
+if(Math.hypot(d.x-player.x,d.y-player.y)<20){
+if(d.type==="red")player.damage+=5;
+if(d.type==="blue")player.speed+=0.3;
+if(d.type==="green")player.regen+=0.05;
+dnas.splice(i,1);
+}
+}
+}
+
+function updateUI(){
+document.getElementById("healthFill").style.width=(player.health/player.maxHealth*100)+"%";
+document.getElementById("xpFill").style.width=(xp/(level*100)*100)+"%";
+document.getElementById("waveText").innerText="Dalga: "+wave;
+document.getElementById("weaponText").innerText=player.weapon===1?"Tabanca":"Pompalı";
+if(xp>=level*100){
+xp=0;level++;wave++;showUpgrades();
+}
+}
+
+function showUpgrades(){
+document.getElementById("upgradeScreen").style.display="flex";
+let options=[
+{txt:"+20 Hasar",apply:()=>player.damage+=20},
+{txt:"+15 Hız",apply:()=>player.speed+=0.5},
+{txt:"+25 Can",apply:()=>{player.maxHealth+=25;player.health+=25}},
+{txt:"Riskli: %50 Hasar -30 Can",apply:()=>{player.damage*=1.5;player.maxHealth-=30}}
+];
+let container=document.getElementById("upgradeOptions");
+container.innerHTML="";
+for(let i=0;i<3;i++){
+let opt=options[Math.floor(Math.random()*options.length)];
+let div=document.createElement("div");
+div.className="upgradeOption";
+div.innerText=opt.txt;
+div.onclick=()=>{opt.apply();document.getElementById("upgradeScreen").style.display="none";};
+container.appendChild(div);
+}
+}
+
+function gameLoop(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+if(screenShake>0){ctx.translate(Math.random()*5,Math.random()*5);screenShake--;}
+drawArena();
+player.move();
+if(player.regen>0&&player.health<player.maxHealth)player.health+=player.regen;
+player.draw();
+updateBullets();
+updateZombies();
+drawParticles();
+updateDNA();
+spawnZombies();
+updateUI();
+if(bossDarken>0){
+ctx.fillStyle="rgba(0,0,0,0.02)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+bossDarken--;
+}
+if(player.health>0)requestAnimationFrame(gameLoop);
+else{
+ctx.fillStyle="red";
+ctx.font="50px Arial";
+ctx.fillText("OYUN BİTTİ",canvas.width/2-150,canvas.height/2);
+}
+}
+
+document.addEventListener("keydown",e=>{
+if(e.key==="1")player.weapon=1;
+if(e.key==="2")player.weapon=2;
+});
+
+const player=new Player();
+gameLoop();
+
+document.getElementById("guideBtn").onclick=()=>document.getElementById("guideModal").style.display="flex";
+document.getElementById("closeGuide").onclick=()=>document.getElementById("guideModal").style.display="none";
 </script>
 </body>
 </html>
