@@ -1,12 +1,35 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Arena Zombi v3.2</title>
+<style>
+body{
+    margin:0;
+    background:#0f0f0f;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:Arial, sans-serif;
+    color:white;
+}
+canvas{
+    background:#181818;
+    border:4px solid #333;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="1200" height="700"></canvas>
+
 <script>
 
 /* ================= CORE ================= */
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const overlay = document.getElementById("overlay");
-const upgradePanel = document.getElementById("upgradePanel");
-const perkPanel = document.getElementById("perkPanel");
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -14,10 +37,23 @@ const HEIGHT = canvas.height;
 let lastTime = 0;
 let deltaTime = 0;
 let gameOver = false;
-let paused = false;
 let restartTimer = 0;
 
-/* ================= MODERN SHOOT SOUND ================= */
+/* ================= INPUT ================= */
+
+let keys = {};
+let mouse = {x:0,y:0};
+
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+canvas.addEventListener("mousemove", e=>{
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+});
+
+/* ================= SHOOT SOUND ================= */
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -27,9 +63,9 @@ function playShootSound(){
 
     osc.type = "square";
     osc.frequency.setValueAtTime(250, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.08);
 
-    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
 
     osc.connect(gain);
@@ -37,13 +73,6 @@ function playShootSound(){
     osc.start();
     osc.stop(audioCtx.currentTime + 0.08);
 }
-
-/* ================= WAVE ================= */
-
-let wave = 1;
-let zombiesToSpawn = 10;
-let spawnTimer = 0;
-let spawnDelay = 2;
 
 /* ================= PLAYER ================= */
 
@@ -125,7 +154,7 @@ class Player{
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
 
-        // PLAYER HP BAR
+        // HP BAR
         ctx.fillStyle="red";
         ctx.fillRect(this.x-25,this.y-30,50,6);
         ctx.fillStyle="lime";
@@ -162,23 +191,12 @@ let bullets=[];
 /* ================= ZOMBIE ================= */
 
 class Zombie{
-    constructor(type="normal"){
-        this.type=type;
+    constructor(){
         this.x=Math.random()<0.5?0:WIDTH;
         this.y=Math.random()*HEIGHT;
-
-        if(type==="boss"){
-            this.speed=40;
-            this.maxHp=20000;
-            this.color="red";
-            this.r=40;
-        }else{
-            this.speed=100;
-            this.maxHp=250*Math.pow(2,wave-1);
-            this.color="green";
-            this.r=18;
-        }
-
+        this.r=18;
+        this.speed=100;
+        this.maxHp=250;
         this.hp=this.maxHp;
     }
 
@@ -190,53 +208,40 @@ class Zombie{
         if(Math.hypot(player.x-this.x,player.y-this.y)<player.r+this.r){
             player.hp-=30*dt;
             if(player.hp<=0){
-                triggerGameOver();
+                gameOver=true;
+                restartTimer=3;
             }
         }
     }
 
     draw(){
-        ctx.fillStyle=this.color;
+        ctx.fillStyle="green";
         ctx.beginPath();
         ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
         ctx.fill();
 
         // ZOMBIE HP BAR
         ctx.fillStyle="red";
-        ctx.fillRect(this.x-20,this.y-30,40,5);
+        ctx.fillRect(this.x-20,this.y-25,40,5);
         ctx.fillStyle="lime";
-        ctx.fillRect(this.x-20,this.y-30,40*(this.hp/this.maxHp),5);
+        ctx.fillRect(this.x-20,this.y-25,40*(this.hp/this.maxHp),5);
     }
 }
 
 let zombies=[];
-
-/* ================= GAME OVER ================= */
-
-function triggerGameOver(){
-    gameOver=true;
-    restartTimer=3; // 3 saniye sonra restart
-}
-
-function restartGame(){
-    wave=1;
-    player.hp=player.maxHp;
-    player.xp=0;
-    zombies=[];
-    bullets=[];
-    gameOver=false;
-}
+let spawnTimer=0;
 
 /* ================= LOOP ================= */
 
 function update(timestamp){
+
     deltaTime=(timestamp-lastTime)/1000;
     lastTime=timestamp;
 
     if(gameOver){
         restartTimer-=deltaTime;
         if(restartTimer<=0){
-            restartGame();
+            location.reload();
         }
     }
 
@@ -247,7 +252,7 @@ function update(timestamp){
         spawnTimer-=deltaTime;
         if(spawnTimer<=0){
             zombies.push(new Zombie());
-            spawnTimer=spawnDelay;
+            spawnTimer=2;
         }
 
         bullets.forEach((b,i)=>{
@@ -280,9 +285,9 @@ function draw(){
 
     ctx.clearRect(0,0,WIDTH,HEIGHT);
 
-    // Saydam Türk Bayrağı
+    // Saydam Türk bayrağı arka plan
     ctx.save();
-    ctx.globalAlpha=0.07;
+    ctx.globalAlpha=0.06;
     ctx.fillStyle="red";
     ctx.fillRect(0,0,WIDTH,HEIGHT);
     ctx.restore();
@@ -292,11 +297,10 @@ function draw(){
     player.draw();
 
     ctx.fillStyle="white";
-    ctx.fillText("Wave: "+wave,550,30);
     ctx.fillText("Level: "+player.level,20,20);
     ctx.fillText("Ammo: "+player.ammo,20,40);
 
-    // XP BAR ALTTA
+    // XP BAR
     ctx.fillStyle="#333";
     ctx.fillRect(200,660,800,20);
     ctx.fillStyle="#9b59b6";
@@ -306,12 +310,13 @@ function draw(){
     ctx.fillText("Sonraki Level için: "+(player.xpNeeded-player.xp)+" XP",480,655);
 
     if(gameOver){
-        ctx.fillStyle="white";
         ctx.font="40px Arial";
-        ctx.fillText("GAME OVER",500,350);
+        ctx.fillText("GAME OVER",480,350);
     }
 }
 
 requestAnimationFrame(update);
 
 </script>
+</body>
+</html>
