@@ -2,332 +2,348 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Abyssal Waters | Pirate Overlord</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <title>Abyssal Waters: Forsaken Captain</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --gold: #FFD700; --neon-blue: #00f2ff; --blood: #ff0044; --wood: #3d2b1f; }
+        :root { --gold: #FFD700; --neon: #00f2ff; --crimson: #8b0000; --ocean: #000a1a; }
         body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Pirata One', cursive; }
-        canvas { display: block; background: radial-gradient(circle, #001a33 0%, #00050a 100%); }
+        
+        /* FULLSCREEN OVERLAYS */
+        #death-screen {
+            position: fixed; inset: 0; background: rgba(139, 0, 0, 0.9);
+            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
+            color: white; text-shadow: 0 0 20px #000;
+        }
+        
+        #market-ui {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+            display: none; justify-content: center; align-items: center; z-index: 5000;
+            backdrop-filter: blur(10px);
+        }
 
-        /* --- MODERN SOL ÜST MENÜ --- */
-        #top-ui {
-            position: absolute; top: 20px; left: 20px; z-index: 100;
-            display: flex; flex-direction: column; gap: 15px; pointer-events: none;
+        /* MODERN HUD */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; pointer-events: none;
+            display: flex; justify-content: space-between; padding: 25px; box-sizing: border-box;
+            z-index: 1000;
         }
-        .glass-panel {
-            background: rgba(0, 20, 40, 0.8); border: 2px solid var(--gold);
-            padding: 15px; border-radius: 0 20px 0 20px; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-            backdrop-filter: blur(10px); pointer-events: auto;
+        .stat-panel {
+            background: rgba(0, 15, 30, 0.85); border: 2px solid var(--gold);
+            padding: 15px 25px; border-radius: 5px; box-shadow: 0 0 25px rgba(0,0,0,0.5);
+            pointer-events: auto;
         }
-        .stat-row { display: flex; align-items: center; gap: 10px; color: white; font-size: 24px; }
-        .bar-bg { width: 200px; height: 12px; background: #111; border-radius: 6px; overflow: hidden; border: 1px solid #444; }
-        .bar-fill { height: 100%; transition: 0.3s; }
+        .bar { width: 250px; height: 18px; background: #111; border: 1px solid #444; border-radius: 9px; margin: 8px 0; overflow: hidden; }
+        .fill { height: 100%; width: 100%; transition: 0.3s ease-out; }
+        
+        /* MINIMAP */
+        #radar {
+            position: absolute; bottom: 30px; right: 30px; width: 200px; height: 200px;
+            background: rgba(0, 20, 40, 0.8); border: 3px solid var(--gold); border-radius: 50%;
+            overflow: hidden; box-shadow: 0 0 30px #000;
+        }
 
-        /* --- SAĞ ALT MİNİ MAP --- */
-        #minimap {
-            position: absolute; bottom: 20px; right: 20px; width: 180px; height: 180px;
-            background: rgba(0, 10, 20, 0.9); border: 3px solid var(--gold);
-            border-radius: 50%; overflow: hidden; box-shadow: 0 0 30px #000; z-index: 100;
+        .btn {
+            background: var(--gold); color: #000; border: none; padding: 12px 30px;
+            font-family: 'Pirata One'; font-size: 24px; cursor: pointer; transition: 0.2s;
+            margin: 10px; border-radius: 4px;
         }
-        #minimap-canvas { width: 100%; height: 100%; opacity: 0.8; }
-
-        /* --- MARKET & ULTİ BUTONLARI --- */
-        #action-bar {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 20px; z-index: 100;
-        }
-        .glow-btn {
-            background: var(--wood); color: var(--gold); border: 2px solid var(--gold);
-            padding: 10px 25px; font-family: 'Pirata One'; font-size: 22px; cursor: pointer;
-            transition: 0.3s; box-shadow: 0 0 10px rgba(0,0,0,0.5); border-radius: 5px;
-        }
-        .glow-btn:hover { background: var(--gold); color: black; box-shadow: 0 0 20px var(--gold); transform: translateY(-5px); }
-        .ulti-btn { border-color: var(--neon-blue); color: var(--neon-blue); }
-        .ulti-btn:disabled { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; }
-
-        /* --- MARKET MODAL --- */
-        #market-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none;
-            justify-content: center; align-items: center; z-index: 1000;
-        }
-        .market-content {
-            background: var(--wood); width: 80%; max-width: 900px; border: 5px ridge var(--gold);
-            padding: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-        }
-        .ship-card { border: 2px solid #555; padding: 15px; text-align: center; color: white; transition: 0.3s; }
-        .ship-card:hover { border-color: var(--gold); background: rgba(255,215,0,0.1); }
-        .ship-card img { width: 100%; height: 120px; object-fit: contain; margin-bottom: 10px; }
+        .btn:hover { transform: scale(1.1); box-shadow: 0 0 20px var(--gold); }
+        
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
-<div id="top-ui">
-    <div class="glass-panel">
-        <div class="stat-row">⚓ <span id="p-name">KAPTAN</span></div>
-        <div class="stat-row" style="color:var(--gold)">💰 <span id="p-gold">0</span></div>
-        <div class="stat-row">
-            HP <div class="bar-bg"><div id="hp-bar" class="bar-fill" style="background:var(--blood); width:100%"></div></div>
-        </div>
-        <div class="stat-row">
-            XP <div class="bar-bg"><div id="xp-bar" class="bar-fill" style="background:var(--neon-blue); width:0%"></div></div>
-        </div>
+<div id="death-screen">
+    <h1 style="font-size: 100px; margin: 0;">GEMİNİZ BATTI!</h1>
+    <p style="font-size: 30px;">Denizin derinliklerinde unutuldunuz...</p>
+    <button class="btn" onclick="location.reload()">YENİDEN DOĞ</button>
+</div>
+
+<div id="market-ui">
+    <div style="background: #2b1d0e; padding: 50px; border: 5px ridge var(--gold); text-align: center; width: 80%;">
+        <h2 style="font-size: 50px; color: var(--gold); margin-top: 0;">KORSAN KARABORSA</h2>
+        <div id="ship-list" style="display: flex; gap: 20px; justify-content: center;"></div>
+        <button class="btn" style="margin-top: 40px; background: #5d4037; color: white;" onclick="toggleMarket()">DENİZE DÖN</button>
     </div>
 </div>
 
-<div id="minimap"><canvas id="minimap-canvas"></canvas></div>
-
-<div id="action-bar">
-    <button class="glow-btn" onclick="toggleMarket()">LİMAN MARKETİ</button>
-    <button id="ulti-btn" class="glow-btn ulti-btn" onclick="useUlti()" disabled>🔥 ABYSSAL BLAST (Q)</button>
+<div id="hud">
+    <div class="stat-panel">
+        <div style="font-size: 32px; color: var(--gold);">KAPTAN: <span id="n-display">JACK</span></div>
+        <div style="color: #00ff00; font-size: 24px;">ALTIN: <span id="g-display">0</span></div>
+        <div class="bar"><div id="hp-fill" class="fill" style="background: linear-gradient(90deg, #ff0000, #8b0000);"></div></div>
+        <div style="font-size: 14px; color: #aaa; font-family: 'Orbitron';">HULL INTEGRITY</div>
+        <div class="bar"><div id="xp-fill" class="fill" style="background: linear-gradient(90deg, #00f2ff, #0044ff); width: 0%;"></div></div>
+        <div style="font-size: 14px; color: #aaa; font-family: 'Orbitron';">LEVEL XP</div>
+    </div>
+    <div style="text-align: right; pointer-events: auto;">
+        <button class="btn" onclick="toggleMarket()">MARKET (M)</button>
+        <div style="color: white; margin-top: 10px;">[WASD] HAREKET | [SOL TIK] ATEŞ | [Q] ULTİ</div>
+    </div>
 </div>
 
-<div id="market-modal">
-    <div class="market-content" id="market-grid">
-        </div>
-</div>
+<div id="radar"><canvas id="radar-canvas"></canvas></div>
 
-<canvas id="game"></canvas>
+<canvas id="world"></canvas>
 
 <script>
 /**
- * ELITE PIRATE ENGINE
+ * ENGINE CONFIGURATION
  */
-const App = {
-    gold: 500, hp: 100, maxHp: 100, xp: 0, lvl: 1,
-    bullets: [], enemies: [], creatures: [], particles: [],
-    keys: {}, ultiReady: false,
-    shipType: 'starter',
-    ships: {
-        starter: { name: "Sandal", img: "https://www.freeiconspng.com/uploads/pirate-ship-png-image-6.png", dmg: 10, spd: 3, price: 0 },
-        warship: { name: "Kraliyet Gemisi", img: "https://www.freeiconspng.com/uploads/pirate-ship-png-2.png", dmg: 25, spd: 4.5, price: 2000 },
-        ghost: { name: "Uçan Hollandalı", img: "https://www.freeiconspng.com/uploads/pirate-ship-png-8.png", dmg: 50, spd: 6, price: 5000 }
-    },
-
+const World = {
+    size: 6000,
+    ctx: null,
+    canvas: document.getElementById('world'),
+    shipImg: new Image(),
+    enemyImg: new Image(),
+    krakenImg: new Image(),
     init() {
-        this.cvs = document.getElementById('game');
-        this.ctx = this.cvs.getContext('2d');
-        this.mmCvs = document.getElementById('minimap-canvas');
-        this.mmCtx = this.mmCvs.getContext('2d');
-        this.resize();
-
-        this.player = { x: 2000, y: 2000, angle: 0, spd: 0 }; // Dev harita
-        this.cam = { x: 0, y: 0 };
-
-        window.onkeydown = (e) => { this.keys[e.code] = true; if(e.code === 'KeyQ' && this.ultiReady) this.useUlti(); };
-        window.onkeyup = (e) => this.keys[e.code] = false;
-
-        this.setupMarket();
-        this.loop();
-        setInterval(() => this.spawnManager(), 2000);
-    },
-
-    resize() {
-        this.cvs.width = window.innerWidth;
-        this.cvs.height = window.innerHeight;
-        this.mmCvs.width = 180;
-        this.mmCvs.height = 180;
-    },
-
-    setupMarket() {
-        const grid = document.getElementById('market-grid');
-        Object.keys(this.ships).forEach(key => {
-            const s = this.ships[key];
-            grid.innerHTML += `
-                <div class="ship-card">
-                    <img src="${s.img}">
-                    <h3>${s.name}</h3>
-                    <p>HASAR: ${s.dmg} | HIZ: ${s.spd}</p>
-                    <button class="glow-btn" onclick="App.buyShip('${key}')">${s.price} ALTIN</button>
-                </div>
-            `;
-        });
-    },
-
-    buyShip(key) {
-        const s = this.ships[key];
-        if(this.gold >= s.price) {
-            this.gold -= s.price;
-            this.shipType = key;
-            this.updateUI();
-            toggleMarket();
-            this.createEffect(this.player.x, this.player.y, varName('--neon-blue'), 50);
-        }
-    },
-
-    spawnManager() {
-        if(this.enemies.length < 10) {
-            this.enemies.push({
-                x: this.player.x + (Math.random()-0.5)*2000,
-                y: this.player.y + (Math.random()-0.5)*2000,
-                hp: 50 * this.lvl, type: 'ship', spd: 1 + Math.random()
-            });
-        }
-        // Deniz Yaratığı (Kraken/Sea Monster)
-        if(Math.random() > 0.7 && this.creatures.length < 3) {
-            this.creatures.push({
-                x: this.player.x + (Math.random()-0.5)*3000,
-                y: this.player.y + (Math.random()-0.5)*3000,
-                hp: 500, type: 'kraken', size: 100 + Math.random()*100,
-                color: '#1a4d1a', lastUlti: 0
-            });
-        }
-    },
-
-    useUlti() {
-        this.ultiReady = false;
-        document.getElementById('ulti-btn').disabled = true;
-        this.createEffect(this.player.x, this.player.y, varName('--neon-blue'), 100);
-        this.enemies.concat(this.creatures).forEach(e => {
-            const dist = Math.hypot(this.player.x - e.x, this.player.y - e.y);
-            if(dist < 500) e.hp -= 200;
-        });
-    },
-
-    update() {
-        const s = this.ships[this.shipType];
-        if(this.keys['KeyW']) this.player.spd = Math.min(this.player.spd + 0.1, s.spd);
-        else this.player.spd *= 0.98;
-
-        if(this.keys['KeyA']) this.player.angle -= 0.04;
-        if(this.keys['KeyD']) this.player.angle += 0.04;
-
-        this.player.x += Math.cos(this.player.angle) * this.player.spd;
-        this.player.y += Math.sin(this.player.angle) * this.player.spd;
-
-        if(this.keys['Space']) this.fire();
-
-        // Kamera
-        this.cam.x = this.player.x - this.cvs.width/2;
-        this.cam.y = this.player.y - this.cvs.height/2;
-
-        // Mermiler ve Çarpışma
-        this.bullets.forEach((b, i) => {
-            b.x += b.vx; b.y += b.vy;
-            [...this.enemies, ...this.creatures].forEach(e => {
-                if(Math.hypot(e.x - b.x, e.y - b.y) < (e.size || 40)) {
-                    e.hp -= s.dmg;
-                    this.bullets.splice(i, 1);
-                    if(e.hp <= 0) this.kill(e);
-                }
-            });
-        });
-
-        // Yaratık Saldırıları (Ulti Atarlar)
-        this.creatures.forEach(c => {
-            const dist = Math.hypot(this.player.x - c.x, this.player.y - c.y);
-            if(dist < 400 && Date.now() - c.lastUlti > 3000) {
-                this.hp -= 20;
-                c.lastUlti = Date.now();
-                this.createEffect(c.x, c.y, 'purple', 40);
-                this.updateUI();
-            }
-        });
-    },
-
-    kill(e) {
-        if(e.type === 'ship') { this.gold += 200; this.xp += 100; }
-        else { this.gold += 1000; this.xp += 500; }
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.ctx = this.canvas.getContext('2d');
         
-        if(this.xp >= 1000) { this.xp = 0; this.lvl++; this.ultiReady = true; document.getElementById('ulti-btn').disabled = false; }
+        // Asset Loading (PNG + Fail-safe drawing)
+        this.shipImg.src = "https://www.freeiconspng.com/uploads/pirate-ship-png-image-6.png";
+        this.enemyImg.src = "https://www.freeiconspng.com/uploads/pirate-ship-png-2.png";
+        this.krakenImg.src = "https://www.freeiconspng.com/uploads/octopus-png-21.png";
         
-        const idx = e.type === 'ship' ? this.enemies.indexOf(e) : this.creatures.indexOf(e);
-        if(e.type === 'ship') this.enemies.splice(idx, 1); else this.creatures.splice(idx, 1);
-        this.updateUI();
-    },
-
-    updateUI() {
-        document.getElementById('p-gold').innerText = this.gold;
-        document.getElementById('hp-bar').style.width = (this.hp) + "%";
-        document.getElementById('xp-bar').style.width = (this.xp / 10) + "%";
-    },
-
-    fire() {
-        if(this.lastFire && Date.now() - this.lastFire < 300) return;
-        this.lastFire = Date.now();
-        this.bullets.push({
-            x: this.player.x, y: this.player.y,
-            vx: Math.cos(this.player.angle) * 10,
-            vy: Math.sin(this.player.angle) * 10
-        });
-    },
-
-    createEffect(x, y, color, count) {
-        for(let i=0; i<count; i++) this.particles.push({
-            x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, l: 1, c: color
-        });
-    },
-
-    draw() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.cvs.width, this.cvs.height);
-
-        ctx.save();
-        ctx.translate(-this.cam.x, -this.cam.y);
-
-        // Okyanus Izgarası
-        ctx.strokeStyle = '#002244';
-        for(let i=0; i<4000; i+=200) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 4000); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(4000, i); ctx.stroke();
-        }
-
-        // Oyuncu
-        ctx.save();
-        ctx.translate(this.player.x, this.player.y);
-        ctx.rotate(this.player.angle + Math.PI/2);
-        const img = new Image(); img.src = this.ships[this.shipType].img;
-        ctx.drawImage(img, -40, -40, 80, 80);
-        ctx.restore();
-
-        // Yaratıklar (Kraken)
-        this.creatures.forEach(c => {
-            ctx.fillStyle = c.color;
-            ctx.beginPath(); ctx.arc(c.x, c.y, c.size/2, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = varName('--blood'); ctx.lineWidth = 5; ctx.stroke();
-        });
-
-        // Düşmanlar
-        this.enemies.forEach(e => {
-            ctx.fillStyle = '#444'; ctx.fillRect(e.x-20, e.y-20, 40, 40);
-        });
-
-        // Efektler
-        this.particles.forEach((p, i) => {
-            ctx.globalAlpha = p.l; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 4, 4);
-            p.x += p.vx; p.y += p.vy; p.l -= 0.02;
-            if(p.l <= 0) this.particles.splice(i, 1);
-        });
-        ctx.globalAlpha = 1;
-
-        // Mermiler
-        ctx.fillStyle = varName('--gold');
-        this.bullets.forEach(b => { ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill(); });
-
-        ctx.restore();
-        this.drawMinimap();
-    },
-
-    drawMinimap() {
-        this.mmCtx.fillStyle = 'rgba(0,10,20,0.9)';
-        this.mmCtx.fillRect(0,0,180,180);
-        const scale = 180 / 4000;
-        this.mmCtx.fillStyle = varName('--neon-blue');
-        this.mmCtx.fillRect(this.player.x * scale, this.player.y * scale, 4, 4);
-        this.mmCtx.fillStyle = 'red';
-        this.enemies.forEach(e => this.mmCtx.fillRect(e.x * scale, e.y * scale, 2, 2));
-    },
-
-    loop() { this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
+        this.rCanvas = document.getElementById('radar-canvas');
+        this.rCtx = this.rCanvas.getContext('2d');
+        this.rCanvas.width = 200;
+        this.rCanvas.height = 200;
+    }
 };
 
+const Player = {
+    x: 3000, y: 3000, angle: 0, speed: 0, 
+    hp: 100, maxHp: 100, gold: 500, xp: 0, lvl: 1,
+    dmg: 20, speedLimit: 4,
+    update() {
+        if (Controls.keys['KeyW']) this.speed = Math.min(this.speed + 0.1, this.speedLimit);
+        else if (Controls.keys['KeyS']) this.speed = Math.max(this.speed - 0.1, -1.5);
+        else this.speed *= 0.97;
+
+        if (Controls.keys['KeyA']) this.angle -= 0.04;
+        if (Controls.keys['KeyD']) this.angle += 0.04;
+
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+
+        // Map Boundaries
+        this.x = Math.max(0, Math.min(World.size, this.x));
+        this.y = Math.max(0, Math.min(World.size, this.y));
+
+        if (this.hp <= 0) die();
+    }
+};
+
+const Controls = {
+    keys: {},
+    init() {
+        window.addEventListener('keydown', e => this.keys[e.code] = true);
+        window.addEventListener('keyup', e => this.keys[e.code] = false);
+        window.addEventListener('mousedown', () => fire());
+        window.addEventListener('keypress', e => { if(e.code === 'KeyM') toggleMarket(); });
+    }
+};
+
+let bullets = [];
+let enemies = [];
+let creatures = [];
+let loot = [];
+
+function fire() {
+    bullets.push({
+        x: Player.x, y: Player.y,
+        vx: Math.cos(Player.angle) * 12,
+        vy: Math.sin(Player.angle) * 12,
+        dmg: Player.dmg, life: 80
+    });
+}
+
+function spawn() {
+    if (enemies.length < 15) {
+        enemies.push({
+            x: Player.x + (Math.random()-0.5)*2000,
+            y: Player.y + (Math.random()-0.5)*2000,
+            hp: 60, speed: 2, angle: 0
+        });
+    }
+    if (creatures.length < 3) {
+        creatures.push({
+            x: Math.random()*World.size, y: Math.random()*World.size,
+            hp: 1000, size: 150, type: 'kraken', lastAtk: 0
+        });
+    }
+}
+
+function update() {
+    Player.update();
+
+    bullets.forEach((b, i) => {
+        b.x += b.vx; b.y += b.vy; b.life--;
+        if (b.life < 0) bullets.splice(i, 1);
+        
+        enemies.forEach((e, ei) => {
+            if (Math.hypot(b.x - e.x, b.y - e.y) < 40) {
+                e.hp -= b.dmg;
+                bullets.splice(i, 1);
+                if (e.hp <= 0) {
+                    loot.push({x: e.x, y: e.y, val: 150});
+                    enemies.splice(ei, 1);
+                    Player.xp += 100;
+                }
+            }
+        });
+
+        creatures.forEach((c, ci) => {
+            if (Math.hypot(b.x - c.x, b.y - c.y) < c.size/2) {
+                c.hp -= b.dmg;
+                bullets.splice(i, 1);
+                if(c.hp <= 0) {
+                    Player.gold += 2000;
+                    creatures.splice(ci, 1);
+                }
+            }
+        });
+    });
+
+    enemies.forEach(e => {
+        let angleToPlayer = Math.atan2(Player.y - e.y, Player.x - e.x);
+        e.angle = angleToPlayer;
+        e.x += Math.cos(e.angle) * e.speed;
+        e.y += Math.sin(e.angle) * e.speed;
+        
+        if (Math.hypot(Player.x - e.x, Player.y - e.y) < 50) {
+            Player.hp -= 0.15;
+        }
+    });
+
+    loot.forEach((l, i) => {
+        if (Math.hypot(Player.x - l.x, Player.y - l.y) < 60) {
+            Player.gold += l.val;
+            loot.splice(i, 1);
+        }
+    });
+
+    // XP & Level Logic
+    if (Player.xp >= 1000) {
+        Player.lvl++;
+        Player.xp = 0;
+        Player.maxHp += 20;
+        Player.hp = Player.maxHp;
+    }
+
+    updateUI();
+}
+
+function updateUI() {
+    document.getElementById('hp-fill').style.width = (Player.hp / Player.maxHp * 100) + "%";
+    document.getElementById('xp-fill').style.width = (Player.xp / 10) + "%";
+    document.getElementById('g-display').innerText = Player.gold;
+}
+
+function draw() {
+    const ctx = World.ctx;
+    ctx.clearRect(0, 0, World.canvas.width, World.canvas.height);
+
+    ctx.save();
+    ctx.translate(World.canvas.width/2 - Player.x, World.canvas.height/2 - Player.y);
+
+    // Deep Ocean Floor
+    ctx.fillStyle = '#000a1a';
+    ctx.fillRect(0, 0, World.size, World.size);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(0, 242, 255, 0.05)';
+    for(let i=0; i<=World.size; i+=250) {
+        ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i, World.size); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(World.size, i); ctx.stroke();
+    }
+
+    // Draw Loot
+    loot.forEach(l => {
+        ctx.fillStyle = 'gold';
+        ctx.beginPath(); ctx.arc(l.x, l.y, 8, 0, Math.PI*2); ctx.fill();
+    });
+
+    // Draw Creatures (Kraken)
+    creatures.forEach(c => {
+        try {
+            ctx.drawImage(World.krakenImg, c.x - c.size/2, c.y - c.size/2, c.size, c.size);
+        } catch(e) {
+            ctx.fillStyle = 'purple';
+            ctx.beginPath(); ctx.arc(c.x, c.y, c.size/2, 0, Math.PI*2); ctx.fill();
+        }
+    });
+
+    // Draw Enemies
+    enemies.forEach(e => {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+        ctx.rotate(e.angle + Math.PI/2);
+        ctx.drawImage(World.enemyImg, -30, -30, 60, 60);
+        ctx.restore();
+    });
+
+    // Draw Player (GEMİ BURADA)
+    ctx.save();
+    ctx.translate(Player.x, Player.y);
+    ctx.rotate(Player.angle + Math.PI/2);
+    // Vektörel Yedek (Resim yüklenmezse diye)
+    ctx.fillStyle = '#5d4037';
+    ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(25, 20); ctx.lineTo(-25, 20); ctx.closePath(); ctx.fill();
+    // Gerçek Resim
+    ctx.drawImage(World.shipImg, -40, -40, 80, 80);
+    ctx.restore();
+
+    // Bullets
+    ctx.fillStyle = 'orange';
+    bullets.forEach(b => {
+        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+    });
+
+    ctx.restore();
+    drawRadar();
+}
+
+function drawRadar() {
+    const rCtx = World.rCtx;
+    rCtx.fillStyle = 'rgba(0, 20, 40, 0.8)';
+    rCtx.fillRect(0, 0, 200, 200);
+    
+    const scale = 200 / World.size;
+    rCtx.fillStyle = '#00f2ff';
+    rCtx.fillRect(Player.x * scale - 2, Player.y * scale - 2, 5, 5);
+    
+    rCtx.fillStyle = 'red';
+    enemies.forEach(e => rCtx.fillRect(e.x * scale, e.y * scale, 3, 3));
+    
+    rCtx.fillStyle = 'purple';
+    creatures.forEach(c => rCtx.fillRect(c.x * scale, c.y * scale, 6, 6));
+}
+
+function die() {
+    document.getElementById('death-screen').style.display = 'flex';
+}
+
 function toggleMarket() {
-    const m = document.getElementById('market-modal');
+    const m = document.getElementById('market-ui');
     m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
 }
 
-function varName(n) { return getComputedStyle(document.documentElement).getPropertyValue(n); }
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
 
-App.init();
+// Start
+World.init();
+Controls.init();
+setInterval(spawn, 3000);
+loop();
 </script>
 </body>
 </html>
