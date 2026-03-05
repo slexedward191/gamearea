@@ -2,242 +2,299 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Cyber-Dash: Chrono-Breaker</title>
+    <title>Melodic Runner | Pro Piano Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root { --neon: #00f2ff; --warn: #ff0055; --slow: #ffcc00; }
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #010103; font-family: 'Syncopate'; }
-        canvas { display: block; filter: contrast(1.1) brightness(1.2); }
-        
+        :root { --neon-blue: #00f2ff; --neon-pink: #ff00ff; --gold: #ffcc00; --bg: #050508; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Orbitron', sans-serif; }
+        canvas { display: block; }
+
+        /* UI Katmanı */
         #ui {
-            position: absolute; inset: 0; pointer-events: none; padding: 30px;
-            display: flex; flex-direction: column; color: white;
+            position: absolute; inset: 0; pointer-events: none; z-index: 100; padding: 40px;
+            display: flex; flex-direction: column; justify-content: space-between;
         }
-        .energy-bar { width: 200px; height: 10px; border: 1px solid var(--neon); margin-top: 10px; position: relative; }
-        #energy-fill { width: 100%; height: 100%; background: var(--neon); transition: 0.1s; box-shadow: 0 0 15px var(--neon); }
-        .chrono-active { color: var(--slow); text-shadow: 0 0 10px var(--slow); animation: blink 0.2s infinite; display: none; }
-        @keyframes blink { 50% { opacity: 0; } }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .piano-visualizer { display: flex; gap: 5px; margin-top: 20px; }
+        .key-notif { 
+            width: 40px; height: 10px; background: rgba(0, 242, 255, 0.1); 
+            border: 1px solid var(--neon-blue); transition: 0.1s;
+        }
+        .key-active { background: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); }
+
+        #start-screen {
+            position: fixed; inset: 0; background: radial-gradient(circle, #101025 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .btn {
+            background: transparent; border: 2px solid var(--neon-blue); color: var(--neon-blue);
+            padding: 20px 60px; font-family: 'Syncopate'; font-weight: 900; cursor: pointer;
+            font-size: 20px; transition: 0.3s; letter-spacing: 5px;
+        }
+        .btn:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 50px var(--neon-blue); }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div style="font-size: 20px;">CHRONO_UNIT: <span id="lvl">01</span></div>
-    <div class="energy-bar"><div id="energy-fill"></div></div>
-    <div style="font-size: 10px; margin-top: 5px;">TIME_ENERGY_BUFFER</div>
-    <div id="chrono-label" class="chrono-active">TIME_DILATION_ACTIVE</div>
+<div id="start-screen">
+    <h1 style="font-family: 'Syncopate'; font-size: 50px; color: white; margin-bottom: 50px; letter-spacing: 10px;">MELODIC RUNNER</h1>
+    <p style="color: var(--neon-blue); margin-bottom: 30px;">PIANO ENGINE v3.4 | 2026</p>
+    <button class="btn" onclick="Game.init()">SİSTEMİ YÜKLE</button>
 </div>
 
-<canvas id="game"></canvas>
+<div id="ui">
+    <div class="header">
+        <div>
+            <div style="font-size: 10px; color: var(--neon-pink);">CURRENT COMPOSITION</div>
+            <div id="ui-lvl" style="font-size: 32px; color: white; font-weight: 900;">LEVEL: 01</div>
+        </div>
+        <div style="text-align: right;">
+            <div id="score" style="font-size: 24px; color: var(--gold);">SCORE: 0000</div>
+            <div id="combo" style="font-size: 12px; color: white;">COMBO: x1</div>
+        </div>
+    </div>
+    <div class="piano-visualizer" id="viz">
+        <div class="key-notif" id="key-a"></div>
+        <div class="key-notif" id="key-w"></div>
+        <div class="key-notif" id="key-s"></div>
+        <div class="key-notif" id="key-d"></div>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
 
 <script>
 /**
- * DYNAMIC AUDIO SYSTEM
+ * PROFESYONEL SES MOTORU (PIANO SYNTH)
+ * Gerçek frekanslarla piyano notalarını simüle eder.
  */
-const AudioEngine = {
+const PianoEngine = {
     ctx: null,
-    init() { this.ctx = new AudioContext(); this.loop(); },
-    play(f, t, d, v=0.1) {
-        if(!this.ctx) return;
-        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-        o.type = t; o.frequency.value = f * (Game.timeScale < 1 ? 0.5 : 1);
-        g.gain.value = v; g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + d);
-        o.connect(g); g.connect(this.ctx.destination);
-        o.start(); o.stop(this.ctx.currentTime + d);
+    frequencies: {
+        'a': 261.63, // C4
+        'w': 293.66, // D4
+        's': 329.63, // E4
+        'd': 349.23, // F4
+        'arrowleft': 392.00,  // G4
+        'arrowup': 440.00,    // A4
+        'arrowdown': 493.88,  // B4
+        'arrowright': 523.25  // C5
     },
-    loop() {
-        setInterval(() => {
-            this.play(50, 'sine', 0.4, 0.3); // Bass kick
-            if(Math.random() > 0.8) this.play(400, 'triangle', 0.1, 0.05);
-        }, 400);
+    
+    init() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    },
+
+    playNote(key) {
+        if(!this.ctx || !this.frequencies[key]) return;
+        const freq = this.frequencies[key];
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle'; // Piyano tınısına yakın yumuşak ses
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 1.5);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 1.5);
     }
 };
 
 /**
- * ELITE GAME ENGINE
+ * OYUN MOTORU (CORE)
  */
 const Game = {
-    level: 1, timeScale: 1, energy: 100,
-    player: { x: 100, y: 100, vx: 0, vy: 0, w: 25, h: 25, jumps: 0 },
-    lasers: [], particles: [], keys: {}, shake: 0,
-    celebs: ["ELON", "RONALDO", "BEAST", "TARKAN", "MESSI"],
+    canvas: document.getElementById('gameCanvas'),
+    ctx: null,
+    level: 1,
+    score: 0,
+    combo: 0,
+    player: { x: 100, y: 100, vx: 0, vy: 0, w: 30, h: 30, jumps: 0 },
+    platforms: [],
+    notes: [], // Toplanabilir müzik notaları
+    particles: [],
+    camera: { x: 0, y: 0 },
+    keys: {},
 
     init() {
-        this.cvs = document.getElementById('game');
-        this.ctx = this.cvs.getContext('2d');
+        document.getElementById('start-screen').style.display = 'none';
+        PianoEngine.init();
+        this.ctx = this.canvas.getContext('2d');
         this.resize();
         window.onresize = () => this.resize();
-        window.onkeydown = (e) => this.keys[e.key.toLowerCase()] = true;
+
+        window.onkeydown = (e) => {
+            const k = e.key.toLowerCase();
+            this.keys[k] = true;
+            if(this.player.jumps < 2 && (k === 'w' || k === 'arrowup' || k === ' ')) {
+                this.player.vy = -12;
+                this.player.jumps++;
+            }
+            if(PianoEngine.frequencies[k]) {
+                PianoEngine.playNote(k);
+                this.triggerVisualizer(k);
+            }
+        };
         window.onkeyup = (e) => this.keys[e.key.toLowerCase()] = false;
-        
-        document.addEventListener('mousedown', (e) => {
-            if(e.button === 2 || e.ctrlKey) this.dash(); // Right click or Ctrl for dash
-        });
-        window.oncontextmenu = (e) => e.preventDefault();
 
-        AudioEngine.init();
-        this.load(1);
-        this.run();
+        this.loadLevel(1);
+        this.loop();
     },
 
-    resize() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
-
-    dash() {
-        if(this.energy < 30) return;
-        const speed = 40;
-        if(this.keys['a']) this.player.vx = -speed;
-        else if(this.keys['d']) this.player.vx = speed;
-        else this.player.vy = -speed;
-        
-        this.energy -= 30;
-        this.shake = 15;
-        AudioEngine.play(600, 'square', 0.1);
-        this.burst(this.player.x, this.player.y, '#00f2ff', 30);
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
     },
 
-    load(n) {
-        this.level = n; this.energy = 100;
-        this.player.x = 100; this.player.y = 500; this.player.vx = 0; this.player.vy = 0;
-        document.getElementById('lvl').innerText = n.toString().padStart(2, '0');
-        
-        const W = this.cvs.width; const H = this.cvs.height;
-        this.platforms = [
-            {x: 0, y: H-40, w: W, h: 40}, // Floor
-            {x: 300, y: H-200, w: 200, h: 20},
-            {x: 600, y: H-350, w: 200, h: 20}
-        ];
-
-        this.lasers = [];
-        for(let i=0; i<3+n; i++) {
-            this.lasers.push({
-                x: 400 + (Math.random()*(W-600)), 
-                y: 100 + (Math.random()*(H-300)),
-                angle: 0, speed: (0.02 + n*0.005), len: 150 + (n*20)
-            });
+    triggerVisualizer(key) {
+        const el = document.getElementById('key-' + key);
+        if(el) {
+            el.classList.add('key-active');
+            setTimeout(() => el.classList.remove('key-active'), 150);
         }
-        this.exit = { x: W-150, y: 100, w: 60, h: 100 };
     },
 
-    burst(x, y, c, n) {
-        for(let i=0; i<n; i++) this.particles.push({ 
-            x, y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, l: 1, c 
-        });
-    },
+    loadLevel(n) {
+        this.level = n;
+        this.player.x = 100;
+        this.player.y = 300;
+        this.platforms = [];
+        this.notes = [];
+        this.camera.x = 0;
 
-    die() {
-        this.shake = 30;
-        AudioEngine.play(80, 'sawtooth', 0.5);
-        this.load(this.level);
+        // Bölüm Tasarımı (Piyano Tuşu Şeklinde Platformlar)
+        let curX = 0;
+        for(let i=0; i < 30 + (n * 5); i++) {
+            let width = 100 + Math.random() * 200;
+            let height = 30;
+            let gap = 50 + Math.random() * 100;
+            let y = 400 + (Math.sin(i * 0.5) * 150);
+            
+            this.platforms.push({ x: curX, y: y, w: width, h: height, color: i % 2 === 0 ? '#fff' : '#000' });
+            
+            // Platform üstüne nota yerleştir
+            if(Math.random() > 0.4) {
+                this.notes.push({ x: curX + width/2, y: y - 50, collected: false });
+            }
+            curX += width + gap;
+        }
+        
+        this.finishX = curX;
+        document.getElementById('ui-lvl').innerText = "LEVEL: " + n.toString().padStart(2, '0');
     },
 
     update() {
-        // Time Dilation Logic
-        if(this.keys['shift'] && this.energy > 0) {
-            this.timeScale = 0.2;
-            this.energy -= 0.5;
-            document.getElementById('chrono-label').style.display = 'block';
-        } else {
-            this.timeScale = 1;
-            if(this.energy < 100) this.energy += 0.2;
-            document.getElementById('chrono-label').style.display = 'none';
-        }
-        document.getElementById('energy-fill').style.width = this.energy + '%';
-
         const p = this.player;
-        const ts = this.timeScale;
+        if(this.keys['a'] || this.keys['arrowleft']) p.vx -= 0.8;
+        if(this.keys['d'] || this.keys['arrowright']) p.vx += 0.8;
+        
+        p.vy += 0.6; // Gravity
+        p.vx *= 0.9;
+        p.x += p.vx;
+        p.y += p.vy;
 
-        if(this.keys['a']) p.vx -= 1 * ts;
-        if(this.keys['d']) p.vx += 1 * ts;
-        if((this.keys['w'] || this.keys[' ']) && p.jumps < 2 && !this.jumpLock) {
-            p.vy = -12; p.jumps++; this.jumpLock = true;
-            AudioEngine.play(200, 'triangle', 0.2);
+        // Platform Çarpışması
+        this.platforms.forEach(plat => {
+            if(p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y + p.h > plat.y && p.y < plat.y + plat.h) {
+                if(p.vy > 0 && p.y < plat.y) {
+                    p.y = plat.y - p.h;
+                    p.vy = 0;
+                    p.jumps = 0;
+                }
+            }
+        });
+
+        // Nota Toplama
+        this.notes.forEach(n => {
+            if(!n.collected && Math.hypot(p.x - n.x, p.y - n.y) < 40) {
+                n.collected = true;
+                this.score += 100;
+                this.combo++;
+                PianoEngine.playNote(['a','w','s','d'][Math.floor(Math.random()*4)]);
+                this.burst(n.x, n.y);
+                document.getElementById('score').innerText = "SCORE: " + this.score.toString().padStart(4, '0');
+            }
+        });
+
+        // Kamera Takibi
+        this.camera.x += (p.x - this.canvas.width/3 - this.camera.x) * 0.1;
+
+        // Ölüm ve Bölüm Geçme
+        if(p.y > this.canvas.height + 500) this.loadLevel(this.level);
+        if(p.x > this.finishX) this.loadLevel(this.level + 1);
+    },
+
+    burst(x, y) {
+        for(let i=0; i<10; i++) {
+            this.particles.push({
+                x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1
+            });
         }
-        if(!(this.keys['w'] || this.keys[' '])) this.jumpLock = false;
-
-        p.vy += 0.6 * ts;
-        p.vx *= (0.85);
-        p.x += p.vx * ts; p.y += p.vy * ts;
-
-        // Platform Collision
-        this.platforms.forEach(b => {
-            if(p.x < b.x+b.w && p.x+p.w > b.x && p.y < b.y+b.h && p.y+p.h > b.y) {
-                if(p.vy > 0) { p.y = b.y-p.h; p.vy = 0; p.jumps = 0; }
-                else { p.vx = 0; }
-            }
-        });
-
-        // Laser Rotation & Collision
-        this.lasers.forEach(l => {
-            l.angle += l.speed * ts;
-            const lx2 = l.x + Math.cos(l.angle) * l.len;
-            const ly2 = l.y + Math.sin(l.angle) * l.len;
-            
-            // Simple line-point collision check
-            const dist = Math.hypot(p.x - l.x, p.y - l.y);
-            if(dist < l.len) {
-                const angleToPlayer = Math.atan2(p.y - l.y, p.x - l.x);
-                if(Math.abs(angleToPlayer - l.angle) < 0.1) this.die();
-            }
-        });
-
-        if(p.x > this.exit.x && p.y < this.exit.y + this.exit.h) this.load(this.level + 1);
-        if(p.y > this.cvs.height) this.die();
-
-        this.particles.forEach((pt, i) => {
-            pt.x += pt.vx * ts; pt.y += pt.vy * ts; pt.l -= 0.02;
-            if(pt.l <= 0) this.particles.splice(i, 1);
-        });
-
-        if(this.shake > 0) this.shake *= 0.9;
     },
 
     draw() {
         const ctx = this.ctx;
-        ctx.fillStyle = '#010103'; ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
-        
+        ctx.fillStyle = '#050508';
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Arka Plan Efekti (Piyano Telleri)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        for(let i=0; i<this.canvas.height; i+=40) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(this.canvas.width, i); ctx.stroke();
+        }
+
         ctx.save();
-        if(this.shake > 1) ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
+        ctx.translate(-this.camera.x, 0);
 
-        // Grid & Glow
-        ctx.strokeStyle = this.timeScale < 1 ? '#ffcc0011' : '#00f2ff11';
-        for(let i=0; i<this.cvs.width; i+=80) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,this.cvs.height); ctx.stroke(); }
-
-        // Platforms
-        ctx.fillStyle = '#0a0a15'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff';
-        this.platforms.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
-
-        // Rotating Lasers
-        this.lasers.forEach(l => {
-            ctx.strokeStyle = varName('--warn'); ctx.lineWidth = 3; ctx.shadowColor = varName('--warn');
-            ctx.beginPath(); ctx.moveTo(l.x, l.y);
-            ctx.lineTo(l.x + Math.cos(l.angle)*l.len, l.y + Math.sin(l.angle)*l.len);
-            ctx.stroke();
-            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(l.x, l.y, 5, 0, Math.PI*2); ctx.fill();
+        // Platformlar (Piyano Tuşları)
+        this.platforms.forEach(p => {
+            ctx.fillStyle = p.color;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = p.color === '#fff' ? 'rgba(255,255,255,0.5)' : 'rgba(0,242,255,0.5)';
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = '#00f2ff';
+            ctx.strokeRect(p.x, p.y, p.w, p.h);
         });
 
-        // Player
-        ctx.fillStyle = 'white'; ctx.shadowColor = this.timeScale < 1 ? '#ffcc00' : '#00f2ff';
-        ctx.shadowBlur = 20;
+        // Notalar
+        this.notes.forEach(n => {
+            if(!n.collected) {
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = '30px Arial';
+                ctx.shadowColor = '#ff00ff'; ctx.shadowBlur = 15;
+                ctx.fillText('♪', n.x, n.y);
+            }
+        });
+
+        // Parçacıklar
+        this.particles.forEach((pt, i) => {
+            ctx.globalAlpha = pt.life;
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(pt.x, pt.y, 4, 4);
+            pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.02;
+            if(pt.life <= 0) this.particles.splice(i, 1);
+        });
+
+        // Oyuncu (Yürüyen Nota)
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fff';
+        ctx.shadowBlur = 25; ctx.shadowColor = '#00f2ff';
         ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
 
-        // Particles
-        this.particles.forEach(pt => { ctx.globalAlpha = pt.l; ctx.fillStyle = pt.c; ctx.fillRect(pt.x, pt.y, 3, 3); });
-
-        // Exit Portal (Celebrity Hologram placeholder)
-        ctx.shadowColor = '#0dff00'; ctx.strokeStyle = '#0dff00';
-        ctx.strokeRect(this.exit.x, this.exit.y, this.exit.w, this.exit.h);
-        ctx.fillStyle = 'white'; ctx.font = '10px Syncopate';
-        ctx.fillText("EXIT_PORTAL", this.exit.x - 10, this.exit.y - 10);
-
         ctx.restore();
-        requestAnimationFrame(() => this.run());
     },
 
-    run() { this.update(); this.draw(); }
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
+    }
 };
-
-function varName(n) { return getComputedStyle(document.documentElement).getPropertyValue(n); }
-Game.init();
 </script>
 </body>
 </html>
