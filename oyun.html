@@ -2,348 +2,323 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Abyssal Waters: Forsaken Captain</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <title>The Abyss | Forsaken Captain v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@600&display=swap" rel="stylesheet">
     <style>
-        :root { --gold: #FFD700; --neon: #00f2ff; --crimson: #8b0000; --ocean: #000a1a; }
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Pirata One', cursive; }
+        :root { --gold: #ffd700; --neon: #00f2ff; --blood: #ff0044; --wood: #3d2b1f; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Pirata One', cursive; user-select: none; }
+        canvas { display: block; filter: saturate(1.2) contrast(1.1); }
+
+        /* --- PLUGIN: UI SYSTEM --- */
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 100; color: white; }
+        .hud-panel { 
+            position: absolute; top: 20px; left: 20px; 
+            background: rgba(0, 10, 20, 0.85); border: 2px solid var(--gold);
+            padding: 15px; border-radius: 0 20px; min-width: 250px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); pointer-events: auto;
+        }
+        .bar-container { width: 100%; height: 10px; background: #111; border: 1px solid #444; margin: 5px 0; border-radius: 5px; overflow: hidden; }
+        .bar-hp { height: 100%; background: linear-gradient(90deg, #ff0000, #8b0000); width: 100%; transition: 0.3s; }
+        .bar-xp { height: 100%; background: linear-gradient(90deg, #00f2ff, #0044ff); width: 0%; transition: 0.3s; }
         
-        /* FULLSCREEN OVERLAYS */
+        /* --- PLUGIN: MINIMAP --- */
+        #minimap { 
+            position: absolute; bottom: 20px; right: 20px; width: 180px; height: 180px; 
+            border: 3px solid var(--gold); border-radius: 50%; background: rgba(0,10,20,0.9);
+            overflow: hidden; box-shadow: 0 0 20px #000;
+        }
+
+        /* --- PLUGIN: DEATH SCREEN --- */
         #death-screen {
-            position: fixed; inset: 0; background: rgba(139, 0, 0, 0.9);
-            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
-            color: white; text-shadow: 0 0 20px #000;
+            position: fixed; inset: 0; background: radial-gradient(circle, #440000, #000);
+            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
         }
+        .death-title { font-size: 80px; color: white; text-shadow: 0 0 20px #000; margin: 0; }
         
-        #market-ui {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
-            display: none; justify-content: center; align-items: center; z-index: 5000;
-            backdrop-filter: blur(10px);
-        }
-
-        /* MODERN HUD */
-        #hud {
-            position: absolute; top: 0; left: 0; width: 100%; pointer-events: none;
-            display: flex; justify-content: space-between; padding: 25px; box-sizing: border-box;
-            z-index: 1000;
-        }
-        .stat-panel {
-            background: rgba(0, 15, 30, 0.85); border: 2px solid var(--gold);
-            padding: 15px 25px; border-radius: 5px; box-shadow: 0 0 25px rgba(0,0,0,0.5);
-            pointer-events: auto;
-        }
-        .bar { width: 250px; height: 18px; background: #111; border: 1px solid #444; border-radius: 9px; margin: 8px 0; overflow: hidden; }
-        .fill { height: 100%; width: 100%; transition: 0.3s ease-out; }
-        
-        /* MINIMAP */
-        #radar {
-            position: absolute; bottom: 30px; right: 30px; width: 200px; height: 200px;
-            background: rgba(0, 20, 40, 0.8); border: 3px solid var(--gold); border-radius: 50%;
-            overflow: hidden; box-shadow: 0 0 30px #000;
-        }
-
+        /* --- BUTTONS --- */
         .btn {
-            background: var(--gold); color: #000; border: none; padding: 12px 30px;
-            font-family: 'Pirata One'; font-size: 24px; cursor: pointer; transition: 0.2s;
-            margin: 10px; border-radius: 4px;
+            background: var(--gold); color: black; border: none; padding: 10px 30px;
+            font-family: 'Pirata One'; font-size: 24px; cursor: pointer; transition: 0.3s;
+            margin-top: 20px; border-radius: 5px;
         }
-        .btn:hover { transform: scale(1.1); box-shadow: 0 0 20px var(--gold); }
-        
-        canvas { display: block; }
+        .btn:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--gold); }
     </style>
 </head>
 <body>
 
+<div id="ui-layer">
+    <div class="hud-panel">
+        <div style="font-size: 28px; color: var(--gold);">KAPTAN: <span id="ui-name">---</span></div>
+        <div style="color: #0dff00;">ALTIN: <span id="ui-gold">0</span></div>
+        <div style="font-size: 14px; font-family: 'Orbitron'; margin-top: 10px;">GÖVDE SAĞLIĞI</div>
+        <div class="bar-container"><div id="hp-bar" class="bar-hp"></div></div>
+        <div style="font-size: 14px; font-family: 'Orbitron';">DENEYİM (LVL <span id="ui-lvl">1</span>)</div>
+        <div class="bar-container"><div id="xp-bar" class="bar-xp"></div></div>
+    </div>
+</div>
+
+<div id="minimap"><canvas id="minimap-canvas"></canvas></div>
+
 <div id="death-screen">
-    <h1 style="font-size: 100px; margin: 0;">GEMİNİZ BATTI!</h1>
-    <p style="font-size: 30px;">Denizin derinliklerinde unutuldunuz...</p>
-    <button class="btn" onclick="location.reload()">YENİDEN DOĞ</button>
+    <h1 class="death-title">DENİZ SENİ YUTTU</h1>
+    <p style="color: white; font-size: 24px;">Gemin okyanusun dibini boyladı...</p>
+    <button class="btn" onclick="location.reload()">YENİDEN DİRİL</button>
 </div>
 
-<div id="market-ui">
-    <div style="background: #2b1d0e; padding: 50px; border: 5px ridge var(--gold); text-align: center; width: 80%;">
-        <h2 style="font-size: 50px; color: var(--gold); margin-top: 0;">KORSAN KARABORSA</h2>
-        <div id="ship-list" style="display: flex; gap: 20px; justify-content: center;"></div>
-        <button class="btn" style="margin-top: 40px; background: #5d4037; color: white;" onclick="toggleMarket()">DENİZE DÖN</button>
-    </div>
-</div>
-
-<div id="hud">
-    <div class="stat-panel">
-        <div style="font-size: 32px; color: var(--gold);">KAPTAN: <span id="n-display">JACK</span></div>
-        <div style="color: #00ff00; font-size: 24px;">ALTIN: <span id="g-display">0</span></div>
-        <div class="bar"><div id="hp-fill" class="fill" style="background: linear-gradient(90deg, #ff0000, #8b0000);"></div></div>
-        <div style="font-size: 14px; color: #aaa; font-family: 'Orbitron';">HULL INTEGRITY</div>
-        <div class="bar"><div id="xp-fill" class="fill" style="background: linear-gradient(90deg, #00f2ff, #0044ff); width: 0%;"></div></div>
-        <div style="font-size: 14px; color: #aaa; font-family: 'Orbitron';">LEVEL XP</div>
-    </div>
-    <div style="text-align: right; pointer-events: auto;">
-        <button class="btn" onclick="toggleMarket()">MARKET (M)</button>
-        <div style="color: white; margin-top: 10px;">[WASD] HAREKET | [SOL TIK] ATEŞ | [Q] ULTİ</div>
-    </div>
-</div>
-
-<div id="radar"><canvas id="radar-canvas"></canvas></div>
-
-<canvas id="world"></canvas>
+<canvas id="gameCanvas"></canvas>
 
 <script>
 /**
- * ENGINE CONFIGURATION
+ * CORE MODULE: ENGINE SETTINGS
  */
-const World = {
-    size: 6000,
+const Engine = {
+    canvas: document.getElementById('gameCanvas'),
     ctx: null,
-    canvas: document.getElementById('world'),
-    shipImg: new Image(),
-    enemyImg: new Image(),
-    krakenImg: new Image(),
+    width: window.innerWidth,
+    height: window.innerHeight,
+    worldSize: 5000,
+    camera: { x: 0, y: 0 },
+    isDead: false,
+    
     init() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
         this.ctx = this.canvas.getContext('2d');
-        
-        // Asset Loading (PNG + Fail-safe drawing)
-        this.shipImg.src = "https://www.freeiconspng.com/uploads/pirate-ship-png-image-6.png";
-        this.enemyImg.src = "https://www.freeiconspng.com/uploads/pirate-ship-png-2.png";
-        this.krakenImg.src = "https://www.freeiconspng.com/uploads/octopus-png-21.png";
-        
-        this.rCanvas = document.getElementById('radar-canvas');
-        this.rCtx = this.rCanvas.getContext('2d');
-        this.rCanvas.width = 200;
-        this.rCanvas.height = 200;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        InputPlugin.init();
+        AudioPlugin.init();
+        this.loop();
+    },
+    
+    loop() {
+        if(!this.isDead) {
+            UpdateModule.run();
+            RenderModule.run();
+        }
+        requestAnimationFrame(() => this.loop());
     }
 };
 
-const Player = {
-    x: 3000, y: 3000, angle: 0, speed: 0, 
-    hp: 100, maxHp: 100, gold: 500, xp: 0, lvl: 1,
-    dmg: 20, speedLimit: 4,
-    update() {
-        if (Controls.keys['KeyW']) this.speed = Math.min(this.speed + 0.1, this.speedLimit);
-        else if (Controls.keys['KeyS']) this.speed = Math.max(this.speed - 0.1, -1.5);
-        else this.speed *= 0.97;
+/**
+ * PLUGIN: INPUT SYSTEM
+ */
+const InputPlugin = {
+    keys: {},
+    mouse: { x: 0, y: 0, down: false },
+    init() {
+        window.onkeydown = (e) => this.keys[e.code] = true;
+        window.onkeyup = (e) => this.keys[e.code] = false;
+        window.onmousedown = (e) => this.mouse.down = true;
+        window.onmouseup = (e) => this.mouse.down = false;
+        window.onmousemove = (e) => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; };
+    }
+};
 
-        if (Controls.keys['KeyA']) this.angle -= 0.04;
-        if (Controls.keys['KeyD']) this.angle += 0.04;
+/**
+ * PLUGIN: AUDIO & AMBIENCE
+ */
+const AudioPlugin = {
+    ctx: null,
+    init() { 
+        window.onclick = () => { if(!this.ctx) this.ctx = new AudioContext(); };
+    },
+    playShoot() {
+        if(!this.ctx) return;
+        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(150, this.ctx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.1);
+        g.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + 0.1);
+    }
+};
+
+/**
+ * CORE MODULE: PLAYER DATA
+ */
+const Player = {
+    x: 2500, y: 2500, angle: 0, speed: 0,
+    hp: 100, maxHp: 100, gold: 0, xp: 0, lvl: 1,
+    bullets: [],
+    update() {
+        if(InputPlugin.keys['KeyW']) this.speed = Math.min(this.speed + 0.08, 4);
+        else if(InputPlugin.keys['KeyS']) this.speed = Math.max(this.speed - 0.05, -1);
+        else this.speed *= 0.98;
+
+        if(InputPlugin.keys['KeyA']) this.angle -= 0.035;
+        if(InputPlugin.keys['KeyD']) this.angle += 0.035;
 
         this.x += Math.cos(this.angle) * this.speed;
         this.y += Math.sin(this.angle) * this.speed;
 
-        // Map Boundaries
-        this.x = Math.max(0, Math.min(World.size, this.x));
-        this.y = Math.max(0, Math.min(World.size, this.y));
+        // Camera follow
+        Engine.camera.x = this.x - Engine.width / 2;
+        Engine.camera.y = this.y - Engine.height / 2;
 
-        if (this.hp <= 0) die();
+        if(InputPlugin.mouse.down) this.fire();
+        
+        if(this.hp <= 0) { Engine.isDead = true; document.getElementById('death-screen').style.display = 'flex'; }
+    },
+    fire() {
+        if(this.lastFire && Date.now() - this.lastFire < 350) return;
+        this.lastFire = Date.now();
+        AudioPlugin.playShoot();
+        this.bullets.push({
+            x: this.x, y: this.y, 
+            vx: Math.cos(this.angle) * 12, vy: Math.sin(this.angle) * 12,
+            life: 100
+        });
     }
 };
 
-const Controls = {
-    keys: {},
-    init() {
-        window.addEventListener('keydown', e => this.keys[e.code] = true);
-        window.addEventListener('keyup', e => this.keys[e.code] = false);
-        window.addEventListener('mousedown', () => fire());
-        window.addEventListener('keypress', e => { if(e.code === 'KeyM') toggleMarket(); });
+/**
+ * PLUGIN: AI & ENTITY SYSTEM
+ */
+const EntityManager = {
+    enemies: [],
+    particles: [],
+    loot: [],
+    
+    spawnEnemy() {
+        if(this.enemies.length > 15) return;
+        const dist = 800;
+        const ang = Math.random() * Math.PI * 2;
+        this.enemies.push({
+            x: Player.x + Math.cos(ang) * dist,
+            y: Player.y + Math.sin(ang) * dist,
+            hp: 50, speed: 1.5, size: 50
+        });
+    },
+
+    update() {
+        this.enemies.forEach((e, i) => {
+            const dx = Player.x - e.x; const dy = Player.y - e.y;
+            const dist = Math.hypot(dx, dy);
+            e.x += (dx/dist) * e.speed; e.y += (dy/dist) * e.speed;
+            
+            if(dist < 60) Player.hp -= 0.2;
+
+            Player.bullets.forEach((b, bi) => {
+                if(Math.hypot(e.x - b.x, e.y - b.y) < 40) {
+                    e.hp -= 20; Player.bullets.splice(bi, 1);
+                    this.createExplosion(e.x, e.y, '#ff4400');
+                    if(e.hp <= 0) {
+                        this.loot.push({x: e.x, y: e.y, gold: 100});
+                        this.enemies.splice(i, 1);
+                        Player.xp += 150;
+                    }
+                }
+            });
+        });
+
+        this.loot.forEach((l, i) => {
+            if(Math.hypot(Player.x - l.x, Player.y - l.y) < 50) {
+                Player.gold += l.gold;
+                this.loot.splice(i, 1);
+                if(Player.xp >= 1000) { Player.lvl++; Player.xp = 0; Player.maxHp += 25; Player.hp = Player.maxHp; }
+                this.updateUI();
+            }
+        });
+
+        this.particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            if(p.life <= 0) this.particles.splice(i, 1);
+        });
+    },
+
+    createExplosion(x, y, color) {
+        for(let i=0; i<15; i++) {
+            this.particles.push({
+                x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                life: 1, color: color
+            });
+        }
+    },
+
+    updateUI() {
+        document.getElementById('ui-gold').innerText = Player.gold;
+        document.getElementById('ui-lvl').innerText = Player.lvl;
+        document.getElementById('hp-bar').style.width = (Player.hp / Player.maxHp * 100) + "%";
+        document.getElementById('xp-bar').style.width = (Player.xp / 10) + "%";
     }
 };
 
-let bullets = [];
-let enemies = [];
-let creatures = [];
-let loot = [];
-
-function fire() {
-    bullets.push({
-        x: Player.x, y: Player.y,
-        vx: Math.cos(Player.angle) * 12,
-        vy: Math.sin(Player.angle) * 12,
-        dmg: Player.dmg, life: 80
-    });
-}
-
-function spawn() {
-    if (enemies.length < 15) {
-        enemies.push({
-            x: Player.x + (Math.random()-0.5)*2000,
-            y: Player.y + (Math.random()-0.5)*2000,
-            hp: 60, speed: 2, angle: 0
-        });
-    }
-    if (creatures.length < 3) {
-        creatures.push({
-            x: Math.random()*World.size, y: Math.random()*World.size,
-            hp: 1000, size: 150, type: 'kraken', lastAtk: 0
-        });
-    }
-}
-
-function update() {
-    Player.update();
-
-    bullets.forEach((b, i) => {
-        b.x += b.vx; b.y += b.vy; b.life--;
-        if (b.life < 0) bullets.splice(i, 1);
+/**
+ * CORE MODULE: RENDER SYSTEM
+ */
+const RenderModule = {
+    run() {
+        const ctx = Engine.ctx;
+        ctx.clearRect(0, 0, Engine.width, Engine.height);
         
-        enemies.forEach((e, ei) => {
-            if (Math.hypot(b.x - e.x, b.y - e.y) < 40) {
-                e.hp -= b.dmg;
-                bullets.splice(i, 1);
-                if (e.hp <= 0) {
-                    loot.push({x: e.x, y: e.y, val: 150});
-                    enemies.splice(ei, 1);
-                    Player.xp += 100;
-                }
-            }
-        });
-
-        creatures.forEach((c, ci) => {
-            if (Math.hypot(b.x - c.x, b.y - c.y) < c.size/2) {
-                c.hp -= b.dmg;
-                bullets.splice(i, 1);
-                if(c.hp <= 0) {
-                    Player.gold += 2000;
-                    creatures.splice(ci, 1);
-                }
-            }
-        });
-    });
-
-    enemies.forEach(e => {
-        let angleToPlayer = Math.atan2(Player.y - e.y, Player.x - e.x);
-        e.angle = angleToPlayer;
-        e.x += Math.cos(e.angle) * e.speed;
-        e.y += Math.sin(e.angle) * e.speed;
-        
-        if (Math.hypot(Player.x - e.x, Player.y - e.y) < 50) {
-            Player.hp -= 0.15;
-        }
-    });
-
-    loot.forEach((l, i) => {
-        if (Math.hypot(Player.x - l.x, Player.y - l.y) < 60) {
-            Player.gold += l.val;
-            loot.splice(i, 1);
-        }
-    });
-
-    // XP & Level Logic
-    if (Player.xp >= 1000) {
-        Player.lvl++;
-        Player.xp = 0;
-        Player.maxHp += 20;
-        Player.hp = Player.maxHp;
-    }
-
-    updateUI();
-}
-
-function updateUI() {
-    document.getElementById('hp-fill').style.width = (Player.hp / Player.maxHp * 100) + "%";
-    document.getElementById('xp-fill').style.width = (Player.xp / 10) + "%";
-    document.getElementById('g-display').innerText = Player.gold;
-}
-
-function draw() {
-    const ctx = World.ctx;
-    ctx.clearRect(0, 0, World.canvas.width, World.canvas.height);
-
-    ctx.save();
-    ctx.translate(World.canvas.width/2 - Player.x, World.canvas.height/2 - Player.y);
-
-    // Deep Ocean Floor
-    ctx.fillStyle = '#000a1a';
-    ctx.fillRect(0, 0, World.size, World.size);
-
-    // Grid
-    ctx.strokeStyle = 'rgba(0, 242, 255, 0.05)';
-    for(let i=0; i<=World.size; i+=250) {
-        ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i, World.size); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(World.size, i); ctx.stroke();
-    }
-
-    // Draw Loot
-    loot.forEach(l => {
-        ctx.fillStyle = 'gold';
-        ctx.beginPath(); ctx.arc(l.x, l.y, 8, 0, Math.PI*2); ctx.fill();
-    });
-
-    // Draw Creatures (Kraken)
-    creatures.forEach(c => {
-        try {
-            ctx.drawImage(World.krakenImg, c.x - c.size/2, c.y - c.size/2, c.size, c.size);
-        } catch(e) {
-            ctx.fillStyle = 'purple';
-            ctx.beginPath(); ctx.arc(c.x, c.y, c.size/2, 0, Math.PI*2); ctx.fill();
-        }
-    });
-
-    // Draw Enemies
-    enemies.forEach(e => {
         ctx.save();
-        ctx.translate(e.x, e.y);
-        ctx.rotate(e.angle + Math.PI/2);
-        ctx.drawImage(World.enemyImg, -30, -30, 60, 60);
+        ctx.translate(-Engine.camera.x, -Engine.camera.y);
+
+        // Water Effect
+        ctx.fillStyle = '#000810'; ctx.fillRect(0, 0, Engine.worldSize, Engine.worldSize);
+        ctx.strokeStyle = '#001a33'; ctx.lineWidth = 2;
+        for(let i=0; i<Engine.worldSize; i+=150) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, Engine.worldSize); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(Engine.worldSize, i); ctx.stroke();
+        }
+
+        // Entities
+        EntityManager.loot.forEach(l => {
+            ctx.fillStyle = 'gold'; ctx.beginPath(); ctx.arc(l.x, l.y, 8, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 15; ctx.shadowColor = 'gold';
+        });
+
+        EntityManager.enemies.forEach(e => {
+            ctx.fillStyle = '#111'; ctx.strokeStyle = 'red'; ctx.lineWidth = 3;
+            ctx.strokeRect(e.x-25, e.y-25, 50, 50);
+            ctx.fillRect(e.x-25, e.y-25, 50, 50);
+        });
+
+        // Player Gemi Çizimi (Vektörel & Neon)
+        ctx.save();
+        ctx.translate(Player.x, Player.y);
+        ctx.rotate(Player.angle + Math.PI/2);
+        ctx.fillStyle = '#3d2b1f';
+        ctx.beginPath(); ctx.moveTo(0, -45); ctx.lineTo(30, 25); ctx.lineTo(-30, 25); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = varName('--neon'); ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = 'white'; ctx.fillRect(-5, -15, 10, 30); // Yelken
         ctx.restore();
-    });
 
-    // Draw Player (GEMİ BURADA)
-    ctx.save();
-    ctx.translate(Player.x, Player.y);
-    ctx.rotate(Player.angle + Math.PI/2);
-    // Vektörel Yedek (Resim yüklenmezse diye)
-    ctx.fillStyle = '#5d4037';
-    ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(25, 20); ctx.lineTo(-25, 20); ctx.closePath(); ctx.fill();
-    // Gerçek Resim
-    ctx.drawImage(World.shipImg, -40, -40, 80, 80);
-    ctx.restore();
+        // Particles & Bullets
+        Player.bullets.forEach(b => {
+            ctx.fillStyle = 'orange'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
+        });
+        EntityManager.particles.forEach(p => {
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4);
+        });
 
-    // Bullets
-    ctx.fillStyle = 'orange';
-    bullets.forEach(b => {
-        ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
-    });
+        ctx.restore();
+        this.drawMinimap();
+    },
 
-    ctx.restore();
-    drawRadar();
-}
+    drawMinimap() {
+        const mmCtx = document.getElementById('minimap-canvas').getContext('2d');
+        mmCtx.fillStyle = 'rgba(0,10,20,0.9)'; mmCtx.fillRect(0,0,180,180);
+        const s = 180 / Engine.worldSize;
+        mmCtx.fillStyle = varName('--neon'); mmCtx.fillRect(Player.x*s, Player.y*s, 4, 4);
+        mmCtx.fillStyle = 'red';
+        EntityManager.enemies.forEach(e => mmCtx.fillRect(e.x*s, e.y*s, 2, 2));
+    }
+};
 
-function drawRadar() {
-    const rCtx = World.rCtx;
-    rCtx.fillStyle = 'rgba(0, 20, 40, 0.8)';
-    rCtx.fillRect(0, 0, 200, 200);
-    
-    const scale = 200 / World.size;
-    rCtx.fillStyle = '#00f2ff';
-    rCtx.fillRect(Player.x * scale - 2, Player.y * scale - 2, 5, 5);
-    
-    rCtx.fillStyle = 'red';
-    enemies.forEach(e => rCtx.fillRect(e.x * scale, e.y * scale, 3, 3));
-    
-    rCtx.fillStyle = 'purple';
-    creatures.forEach(c => rCtx.fillRect(c.x * scale, c.y * scale, 6, 6));
-}
+const UpdateModule = {
+    run() {
+        Player.update();
+        EntityManager.update();
+        EntityManager.updateUI();
+    }
+};
 
-function die() {
-    document.getElementById('death-screen').style.display = 'flex';
-}
+function varName(n) { return getComputedStyle(document.documentElement).getPropertyValue(n); }
 
-function toggleMarket() {
-    const m = document.getElementById('market-ui');
-    m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
-}
-
-function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-}
-
-// Start
-World.init();
-Controls.init();
-setInterval(spawn, 3000);
-loop();
+// Initialize
+Engine.init();
+setInterval(() => EntityManager.spawnEnemy(), 2000);
+document.getElementById('ui-name').innerText = prompt("KAPTAN ADI GİRİNİZ:") || "Adsız Korsan";
 </script>
 </body>
 </html>
