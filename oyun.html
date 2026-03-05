@@ -2,208 +2,189 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Lordz.io Ultimate</title>
+    <title>MMORPG - Origins</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { display: block; background: #27ae60; }
-        #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; }
-        #leaderboard { position: absolute; top: 20px; right: 20px; color: white; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; min-width: 150px; }
-        #controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #eee; background: rgba(0,0,0,0.7); padding: 10px 25px; border-radius: 30px; border: 2px solid #f1c40f; }
-        .stat { font-size: 22px; font-weight: bold; margin-bottom: 5px; color: #f1c40f; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; background: #1b5e20; } /* Koyu yeşil zemin */
+        
+        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; }
+        .bar-container { width: 200px; height: 15px; background: #333; border: 2px solid #000; margin-bottom: 5px; }
+        #hp-bar { width: 100%; height: 100%; background: #e74c3c; transition: width 0.3s; }
+        #xp-bar { width: 0%; height: 100%; background: #3498db; transition: width 0.3s; }
+        
+        #class-select {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9); padding: 30px; color: white; text-align: center;
+            border: 2px solid #f1c40f; border-radius: 15px;
+        }
+        button { padding: 10px 20px; cursor: pointer; background: #f1c40f; border: none; font-weight: bold; margin: 10px; }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div class="stat">💰 Altın: <span id="gold">100</span></div>
-        <div class="stat">🛡️ Ordu: <span id="army">1</span></div>
-        <div class="stat">❤️ Can: <span id="hp">100</span></div>
+
+    <div id="class-select">
+        <h2>SINIFINI SEÇ</h2>
+        <button onclick="startGame('Savaşçı')">SAVAŞÇI (Yüksek Can)</button>
+        <button onclick="startGame('Büyücü')">BÜYÜCÜ (Hızlı Hareket)</button>
     </div>
-    <div id="leaderboard">
-        <h3 style="margin:0 0 10px 0; border-bottom: 1px solid #fff;">Liderlik</h3>
-        <div id="lb-content">1. Sen: 1 Birim</div>
+
+    <div id="hud" style="display: none;">
+        <div class="stat"><b>Sınıf:</b> <span id="char-class">-</span></div>
+        <div class="stat"><b>Level:</b> <span id="char-lvl">1</span></div>
+        <p>HP</p><div class="bar-container"><div id="hp-bar"></div></div>
+        <p>XP</p><div class="bar-container"><div id="xp-bar"></div></div>
     </div>
-    <div id="controls"><b>E</b> - Kule Kur (50 Altın) | <b>Fare</b> - Yön | <b>Altın Topla & Savaş!</b></div>
+
     <canvas id="gameCanvas"></canvas>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const goldDisplay = document.getElementById('gold');
-const armyDisplay = document.getElementById('army');
-const hpDisplay = document.getElementById('hp');
-const lbContent = document.getElementById('lb-content');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+let gameRunning = false;
+let player = { 
+    x: 1000, y: 1000, radius: 20, 
+    lvl: 1, xp: 0, nextLvl: 100,
+    hp: 100, maxHp: 100, 
+    speed: 4, class: '', color: '' 
+};
 
-// OYUN DÜNYASI (Harita Boyutu)
-const WORLD_SIZE = 3000;
-let camera = { x: 0, y: 0 };
-
-let player = { x: WORLD_SIZE/2, y: WORLD_SIZE/2, radius: 20, gold: 100, hp: 100 };
-let soldiers = [];
-let resources = [];
-let towers = [];
 let enemies = [];
+let particles = [];
+let camera = { x: 0, y: 0 };
 let mouse = { x: 0, y: 0 };
 
-// Başlangıç objeleri
-for(let i=0; i<100; i++) spawnGold();
-for(let i=0; i<15; i++) spawnEnemy();
-
-function spawnGold() {
-    resources.push({ x: Math.random() * WORLD_SIZE, y: Math.random() * WORLD_SIZE, radius: 6 });
-}
-
-function spawnEnemy() {
-    enemies.push({
-        x: Math.random() * WORLD_SIZE,
-        y: Math.random() * WORLD_SIZE,
-        radius: 18,
-        hp: 100,
-        type: Math.random() > 0.5 ? 'warrior' : 'scout'
-    });
-}
-
-function addSoldier() {
-    const type = Math.random() > 0.3 ? 'Piyade' : 'Okçu';
-    soldiers.push({
-        x: player.x, y: player.y,
-        radius: type === 'Piyade' ? 10 : 8,
-        color: type === 'Piyade' ? '#3498db' : '#9b59b6',
-        type: type,
-        speed: 3 + Math.random()
-    });
-}
-
-window.addEventListener('mousemove', (e) => {
-    mouse.x = e.clientX;
-    mouse.y = e.clientY;
-});
-
-window.addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'e' && player.gold >= 50) {
-        player.gold -= 50;
-        towers.push({ x: player.x, y: player.y, range: 200 });
-        goldDisplay.innerText = player.gold;
+function startGame(type) {
+    player.class = type;
+    if(type === 'Savaşçı') {
+        player.maxHp = 150; player.hp = 150; player.speed = 3; player.color = '#e67e22';
+    } else {
+        player.maxHp = 80; player.hp = 80; player.speed = 6; player.color = '#9b59b6';
     }
-});
+    document.getElementById('class-select').style.display = 'none';
+    document.getElementById('hud').style.display = 'block';
+    document.getElementById('char-class').innerText = type;
+    gameRunning = true;
+    spawnEnemies();
+    animate();
+}
+
+function spawnEnemies() {
+    for(let i=0; i<30; i++) {
+        enemies.push({
+            x: Math.random() * 2000,
+            y: Math.random() * 2000,
+            hp: 50,
+            maxHp: 50,
+            radius: 15,
+            color: '#c0392b'
+        });
+    }
+}
+
+window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
 function update() {
+    if(!gameRunning) return;
+
     // Kamera Takibi
     camera.x = player.x - canvas.width / 2;
     camera.y = player.y - canvas.height / 2;
 
-    // Oyuncu Hareketi (Dünya koordinatlarına göre fare yönü)
-    let worldMouseX = mouse.x + camera.x;
-    let worldMouseY = mouse.y + camera.y;
-    let dx = worldMouseX - player.x;
-    let dy = worldMouseY - player.y;
-    let dist = Math.hypot(dx, dy);
-    
-    if (dist > 5) {
-        player.x += (dx / dist) * 5;
-        player.y += (dy / dist) * 5;
+    // Hareket
+    let dx = (mouse.x + camera.x) - player.x;
+    let dy = (mouse.y + camera.y) - player.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    if(dist > 10) {
+        player.x += (dx/dist) * player.speed;
+        player.y += (dy/dist) * player.speed;
     }
 
-    // Altın Toplama
-    resources.forEach((g, i) => {
-        if (Math.hypot(player.x - g.x, player.y - g.y) < player.radius + g.radius) {
-            resources.splice(i, 1);
-            player.gold += 10;
-            goldDisplay.innerText = player.gold;
-            spawnGold();
-            if (player.gold % 50 === 0) addSoldier();
-        }
-    });
-
-    // Asker ve Savaş Mekaniği
-    armyDisplay.innerText = soldiers.length + 1;
-    lbContent.innerHTML = `1. Sen: ${soldiers.length + 1} Birim<br>2. Bot_Lord: ${enemies.length} Birim`;
-
-    soldiers.forEach((s, i) => {
-        let sdx = player.x - s.x;
-        let sdy = player.y - s.y;
-        let sDist = Math.hypot(sdx, sdy);
-        if (sDist > 50 + (i * 3)) {
-            s.x += (sdx / sDist) * s.speed;
-            s.y += (sdy / sDist) * s.speed;
-        }
-
-        enemies.forEach((en, ei) => {
-            let fightDist = Math.hypot(s.x - en.x, s.y - en.y);
-            if (fightDist < 100) {
-                en.hp -= 0.5;
-                if (en.hp <= 0) {
-                    enemies.splice(ei, 1);
-                    player.gold += 30;
-                    spawnEnemy();
-                }
-            }
-        });
-    });
-
-    // Düşman hasarı (Sana değerlerse canın gider)
-    enemies.forEach(en => {
-        if (Math.hypot(player.x - en.x, player.y - en.y) < player.radius + en.radius) {
-            player.hp -= 0.2;
-            hpDisplay.innerText = Math.floor(player.hp);
-            if (player.hp <= 0) {
-                alert("Lord Öldü! Skorun: " + (soldiers.length + 1));
-                location.reload();
+    // Düşman Etkileşimi
+    enemies.forEach((en, index) => {
+        let eDist = Math.hypot(player.x - en.x, player.y - en.y);
+        
+        // Saldırı Menzili (MMORPG tarzı otomatik saldırı)
+        if(eDist < 100) {
+            en.hp -= 1; // Her frame hasar
+            if(en.hp <= 0) {
+                enemies.splice(index, 1);
+                gainXp(30);
+                setTimeout(spawnEnemies, 3000); // Yeniden doğma
             }
         }
+
+        // Düşman Hasarı
+        if(eDist < player.radius + en.radius) {
+            player.hp -= 0.5;
+            updateHud();
+            if(player.hp <= 0) location.reload();
+        }
     });
+}
+
+function gainXp(amount) {
+    player.xp += amount;
+    if(player.xp >= player.nextLvl) {
+        player.lvl++;
+        player.xp = 0;
+        player.nextLvl *= 1.5;
+        player.maxHp += 20;
+        player.hp = player.maxHp;
+        alert("LEVEL UP! Artık Seviye: " + player.lvl);
+    }
+    updateHud();
+}
+
+function updateHud() {
+    document.getElementById('hp-bar').style.width = (player.hp / player.maxHp * 100) + "%";
+    document.getElementById('xp-bar').style.width = (player.xp / player.nextLvl * 100) + "%";
+    document.getElementById('char-lvl').innerText = player.lvl;
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-    ctx.translate(-camera.x, -camera.y); // Kamerayı uygula
+    ctx.translate(-camera.x, -camera.y);
 
-    // Izgara (Grid) Çizimi - Dünya sınırlarını hissetmek için
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    for(let i=0; i<WORLD_SIZE; i+=100) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
+    // Izgara Çizimi
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    for(let i=0; i<2000; i+=50) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 2000); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(2000, i); ctx.stroke();
     }
 
-    // Kuleler
-    towers.forEach(t => {
-        ctx.fillStyle = '#95a5a6';
-        ctx.fillRect(t.x-25, t.y-25, 50, 50);
-        ctx.beginPath(); ctx.arc(t.x, t.y, t.range, 0, Math.PI*2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.stroke();
-    });
-
-    // Altınlar
-    ctx.fillStyle = '#f1c40f';
-    resources.forEach(g => {
-        ctx.beginPath(); ctx.arc(g.x, g.y, g.radius, 0, Math.PI*2); ctx.fill();
-    });
-
-    // Düşmanlar
+    // Düşmanları Çiz
     enemies.forEach(en => {
-        ctx.fillStyle = '#e74c3c';
+        ctx.fillStyle = en.color;
         ctx.beginPath(); ctx.arc(en.x, en.y, en.radius, 0, Math.PI*2); ctx.fill();
+        // Düşman HP Bar
+        ctx.fillStyle = "red";
+        ctx.fillRect(en.x - 15, en.y - 25, 30 * (en.hp/50), 4);
     });
 
-    // Askerler
-    soldiers.forEach(s => {
-        ctx.fillStyle = s.color;
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
-    });
-
-    // Oyuncu
+    // Oyuncu Çiz (Lordz.io tarzı ama sınıf renkli)
+    ctx.shadowBlur = 15; ctx.shadowColor = player.color;
     ctx.fillStyle = player.color;
     ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.strokeStyle = "white"; ctx.lineWidth = 3; ctx.stroke();
 
     ctx.restore();
-    requestAnimationFrame(() => { update(); draw(); });
 }
-draw();
+
+function animate() {
+    update();
+    draw();
+    requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
 </script>
 </body>
 </html>
