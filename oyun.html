@@ -2,219 +2,154 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>The Abyss | Forsaken Captain v2.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@600&display=swap" rel="stylesheet">
+    <title>ABYSS ENGINE v3 | Kaptan'ın Gazabı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root { --gold: #ffd700; --neon: #00f2ff; --blood: #ff0044; --wood: #3d2b1f; }
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Pirata One', cursive; user-select: none; }
-        canvas { display: block; filter: saturate(1.2) contrast(1.1); }
-
-        /* --- PLUGIN: UI SYSTEM --- */
-        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 100; color: white; }
-        .hud-panel { 
-            position: absolute; top: 20px; left: 20px; 
-            background: rgba(0, 10, 20, 0.85); border: 2px solid var(--gold);
-            padding: 15px; border-radius: 0 20px; min-width: 250px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); pointer-events: auto;
-        }
-        .bar-container { width: 100%; height: 10px; background: #111; border: 1px solid #444; margin: 5px 0; border-radius: 5px; overflow: hidden; }
-        .bar-hp { height: 100%; background: linear-gradient(90deg, #ff0000, #8b0000); width: 100%; transition: 0.3s; }
-        .bar-xp { height: 100%; background: linear-gradient(90deg, #00f2ff, #0044ff); width: 0%; transition: 0.3s; }
+        :root { --gold: #ffd700; --neon: #00f2ff; --crimson: #ff0044; --fog: rgba(0, 30, 60, 0.4); }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Pirata One', cursive; }
         
-        /* --- PLUGIN: MINIMAP --- */
-        #minimap { 
-            position: absolute; bottom: 20px; right: 20px; width: 180px; height: 180px; 
-            border: 3px solid var(--gold); border-radius: 50%; background: rgba(0,10,20,0.9);
-            overflow: hidden; box-shadow: 0 0 20px #000;
+        /* --- DİNAMIK UI PANELİ --- */
+        #game-ui { position: absolute; inset: 0; pointer-events: none; z-index: 1000; }
+        .top-left { position: absolute; top: 20px; left: 20px; width: 350px; pointer-events: auto; }
+        .glass-morphism { 
+            background: rgba(0, 15, 30, 0.85); border: 2px solid var(--gold); 
+            padding: 20px; border-radius: 0 30px 0 30px; backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0,0,0,1);
+        }
+        
+        /* BARLAR */
+        .bar-wrap { background: #111; height: 15px; border-radius: 10px; border: 1px solid #444; margin: 10px 0; overflow: hidden; }
+        .bar-hp { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0000, #800000); transition: 0.4s; }
+        .bar-xp { width: 0%; height: 100%; background: linear-gradient(90deg, #00f2ff, #0044ff); transition: 0.4s; }
+        .bar-shield { width: 0%; height: 100%; background: #00ff88; transition: 0.2s; }
+
+        /* YETENEK SLOTLARI */
+        .skills { display: flex; gap: 10px; margin-top: 15px; }
+        .skill-slot { 
+            width: 50px; height: 50px; border: 2px solid var(--neon); 
+            background: rgba(0,0,0,0.5); display: flex; align-items: center; 
+            justify-content: center; font-family: 'Orbitron'; font-size: 12px; color: var(--neon);
+        }
+        .ready { background: rgba(0, 242, 255, 0.2); }
+
+        /* RADAR */
+        #radar { 
+            position: absolute; bottom: 30px; right: 30px; width: 220px; height: 220px; 
+            border: 4px solid var(--gold); border-radius: 50%; background: rgba(0,10,20,0.95);
+            pointer-events: auto; box-shadow: 0 0 50px #000;
         }
 
-        /* --- PLUGIN: DEATH SCREEN --- */
-        #death-screen {
-            position: fixed; inset: 0; background: radial-gradient(circle, #440000, #000);
-            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .death-title { font-size: 80px; color: white; text-shadow: 0 0 20px #000; margin: 0; }
-        
-        /* --- BUTTONS --- */
-        .btn {
-            background: var(--gold); color: black; border: none; padding: 10px 30px;
-            font-family: 'Pirata One'; font-size: 24px; cursor: pointer; transition: 0.3s;
-            margin-top: 20px; border-radius: 5px;
-        }
-        .btn:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--gold); }
+        canvas { display: block; }
+        #weather-fx { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
     </style>
 </head>
 <body>
 
-<div id="ui-layer">
-    <div class="hud-panel">
-        <div style="font-size: 28px; color: var(--gold);">KAPTAN: <span id="ui-name">---</span></div>
-        <div style="color: #0dff00;">ALTIN: <span id="ui-gold">0</span></div>
-        <div style="font-size: 14px; font-family: 'Orbitron'; margin-top: 10px;">GÖVDE SAĞLIĞI</div>
-        <div class="bar-container"><div id="hp-bar" class="bar-hp"></div></div>
-        <div style="font-size: 14px; font-family: 'Orbitron';">DENEYİM (LVL <span id="ui-lvl">1</span>)</div>
-        <div class="bar-container"><div id="xp-bar" class="bar-xp"></div></div>
+<div id="game-ui">
+    <div class="top-left glass-morphism">
+        <div style="font-size: 35px; color: var(--gold); letter-spacing: 2px;">KAPTAN <span id="cap-name">---</span></div>
+        <div style="display:flex; justify-content: space-between; color: #0f0; font-family: 'Orbitron'; font-size: 14px;">
+            <span>ALTIN: <b id="gold-val">1500</b></span>
+            <span>LEVEL: <b id="lvl-val">1</b></span>
+        </div>
+        <div class="bar-wrap"><div id="hp-bar" class="bar-hp"></div></div>
+        <div class="bar-wrap"><div id="shield-bar" class="bar-shield"></div></div>
+        <div class="bar-wrap"><div id="xp-bar" class="bar-xp"></div></div>
+        
+        <div class="skills">
+            <div id="skill-q" class="skill-slot ready">Q<br>HIZ</div>
+            <div id="skill-e" class="skill-slot ready">E<br>KALKAN</div>
+            <div id="skill-r" class="skill-slot ready">R<br>YAĞMUR</div>
+        </div>
     </div>
 </div>
 
-<div id="minimap"><canvas id="minimap-canvas"></canvas></div>
+<div id="radar"><canvas id="radar-cvs"></canvas></div>
+<div id="weather-fx"></div>
 
-<div id="death-screen">
-    <h1 class="death-title">DENİZ SENİ YUTTU</h1>
-    <p style="color: white; font-size: 24px;">Gemin okyanusun dibini boyladı...</p>
-    <button class="btn" onclick="location.reload()">YENİDEN DİRİL</button>
-</div>
-
-<canvas id="gameCanvas"></canvas>
+<canvas id="game"></canvas>
 
 <script>
 /**
- * CORE MODULE: ENGINE SETTINGS
+ * PLUGIN 1: WEATHER & AMBIENCE SYSTEM
+ */
+const Weather = {
+    isThunder: false,
+    fogDensity: 0.1,
+    update() {
+        if(Math.random() > 0.998) this.thunderStrike();
+    },
+    thunderStrike() {
+        document.body.style.background = "#fff";
+        setTimeout(() => document.body.style.background = "#000", 50);
+        setTimeout(() => document.body.style.background = "#fff", 30);
+        setTimeout(() => document.body.style.background = "#000", 100);
+    }
+};
+
+/**
+ * MODULE 2: PHYSICS & CORE ENGINE
  */
 const Engine = {
-    canvas: document.getElementById('gameCanvas'),
+    canvas: document.getElementById('game'),
     ctx: null,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    worldSize: 5000,
-    camera: { x: 0, y: 0 },
-    isDead: false,
+    worldSize: 10000,
+    entities: [],
+    bullets: [],
+    particles: [],
+    loots: [],
     
     init() {
         this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        InputPlugin.init();
-        AudioPlugin.init();
-        this.loop();
-    },
-    
-    loop() {
-        if(!this.isDead) {
-            UpdateModule.run();
-            RenderModule.run();
-        }
-        requestAnimationFrame(() => this.loop());
-    }
-};
-
-/**
- * PLUGIN: INPUT SYSTEM
- */
-const InputPlugin = {
-    keys: {},
-    mouse: { x: 0, y: 0, down: false },
-    init() {
-        window.onkeydown = (e) => this.keys[e.code] = true;
-        window.onkeyup = (e) => this.keys[e.code] = false;
-        window.onmousedown = (e) => this.mouse.down = true;
-        window.onmouseup = (e) => this.mouse.down = false;
-        window.onmousemove = (e) => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; };
-    }
-};
-
-/**
- * PLUGIN: AUDIO & AMBIENCE
- */
-const AudioPlugin = {
-    ctx: null,
-    init() { 
-        window.onclick = () => { if(!this.ctx) this.ctx = new AudioContext(); };
-    },
-    playShoot() {
-        if(!this.ctx) return;
-        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-        o.type = 'sawtooth'; o.frequency.setValueAtTime(150, this.ctx.currentTime);
-        o.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.1);
-        g.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        o.connect(g); g.connect(this.ctx.destination);
-        o.start(); o.stop(this.ctx.currentTime + 0.1);
-    }
-};
-
-/**
- * CORE MODULE: PLAYER DATA
- */
-const Player = {
-    x: 2500, y: 2500, angle: 0, speed: 0,
-    hp: 100, maxHp: 100, gold: 0, xp: 0, lvl: 1,
-    bullets: [],
-    update() {
-        if(InputPlugin.keys['KeyW']) this.speed = Math.min(this.speed + 0.08, 4);
-        else if(InputPlugin.keys['KeyS']) this.speed = Math.max(this.speed - 0.05, -1);
-        else this.speed *= 0.98;
-
-        if(InputPlugin.keys['KeyA']) this.angle -= 0.035;
-        if(InputPlugin.keys['KeyD']) this.angle += 0.035;
-
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
-
-        // Camera follow
-        Engine.camera.x = this.x - Engine.width / 2;
-        Engine.camera.y = this.y - Engine.height / 2;
-
-        if(InputPlugin.mouse.down) this.fire();
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.player = new Ship(5000, 5000, true);
+        this.name = prompt("Gemi Adını Belirle Kaptan:") || "Kara İnci";
+        document.getElementById('cap-name').innerText = this.name.toUpperCase();
         
-        if(this.hp <= 0) { Engine.isDead = true; document.getElementById('death-screen').style.display = 'flex'; }
+        this.loop();
+        for(let i=0; i<20; i++) this.spawnAI();
     },
-    fire() {
-        if(this.lastFire && Date.now() - this.lastFire < 350) return;
-        this.lastFire = Date.now();
-        AudioPlugin.playShoot();
-        this.bullets.push({
-            x: this.x, y: this.y, 
-            vx: Math.cos(this.angle) * 12, vy: Math.sin(this.angle) * 12,
-            life: 100
-        });
-    }
-};
-
-/**
- * PLUGIN: AI & ENTITY SYSTEM
- */
-const EntityManager = {
-    enemies: [],
-    particles: [],
-    loot: [],
     
-    spawnEnemy() {
-        if(this.enemies.length > 15) return;
-        const dist = 800;
-        const ang = Math.random() * Math.PI * 2;
-        this.enemies.push({
-            x: Player.x + Math.cos(ang) * dist,
-            y: Player.y + Math.sin(ang) * dist,
-            hp: 50, speed: 1.5, size: 50
-        });
+    spawnAI() {
+        this.entities.push(new Ship(Math.random()*this.worldSize, Math.random()*this.worldSize, false));
+    },
+
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
     },
 
     update() {
-        this.enemies.forEach((e, i) => {
-            const dx = Player.x - e.x; const dy = Player.y - e.y;
-            const dist = Math.hypot(dx, dy);
-            e.x += (dx/dist) * e.speed; e.y += (dy/dist) * e.speed;
+        Weather.update();
+        this.player.update();
+        
+        this.bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy; b.life--;
+            if(b.life < 0) this.bullets.splice(i, 1);
             
-            if(dist < 60) Player.hp -= 0.2;
-
-            Player.bullets.forEach((b, bi) => {
-                if(Math.hypot(e.x - b.x, e.y - b.y) < 40) {
-                    e.hp -= 20; Player.bullets.splice(bi, 1);
-                    this.createExplosion(e.x, e.y, '#ff4400');
-                    if(e.hp <= 0) {
-                        this.loot.push({x: e.x, y: e.y, gold: 100});
-                        this.enemies.splice(i, 1);
-                        Player.xp += 150;
+            this.entities.forEach((en, ei) => {
+                if(Math.hypot(b.x - en.x, b.y - en.y) < 40) {
+                    en.hp -= 25;
+                    this.bullets.splice(i, 1);
+                    this.createEffect(en.x, en.y, 'orange', 10);
+                    if(en.hp <= 0) {
+                        this.loots.push({x: en.x, y: en.y, type: 'gold', val: 500});
+                        this.entities.splice(ei, 1);
+                        this.player.xp += 200;
+                        this.spawnAI();
                     }
                 }
             });
         });
 
-        this.loot.forEach((l, i) => {
-            if(Math.hypot(Player.x - l.x, Player.y - l.y) < 50) {
-                Player.gold += l.gold;
-                this.loot.splice(i, 1);
-                if(Player.xp >= 1000) { Player.lvl++; Player.xp = 0; Player.maxHp += 25; Player.hp = Player.maxHp; }
+        this.entities.forEach(en => en.updateAI(this.player));
+        
+        this.loots.forEach((l, i) => {
+            if(Math.hypot(this.player.x - l.x, this.player.y - l.y) < 60) {
+                this.player.gold += l.val;
+                this.loots.splice(i, 1);
                 this.updateUI();
             }
         });
@@ -223,102 +158,149 @@ const EntityManager = {
             p.x += p.vx; p.y += p.vy; p.life -= 0.02;
             if(p.life <= 0) this.particles.splice(i, 1);
         });
-    },
 
-    createExplosion(x, y, color) {
-        for(let i=0; i<15; i++) {
-            this.particles.push({
-                x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
-                life: 1, color: color
-            });
+        if(this.player.xp >= 1000) {
+            this.player.lvl++;
+            this.player.xp = 0;
+            this.updateUI();
         }
     },
 
+    createEffect(x, y, color, count) {
+        for(let i=0; i<count; i++) this.particles.push({
+            x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, life: 1, color
+        });
+    },
+
     updateUI() {
-        document.getElementById('ui-gold').innerText = Player.gold;
-        document.getElementById('ui-lvl').innerText = Player.lvl;
-        document.getElementById('hp-bar').style.width = (Player.hp / Player.maxHp * 100) + "%";
-        document.getElementById('xp-bar').style.width = (Player.xp / 10) + "%";
+        document.getElementById('hp-bar').style.width = this.player.hp + "%";
+        document.getElementById('xp-bar').style.width = (this.player.xp / 10) + "%";
+        document.getElementById('gold-val').innerText = this.player.gold;
+        document.getElementById('lvl-val').innerText = this.player.lvl;
+        document.getElementById('shield-bar').style.width = this.player.shield + "%";
+    },
+
+    draw() {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        ctx.save();
+        ctx.translate(this.canvas.width/2 - this.player.x, this.canvas.height/2 - this.player.y);
+
+        // Okyanus Çizimi
+        ctx.fillStyle = '#00081a';
+        ctx.fillRect(0,0, this.worldSize, this.worldSize);
+
+        // Ganimetler
+        this.loots.forEach(l => {
+            ctx.fillStyle = 'gold'; ctx.shadowBlur = 20; ctx.shadowColor = 'gold';
+            ctx.beginPath(); ctx.arc(l.x, l.y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+        });
+
+        // Düşmanlar
+        this.entities.forEach(en => en.draw(ctx));
+        
+        // Oyuncu
+        this.player.draw(ctx);
+
+        // Mermiler ve Efektler
+        this.bullets.forEach(b => {
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+        });
+        this.particles.forEach(p => {
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
+        });
+
+        ctx.restore();
+        this.drawRadar();
+    },
+
+    drawRadar() {
+        const rC = document.getElementById('radar-cvs');
+        const rCtx = rC.getContext('2d');
+        rC.width = 220; rC.height = 220;
+        rCtx.fillStyle = 'rgba(0,20,40,0.8)'; rCtx.fillRect(0,0,220,220);
+        const s = 220 / this.worldSize;
+        rCtx.fillStyle = '#00f2ff'; rCtx.fillRect(this.player.x*s, this.player.y*s, 6, 6);
+        rCtx.fillStyle = 'red';
+        this.entities.forEach(en => rCtx.fillRect(en.x*s, en.y*s, 4, 4));
     }
 };
 
 /**
- * CORE MODULE: RENDER SYSTEM
+ * CLASS: SHIP (Dinamik Gemi Sınıfı)
  */
-const RenderModule = {
-    run() {
-        const ctx = Engine.ctx;
-        ctx.clearRect(0, 0, Engine.width, Engine.height);
-        
-        ctx.save();
-        ctx.translate(-Engine.camera.x, -Engine.camera.y);
+class Ship {
+    constructor(x, y, isPlayer) {
+        this.x = x; this.y = y; this.angle = 0; this.speed = 0;
+        this.hp = 100; this.shield = 0; this.gold = 0; this.xp = 0; this.lvl = 1;
+        this.isPlayer = isPlayer;
+    }
 
-        // Water Effect
-        ctx.fillStyle = '#000810'; ctx.fillRect(0, 0, Engine.worldSize, Engine.worldSize);
-        ctx.strokeStyle = '#001a33'; ctx.lineWidth = 2;
-        for(let i=0; i<Engine.worldSize; i+=150) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, Engine.worldSize); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(Engine.worldSize, i); ctx.stroke();
+    update() {
+        // Kontroller
+        if(keys['KeyW']) this.speed = Math.min(this.speed + 0.1, 5);
+        else if(keys['KeyS']) this.speed = Math.max(this.speed - 0.1, -2);
+        else this.speed *= 0.98;
+
+        if(keys['KeyA']) this.angle -= 0.04;
+        if(keys['KeyD']) this.angle += 0.04;
+
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+
+        // Yetenekler
+        if(keys['KeyQ']) { this.speed = 10; Engine.createEffect(this.x, this.y, 'cyan', 2); }
+        if(keys['KeyE']) { this.shield = 100; }
+        if(this.shield > 0) this.shield -= 0.2;
+    }
+
+    updateAI(player) {
+        if(this.isPlayer) return;
+        const d = Math.hypot(player.x - this.x, player.y - this.y);
+        if(d < 800) {
+            this.angle = Math.atan2(player.y - this.y, player.x - this.x);
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+            this.speed = 2;
+            if(d < 400 && Math.random() > 0.98) this.fire();
+        }
+    }
+
+    fire() {
+        Engine.bullets.push({
+            x: this.x, y: this.y, 
+            vx: Math.cos(this.angle) * 10, vy: Math.sin(this.angle) * 10,
+            life: 100
+        });
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle + Math.PI/2);
+        
+        // Gemi Gövdesi
+        ctx.fillStyle = this.isPlayer ? '#3d2b1f' : '#222';
+        ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(25, 20); ctx.lineTo(-25, 20); ctx.closePath(); ctx.fill();
+        
+        // Kalkan Efekti
+        if(this.shield > 0) {
+            ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI*2); ctx.stroke();
         }
 
-        // Entities
-        EntityManager.loot.forEach(l => {
-            ctx.fillStyle = 'gold'; ctx.beginPath(); ctx.arc(l.x, l.y, 8, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 15; ctx.shadowColor = 'gold';
-        });
-
-        EntityManager.enemies.forEach(e => {
-            ctx.fillStyle = '#111'; ctx.strokeStyle = 'red'; ctx.lineWidth = 3;
-            ctx.strokeRect(e.x-25, e.y-25, 50, 50);
-            ctx.fillRect(e.x-25, e.y-25, 50, 50);
-        });
-
-        // Player Gemi Çizimi (Vektörel & Neon)
-        ctx.save();
-        ctx.translate(Player.x, Player.y);
-        ctx.rotate(Player.angle + Math.PI/2);
-        ctx.fillStyle = '#3d2b1f';
-        ctx.beginPath(); ctx.moveTo(0, -45); ctx.lineTo(30, 25); ctx.lineTo(-30, 25); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = varName('--neon'); ctx.lineWidth = 2; ctx.stroke();
-        ctx.fillStyle = 'white'; ctx.fillRect(-5, -15, 10, 30); // Yelken
+        ctx.fillStyle = 'white'; ctx.fillRect(-5, -10, 10, 25); // Yelken
         ctx.restore();
-
-        // Particles & Bullets
-        Player.bullets.forEach(b => {
-            ctx.fillStyle = 'orange'; ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
-        });
-        EntityManager.particles.forEach(p => {
-            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4);
-        });
-
-        ctx.restore();
-        this.drawMinimap();
-    },
-
-    drawMinimap() {
-        const mmCtx = document.getElementById('minimap-canvas').getContext('2d');
-        mmCtx.fillStyle = 'rgba(0,10,20,0.9)'; mmCtx.fillRect(0,0,180,180);
-        const s = 180 / Engine.worldSize;
-        mmCtx.fillStyle = varName('--neon'); mmCtx.fillRect(Player.x*s, Player.y*s, 4, 4);
-        mmCtx.fillStyle = 'red';
-        EntityManager.enemies.forEach(e => mmCtx.fillRect(e.x*s, e.y*s, 2, 2));
     }
-};
+}
 
-const UpdateModule = {
-    run() {
-        Player.update();
-        EntityManager.update();
-        EntityManager.updateUI();
-    }
-};
+const keys = {};
+window.onkeydown = (e) => { keys[e.code] = true; if(e.code === 'Space') Engine.player.fire(); };
+window.onkeyup = (e) => keys[e.code] = false;
 
-function varName(n) { return getComputedStyle(document.documentElement).getPropertyValue(n); }
-
-// Initialize
 Engine.init();
-setInterval(() => EntityManager.spawnEnemy(), 2000);
-document.getElementById('ui-name').innerText = prompt("KAPTAN ADI GİRİNİZ:") || "Adsız Korsan";
 </script>
 </body>
 </html>
