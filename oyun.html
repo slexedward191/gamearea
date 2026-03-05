@@ -2,173 +2,221 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Leap: Elemental</title>
+    <title>Neon Leap: Elemental Beats</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-blue: #00f2ff; --neon-pink: #ff00ff; --bg-dark: #050612; }
+        :root { --neon-blue: #00f2ff; --neon-pink: #ff00ff; --bg-dark: #020205; }
         body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg-dark); font-family: 'Orbitron', sans-serif; }
         canvas { display: block; }
-        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; }
-        #overlay { position: fixed; inset: 0; background: rgba(5,6,18,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
-        .btn { background: var(--neon-blue); border: none; padding: 15px 40px; font-size: 20px; font-weight: 900; cursor: pointer; border-radius: 5px; box-shadow: 0 0 20px var(--neon-blue); }
-        .jump-indicator { font-size: 12px; color: var(--neon-blue); margin-top: 5px; opacity: 0.7; }
+        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; text-shadow: 0 0 10px #000; }
+        #overlay { position: fixed; inset: 0; background: rgba(2,2,5,0.98); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
+        .btn { background: var(--neon-blue); border: none; padding: 20px 50px; font-size: 24px; font-weight: 900; cursor: pointer; border-radius: 5px; box-shadow: 0 0 30px var(--neon-blue); transition: 0.3s; }
+        .btn:hover { transform: scale(1.1); filter: brightness(1.2); }
+        #effect-announcer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; font-weight: 900; color: white; opacity: 0; pointer-events: none; transition: 1s; }
     </style>
 </head>
 <body>
 
 <div id="overlay">
-    <h1 style="font-size: 50px; color: var(--neon-blue);">ELEMENTAL LEAP</h1>
-    <p>HAVA DURUMU SİSTEMİ VE ÇİFT ZIPLAMA AKTİF</p>
-    <button class="btn" onclick="Engine.init()">BAŞLAT</button>
+    <h1 style="font-size: 60px; margin-bottom: 0; background: linear-gradient(to right, var(--neon-blue), var(--neon-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VFX ODYSSEY</h1>
+    <p style="letter-spacing: 5px; margin-bottom: 40px;">DİNAMİK MÜZİK VE GÖRSEL ŞÖLEN</p>
+    <button class="btn" onclick="Engine.start()">OYUNU BAŞLAT</button>
 </div>
 
 <div id="hud">
-    <div style="font-size: 24px;">BÖLÜM: <span id="cur-lvl">1</span></div>
-    <div id="weather-tag" style="color: var(--neon-pink);">DURUM: TEMİZ</div>
-    <div class="jump-indicator">BOŞLUK / W: ÇİFT ZIPLAMA MÜMKÜN</div>
+    <div style="font-size: 28px; font-weight: 900;">BÖLÜM: <span id="cur-lvl">1</span></div>
+    <div id="weather-tag" style="color: var(--neon-blue); font-size: 14px;">MOD: YÜKLENİYOR...</div>
 </div>
+
+<div id="effect-announcer">KAR FIRTINASI</div>
 
 <canvas id="gameCanvas"></canvas>
 
 <script>
+/**
+ * PROFESYONEL SES VE MÜZİK MOTORU
+ */
 const AudioEngine = {
     ctx: null,
-    init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+    nextBeat: 0,
+    init() { 
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+        this.startMusic();
+    },
     play(freq, type, decay, vol = 0.1) {
-        if(!this.ctx) return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + decay);
         gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + decay);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + decay);
         osc.connect(gain); gain.connect(this.ctx.destination);
         osc.start(); osc.stop(this.ctx.currentTime + decay);
     },
-    jump(isDouble) { this.play(isDouble ? 300 : 150, 'triangle', 0.2); },
-    die() { this.play(60, 'sawtooth', 0.5, 0.2); },
-    win() { this.play(523, 'sine', 0.6); }
+    // Arka Plan Müziği (Dinamik Techno Beat)
+    startMusic() {
+        setInterval(() => {
+            const time = this.ctx.currentTime;
+            // Kick Drum
+            this.play(60, 'sine', 0.2, 0.15);
+            // Hi-Hat
+            if(Math.random() > 0.5) setTimeout(() => this.play(8000, 'hi-pass', 0.05, 0.05), 250);
+            // Synth Lead (Bölüme göre değişen notalar)
+            const notes = [261.63, 329.63, 392.00, 523.25];
+            this.play(notes[Engine.level % 4], 'triangle', 0.4, 0.03);
+        }, 500);
+    }
 };
 
+/**
+ * OYUN MOTORU VE VFX SİSTEMİ
+ */
 const Engine = {
     canvas: document.getElementById('gameCanvas'),
     ctx: null, level: 1,
-    player: { x: 50, y: 400, vx: 0, vy: 0, w: 25, h: 25, jumps: 0, maxJumps: 2 },
-    platforms: [], hazards: [], keys: {}, camera: { x: 0, y: 0 },
-    particles: [], weather: 'CLEAR',
+    player: { x: 100, y: 400, vx: 0, vy: 0, w: 25, h: 25, jumps: 0 },
+    platforms: [], hazards: [], particles: [], keys: {}, camera: { x: 0, y: 0 },
+    weather: 'SNOW',
 
-    init() {
+    start() {
         document.getElementById('overlay').style.display = 'none';
         AudioEngine.init();
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
-        window.addEventListener('keydown', e => this.handleKeys(e, true));
+        window.addEventListener('keydown', e => this.handleInput(e, true));
         window.addEventListener('keyup', e => this.keys[e.key.toLowerCase()] = false);
-        this.loadLevel(this.level);
+        this.loadLevel(1);
         this.loop();
     },
 
-    handleKeys(e, state) {
+    handleInput(e, state) {
         let key = e.key.toLowerCase();
         if(state && (key === 'w' || key === ' ' || key === 'arrowup')) {
-            if(this.player.jumps < this.player.maxJumps) {
-                this.player.vy = -11;
+            if(this.player.jumps < 2) {
+                this.player.vy = -12;
                 this.player.jumps++;
-                AudioEngine.jump(this.player.jumps > 1);
-                this.burstParticles(this.player.x + 12, this.player.y + 25, this.player.jumps > 1 ? '#ff00ff' : '#00f2ff');
+                AudioEngine.play(this.player.jumps === 1 ? 150 : 300, 'square', 0.2);
             }
         }
         this.keys[key] = state;
     },
 
     loadLevel(num) {
+        this.level = num;
         this.platforms = []; this.hazards = []; this.particles = [];
         this.player.x = 100; this.player.y = 400; this.player.vx = 0; this.player.vy = 0;
-        this.player.jumps = 0;
         
-        // Hava Durumu Belirleme (Her 5 seviyede bir değişir)
-        const weathers = ['CLEAR', 'SNOW', 'METEOR', 'MATRIX'];
-        this.weather = weathers[Math.floor((num-1) / 5) % weathers.length];
-        document.getElementById('weather-tag').innerText = "ATMOSFER: " + this.weather;
+        const effects = ['KAR FIRTINASI', 'METEOR YAĞMURU', 'MATRIX YAĞMURU', 'PLAZMA PATLAMASI'];
+        this.weather = ['SNOW', 'METEOR', 'MATRIX', 'PLASMA'][Math.floor((num-1) / 2) % 4];
+        
+        // Announcer Efekti
+        const ann = document.getElementById('effect-announcer');
+        ann.innerText = effects[Math.floor((num-1) / 2) % 4];
+        ann.style.opacity = 1;
+        setTimeout(() => ann.style.opacity = 0, 2000);
+        document.getElementById('weather-tag').innerText = "MOD: " + effects[Math.floor((num-1) / 2) % 4];
 
-        this.platforms.push({ x: 0, y: 500, w: 250, h: 40 });
-        let lx = 250, ly = 500;
-        for(let i=0; i<8+num; i++) {
-            lx += 120 + Math.random()*100; ly += (Math.random()-0.5)*150;
-            this.platforms.push({ x: lx, y: ly, w: 120-num, h: 20 });
-            if(num > 2 && Math.random() > 0.6) this.hazards.push({ x: lx+20, y: ly-15, w: 80-num, h: 15 });
+        this.platforms.push({ x: 0, y: 550, w: 300, h: 40 });
+        let lx = 300; let ly = 550;
+        for(let i=0; i<10+num; i++) {
+            lx += 150 + Math.random()*100;
+            ly += (Math.random()-0.5)*150;
+            this.platforms.push({ x: lx, y: ly, w: 120, h: 20 });
+            if(num > 2 && Math.random() > 0.5) this.hazards.push({ x: lx+30, y: ly-15, w: 60, h: 15 });
         }
-        this.finish = { x: lx + 200, y: ly - 50, w: 60, h: 120 };
+        this.finish = { x: lx + 200, y: ly - 100, w: 80, h: 200 };
         document.getElementById('cur-lvl').innerText = num;
     },
 
-    burstParticles(x, y, color) {
-        for(let i=0; i<10; i++) {
-            this.particles.push({ x, y, vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6, life: 1, color, type: 'spark' });
+    spawnWeatherParticles() {
+        const cam = this.camera;
+        if(this.weather === 'SNOW') {
+            this.particles.push({ x: Math.random()*this.canvas.width+cam.x, y: cam.y-20, vx: -2, vy: 3, life: 1, color: '#fff', size: 2, type: 'env' });
+        } else if(this.weather === 'METEOR' && Math.random() > 0.9) {
+            this.particles.push({ x: Math.random()*this.canvas.width+cam.x+500, y: cam.y-20, vx: -15, vy: 12, life: 1, color: '#ff4400', size: 10, type: 'meteor' });
+        } else if(this.weather === 'MATRIX') {
+            this.particles.push({ x: Math.random()*this.canvas.width+cam.x, y: cam.y-20, vx: 0, vy: 8, life: 1, color: '#0f0', size: 12, type: 'code' });
+        } else if(this.weather === 'PLASMA') {
+            this.particles.push({ x: Math.random()*this.canvas.width+cam.x, y: Math.random()*this.canvas.height+cam.y, vx: 0, vy: 0, life: 1, color: `hsl(${Math.random()*360}, 100%, 50%)`, size: Math.random()*30, type: 'plasma' });
         }
     },
 
     update() {
         const p = this.player;
-        if(this.keys['a'] || this.keys['arrowleft']) p.vx -= 0.7;
-        if(this.keys['d'] || this.keys['arrowright']) p.vx += 0.7;
-        p.vy += 0.55; p.vx *= 0.88; p.x += p.vx; p.y += p.vy;
+        if(this.keys['a'] || this.keys['arrowleft']) p.vx -= 0.8;
+        if(this.keys['d'] || this.keys['arrowright']) p.vx += 0.8;
+        p.vy += 0.6; p.vx *= 0.85; p.x += p.vx; p.y += p.vy;
 
-        // Platform Çarpışma
         this.platforms.forEach(plat => {
             if(p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y + p.h > plat.y && p.y < plat.y + plat.h) {
-                if(p.vy > 0 && p.y < plat.y) {
-                    p.y = plat.y - p.h; p.vy = 0; p.jumps = 0;
-                }
+                if(p.vy > 0 && p.y < plat.y) { p.y = plat.y - p.h; p.vy = 0; p.jumps = 0; }
             }
         });
 
-        // Hava Durumu Parçacıkları Ekleme
-        if(this.weather === 'SNOW') this.particles.push({ x: Math.random() * canvas.width + this.camera.x, y: this.camera.y - 20, vx: (Math.random()-0.5), vy: 2+Math.random()*2, life: 1, color: '#fff', type: 'snow' });
-        if(this.weather === 'METEOR' && Math.random() > 0.95) this.particles.push({ x: Math.random() * canvas.width + this.camera.x + 400, y: this.camera.y - 20, vx: -8, vy: 8, life: 1, color: '#ff4400', type: 'meteor' });
-        if(this.weather === 'MATRIX') this.particles.push({ x: Math.random() * canvas.width + this.camera.x, y: this.camera.y - 20, vx: 0, vy: 10, life: 1, color: '#0f0', type: 'code' });
-
+        this.spawnWeatherParticles();
         this.particles.forEach((part, i) => {
-            part.x += part.vx; part.y += part.vy; part.life -= (part.type === 'spark' ? 0.02 : 0.005);
+            part.x += part.vx; part.y += part.vy;
+            part.life -= (part.type === 'plasma' || part.type === 'meteor') ? 0.01 : 0.005;
             if(part.life <= 0) this.particles.splice(i, 1);
         });
 
-        this.camera.x += (p.x - window.innerWidth/2 - this.camera.x) * 0.1;
-        this.camera.y += (p.y - window.innerHeight/2 - this.camera.y) * 0.1;
+        this.camera.x += (p.x - this.canvas.width/2 - this.camera.x) * 0.1;
+        this.camera.y += (p.y - this.canvas.height/2 - this.camera.y) * 0.1;
 
-        if(p.y > window.innerHeight + 1000 || this.hazards.some(h => p.x < h.x + h.w && p.x + p.w > h.x && p.y + p.h > h.y && p.y < h.y + h.h)) {
-            AudioEngine.die(); this.loadLevel(this.level);
+        if(p.y > 1500 || this.hazards.some(h => p.x < h.x+h.w && p.x+p.w > h.x && p.y+p.h > h.y && p.y < h.y+h.h)) {
+            AudioEngine.play(50, 'sawtooth', 0.4); this.loadLevel(this.level);
         }
-        if(p.x > this.finish.x && p.x < this.finish.x + this.finish.w && p.y > this.finish.y && p.y < this.finish.y + this.finish.h) {
-            AudioEngine.win(); this.level++; this.loadLevel(this.level);
+        if(p.x > this.finish.x && p.x < this.finish.x+this.finish.w && p.y > this.finish.y && p.y < this.finish.y+this.finish.h) {
+            AudioEngine.play(600, 'sine', 0.5); this.loadLevel(this.level + 1);
         }
     },
 
     draw() {
         const ctx = this.ctx;
-        ctx.fillStyle = '#050612'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.fillStyle = '#020205'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
         ctx.save(); ctx.translate(-this.camera.x, -this.camera.y);
 
-        this.platforms.forEach(p => { ctx.fillStyle = '#15172b'; ctx.fillRect(p.x, p.y, p.w, p.h); ctx.strokeStyle = '#00f2ff'; ctx.strokeRect(p.x, p.y, p.w, p.h); });
-        this.hazards.forEach(h => { ctx.fillStyle = '#ff0066'; ctx.beginPath(); ctx.moveTo(h.x, h.y+h.h); ctx.lineTo(h.x+h.w/2, h.y); ctx.lineTo(h.x+h.w, h.y+h.h); ctx.fill(); });
+        // Platformlar (Glow Efekti)
+        ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff';
+        this.platforms.forEach(p => { ctx.fillStyle = '#101025'; ctx.fillRect(p.x, p.y, p.w, p.h); });
         
-        ctx.fillStyle = '#00ff88'; ctx.globalAlpha = 0.2; ctx.fillRect(this.finish.x, this.finish.y, this.finish.w, this.finish.h); ctx.globalAlpha = 1;
+        // Tehlikeler
+        ctx.shadowColor = '#ff00ff'; ctx.fillStyle = '#ff00ff';
+        this.hazards.forEach(h => { ctx.beginPath(); ctx.moveTo(h.x, h.y+h.h); ctx.lineTo(h.x+h.w/2, h.y); ctx.lineTo(h.x+h.w, h.y+h.h); ctx.fill(); });
 
+        // Hava Durumu Efektleri Çizimi
+        ctx.shadowBlur = 0;
         this.particles.forEach(part => {
-            ctx.fillStyle = part.color; ctx.globalAlpha = part.life;
-            if(part.type === 'meteor') { ctx.fillRect(part.x, part.y, 8, 8); }
-            else if(part.type === 'code') { ctx.font = "10px monospace"; ctx.fillText(Math.random()>0.5?"1":"0", part.x, part.y); }
-            else { ctx.fillRect(part.x, part.y, 3, 3); }
+            ctx.globalAlpha = part.life;
+            ctx.fillStyle = part.color;
+            if(part.type === 'code') { ctx.font = part.size+"px monospace"; ctx.fillText(Math.random()>0.5?"1":"0", part.x, part.y); }
+            else if(part.type === 'plasma') { 
+                ctx.beginPath(); ctx.arc(part.x, part.y, part.size * part.life, 0, Math.PI*2); ctx.fill(); 
+            }
+            else if(part.type === 'meteor') {
+                ctx.shadowBlur = 20; ctx.shadowColor = 'red'; ctx.fillRect(part.x, part.y, part.size, part.size); ctx.shadowBlur = 0;
+            }
+            else { ctx.fillRect(part.x, part.y, part.size, part.size); }
         });
 
-        ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff';
-        ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h); ctx.shadowBlur = 0;
+        // Bitiş Kapısı
+        ctx.globalAlpha = 0.2; ctx.fillStyle = '#00ff88'; ctx.fillRect(this.finish.x, this.finish.y, this.finish.w, this.finish.h);
+        
+        // Oyuncu
+        ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = '#00f2ff';
+        ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
+
         ctx.restore();
     },
 
     loop() { this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
 };
+
+window.addEventListener('resize', () => {
+    if(Engine.ctx) { Engine.canvas.width = window.innerWidth; Engine.canvas.height = window.innerHeight; }
+});
 </script>
 </body>
 </html>
