@@ -2,106 +2,154 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Lordz RPG - Fixed Edition</title>
+    <title>Dragon Lordz: Arena</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background: #0e1a10; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; background: #1a2e1c; }
+        :root { --gold: #f1c40f; --red: #e74c3c; --blue: #3498db; --green: #2ecc71; }
+        body { margin: 0; background: #0b0e11; font-family: 'Poppins', sans-serif; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         
-        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; display: none; }
-        .stat-box { background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 8px; border-left: 5px solid #f1c40f; margin-bottom: 10px; }
+        #game-container { position: relative; width: 1000px; height: 600px; background: linear-gradient(to bottom, #1a2a6c, #b21f1f, #fdbb2d); border: 5px solid var(--gold); border-radius: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.8); overflow: hidden; }
         
-        #skill-bar { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: none; gap: 15px; }
-        .skill {
-            width: 60px; height: 60px; background: #222; border: 2px solid #555; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;
-            position: relative; overflow: hidden;
-        }
-        .skill.ready { border-color: #f1c40f; box-shadow: 0 0 15px #f1c40f; }
-        .cd-mask { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.7); height: 0%; }
+        /* Battle UI */
+        .health-bar-container { position: absolute; width: 300px; height: 30px; background: #333; border: 2px solid white; border-radius: 15px; overflow: hidden; }
+        .health-fill { width: 100%; height: 100%; background: var(--green); transition: width 0.5s ease-out; }
+        .player-ui { top: 50px; left: 50px; }
+        .bot-ui { top: 50px; right: 50px; text-align: right; }
+        
+        /* Dragon Graphics */
+        .dragon { position: absolute; width: 150px; height: 150px; transition: transform 0.2s; }
+        #player-dragon { bottom: 150px; left: 150px; background: url('https://cdn-icons-png.flaticon.com/512/606/606553.png') no-repeat center/contain; transform: scaleX(-1); }
+        #bot-dragon { bottom: 150px; right: 150px; background: url('https://cdn-icons-png.flaticon.com/512/606/606548.png') no-repeat center/contain; }
 
-        #overlay {
-            position: absolute; inset: 0; background: rgba(0,0,0,0.85);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100;
-        }
-        button { padding: 15px 40px; cursor: pointer; background: #f1c40f; border: none; font-weight: bold; font-size: 20px; border-radius: 5px; }
+        /* Action Menu */
+        #action-menu { position: absolute; bottom: 0; width: 100%; height: 120px; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; gap: 20px; border-top: 3px solid var(--gold); }
+        .skill-btn { padding: 15px 25px; border: 2px solid var(--gold); background: #222; color: white; border-radius: 10px; cursor: pointer; transition: 0.3s; font-family: 'Cinzel'; }
+        .skill-btn:hover:not(:disabled) { background: var(--gold); color: black; transform: translateY(-5px); }
+        .skill-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555; }
+
+        /* Logs */
+        #battle-log { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); text-align: center; font-style: italic; color: #fff; text-shadow: 2px 2px 4px #000; width: 80%; }
+        
+        /* Animations */
+        .attack-anim { transform: translateX(100px) scaleX(-1.2) !important; }
+        .bot-attack-anim { transform: translateX(-100px) scale(1.2) !important; }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0% { left: 150px; } 25% { left: 140px; } 50% { left: 160px; } 75% { left: 140px; } 100% { left: 150px; } }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <h1 id="status-title">LORDZ RPG</h1>
-        <p>Dünya yüklenmeye hazır...</p>
-        <button onclick="startGame()">OYUNU BAŞLAT</button>
-    </div>
-
-    <div id="hud">
-        <div class="stat-box">
-            <div>👑 SEVİYE: <span id="lvl">1</span></div>
-            <div style="font-size: 12px; color: #3498db;">XP: <span id="xp">0</span></div>
+    <div id="game-container">
+        <div class="player-ui">
+            <h3 id="p-name">Ateş Ejderhası (Lv. 5)</h3>
+            <div class="health-bar-container"><div id="p-hp" class="health-fill"></div></div>
+            <p>HP: <span id="p-hp-text">100/100</span></p>
         </div>
-        <div class="stat-box" style="border-left-color: #e74c3c;">
-            <div>❤️ CAN: <span id="hp">100</span></div>
-            <div>🛡️ ORDU: <span id="army">1</span></div>
+
+        <div class="bot-ui">
+            <h3 id="b-name">Karanlık Lord (Lv. 7)</h3>
+            <div class="health-bar-container"><div id="b-hp" class="health-fill" style="float: right;"></div></div>
+            <p style="clear: both;">HP: <span id="b-hp-text">150/150</span></p>
+        </div>
+
+        <div id="battle-log">Savaş Başlıyor! Senin sıran...</div>
+
+        <div id="player-dragon" class="dragon"></div>
+        <div id="bot-dragon" class="dragon"></div>
+
+        <div id="action-menu">
+            <button class="skill-btn" onclick="playerMove('attack')">🔥 ALEV NEFESİ</button>
+            <button class="skill-btn" onclick="playerMove('special')">☄️ METEOR ÇARPMASI</button>
+            <button class="skill-btn" onclick="playerMove('heal')">🛡️ CANLANMA</button>
         </div>
     </div>
-
-    <div id="skill-bar">
-        <div class="skill ready" id="s1">1<div id="cd1" class="cd-mask"></div></div>
-        <div class="skill ready" id="s2">2<div id="cd2" class="cd-mask"></div></div>
-        <div class="skill ready" id="s3">3<div id="cd3" class="cd-mask"></div></div>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const WORLD_SIZE = 4000;
+    let pState = { hp: 100, maxHp: 100, name: "Ejderhan" };
+    let bState = { hp: 150, maxHp: 150, name: "Karanlık Lord" };
+    let isPlayerTurn = true;
 
-let player, soldiers, mobs, particles, camera, mouse, isPlaying = false;
-let cds = { 1: 0, 2: 0, 3: 0 };
+    const log = document.getElementById('battle-log');
+    const pBtn = document.querySelectorAll('.skill-btn');
 
-function startGame() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    player = { 
-        x: WORLD_SIZE / 2, 
-        y: WORLD_SIZE / 2, 
-        hp: 100, maxHp: 100, 
-        lvl: 1, xp: 0, nextXp: 100 
-    };
-    
-    soldiers = [];
-    mobs = [];
-    particles = [];
-    camera = { x: player.x - canvas.width/2, y: player.y - canvas.height/2 };
-    mouse = { x: player.x, y: player.y };
-    
-    // Mobları başlat
-    for(let i=0; i<40; i++) spawnMob();
-    
-    // UI'ları aç
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('hud').style.display = 'block';
-    document.getElementById('skill-bar').style.display = 'flex';
-    
-    isPlaying = true;
-    requestAnimationFrame(gameLoop);
-}
+    function updateUI() {
+        document.getElementById('p-hp').style.width = (pState.hp / pState.maxHp * 100) + "%";
+        document.getElementById('b-hp').style.width = (bState.hp / bState.maxHp * 100) + "%";
+        document.getElementById('p-hp-text').innerText = `${Math.ceil(pState.hp)}/${pState.maxHp}`;
+        document.getElementById('b-hp-text').innerText = `${Math.ceil(bState.hp)}/${bState.maxHp}`;
+        
+        pBtn.forEach(btn => btn.disabled = !isPlayerTurn);
+    }
 
-function spawnMob() {
-    let isBoss = Math.random() > 0.9;
-    mobs.push({
-        x: Math.random() * WORLD_SIZE,
-        y: Math.random() * WORLD_SIZE,
-        hp: isBoss ? 400 : 50,
-        maxHp: isBoss ? 400 : 50,
-        size: isBoss ? 55 : 20,
-        isBoss: isBoss,
-        color: isBoss ? '#8e44ad' : '#c0392b'
-    });
-}
+    async function playerMove(type) {
+        if(!isPlayerTurn) return;
+        isPlayerTurn = false;
+        
+        let dmg = 0;
+        const pDrag = document.getElementById('player-dragon');
+        const bDrag = document.getElementById('bot-dragon');
 
-window.addEventListener('mousemove', (e) => {
-    if(!
+        if(type === 'attack') {
+            dmg = 15 + Math.random() * 10;
+            log.innerText = `${pState.name} Alev Nefesi kullandı!`;
+            pDrag.classList.add('attack-anim');
+        } else if(type === 'special') {
+            dmg = 30 + Math.random() * 15;
+            log.innerText = `${pState.name} METEOR ÇAĞIRDI!`;
+            bDrag.style.filter = "hue-rotate(90deg) brightness(2)";
+        } else {
+            let heal = 25;
+            pState.hp = Math.min(pState.maxHp, pState.hp + heal);
+            log.innerText = `${pState.name} yaralarını iyileştirdi.`;
+        }
+
+        bState.hp = Math.max(0, bState.hp - dmg);
+        updateUI();
+        
+        setTimeout(() => {
+            pDrag.classList.remove('attack-anim');
+            bDrag.style.filter = "none";
+            if(bState.hp <= 0) {
+                log.innerText = "TEBRİKLER! Karanlık Lord'u yendin!";
+                return;
+            }
+            setTimeout(botMove, 1500);
+        }, 600);
+    }
+
+    async function botMove() {
+        const bDrag = document.getElementById('bot-dragon');
+        const pDrag = document.getElementById('player-dragon');
+        let dmg = 0;
+
+        // Basit AI: Canı %20'den azsa iyileşmeye çalışır
+        if(bState.hp < bState.maxHp * 0.2 && Math.random() > 0.5) {
+            bState.hp += 20;
+            log.innerText = "Karanlık Lord karanlık güçle iyileşiyor!";
+        } else {
+            dmg = 10 + Math.random() * 20;
+            log.innerText = "Karanlık Lord pençe attı!";
+            bDrag.classList.add('bot-attack-anim');
+            pDrag.classList.add('shake');
+        }
+
+        pState.hp = Math.max(0, pState.hp - dmg);
+        updateUI();
+
+        setTimeout(() => {
+            bDrag.classList.remove('bot-attack-anim');
+            pDrag.classList.remove('shake');
+            if(pState.hp <= 0) {
+                log.innerText = "YENİLDİN! Ejderhan nakavt oldu.";
+                return;
+            }
+            isPlayerTurn = true;
+            log.innerText = "Senin sıran! Ne yapacaksın?";
+            updateUI();
+        }, 1000);
+    }
+
+    updateUI();
+</script>
+</body>
+</html>
