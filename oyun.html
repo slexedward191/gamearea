@@ -2,221 +2,265 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Leap: Elemental Beats</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <title>Neon Vault: Celebrity Escape</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-blue: #00f2ff; --neon-pink: #ff00ff; --bg-dark: #020205; }
-        body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg-dark); font-family: 'Orbitron', sans-serif; }
-        canvas { display: block; }
-        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; z-index: 10; text-shadow: 0 0 10px #000; }
-        #overlay { position: fixed; inset: 0; background: rgba(2,2,5,0.98); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
-        .btn { background: var(--neon-blue); border: none; padding: 20px 50px; font-size: 24px; font-weight: 900; cursor: pointer; border-radius: 5px; box-shadow: 0 0 30px var(--neon-blue); transition: 0.3s; }
-        .btn:hover { transform: scale(1.1); filter: brightness(1.2); }
-        #effect-announcer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; font-weight: 900; color: white; opacity: 0; pointer-events: none; transition: 1s; }
+        :root { --neon-blue: #00f2ff; --neon-pink: #ff00ff; --neon-green: #0dff00; --bg: #020205; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Orbitron', sans-serif; color: white; }
+        canvas { display: block; filter: contrast(1.2) brightness(1.1); }
+        
+        /* GİRİŞ EKRANI */
+        #login-overlay {
+            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        input { 
+            background: transparent; border: 2px solid var(--neon-blue); color: white;
+            padding: 15px; font-size: 20px; font-family: 'Orbitron'; text-align: center; margin: 20px;
+            box-shadow: 0 0 15px var(--neon-blue); outline: none;
+        }
+        .btn { 
+            background: var(--neon-blue); border: none; padding: 15px 40px; 
+            font-family: 'Syncopate'; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .btn:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--neon-blue); }
+
+        /* OYUN UI */
+        #hud {
+            position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .celeb-frame {
+            position: absolute; top: 20px; right: 20px; width: 150px; height: 150px;
+            border: 3px solid var(--neon-pink); border-radius: 15px; overflow: hidden;
+            box-shadow: 0 0 20px var(--neon-pink); opacity: 0.8;
+        }
+        .celeb-frame img { width: 100%; height: 100%; object-fit: cover; }
     </style>
 </head>
 <body>
 
-<div id="overlay">
-    <h1 style="font-size: 60px; margin-bottom: 0; background: linear-gradient(to right, var(--neon-blue), var(--neon-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VFX ODYSSEY</h1>
-    <p style="letter-spacing: 5px; margin-bottom: 40px;">DİNAMİK MÜZİK VE GÖRSEL ŞÖLEN</p>
-    <button class="btn" onclick="Engine.start()">OYUNU BAŞLAT</button>
+<div id="login-overlay">
+    <h1 style="font-family: 'Syncopate'; font-size: 40px; color: var(--neon-blue);">NEON VAULT PRO</h1>
+    <input type="text" id="player-name" placeholder="ADINI YAZ ŞAMPİYON" maxlength="12">
+    <button class="btn" onclick="Game.init()">SİSTEME GİR</button>
 </div>
 
 <div id="hud">
-    <div style="font-size: 28px; font-weight: 900;">BÖLÜM: <span id="cur-lvl">1</span></div>
-    <div id="weather-tag" style="color: var(--neon-blue); font-size: 14px;">MOD: YÜKLENİYOR...</div>
+    <div style="font-size: 20px; color: var(--neon-blue);">PLAYER: <span id="ui-name">---</span></div>
+    <div style="font-size: 14px;">LEVEL: <span id="ui-lvl">1</span></div>
+    <div style="font-size: 12px; color: var(--neon-pink);">STATUS: <span id="ui-celeb">PENDING</span></div>
 </div>
 
-<div id="effect-announcer">KAR FIRTINASI</div>
+<div class="celeb-frame" id="celeb-box">
+    <img src="" id="celeb-img" alt="Celebrity">
+</div>
 
 <canvas id="gameCanvas"></canvas>
 
 <script>
 /**
- * PROFESYONEL SES VE MÜZİK MOTORU
+ * PROFESYONEL SES VE MÜZİK ÜRETECİ (Dinamik)
  */
 const AudioEngine = {
     ctx: null,
-    nextBeat: 0,
-    init() { 
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
-        this.startMusic();
+    osc: null,
+    init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.playMusic(); },
+    play(f, t, d, v=0.1) {
+        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+        o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
+        g.gain.setValueAtTime(v, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d);
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(); o.stop(this.ctx.currentTime + d);
     },
-    play(freq, type, decay, vol = 0.1) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + decay);
-        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + decay);
-        osc.connect(gain); gain.connect(this.ctx.destination);
-        osc.start(); osc.stop(this.ctx.currentTime + decay);
-    },
-    // Arka Plan Müziği (Dinamik Techno Beat)
-    startMusic() {
+    playMusic() {
         setInterval(() => {
-            const time = this.ctx.currentTime;
-            // Kick Drum
-            this.play(60, 'sine', 0.2, 0.15);
-            // Hi-Hat
-            if(Math.random() > 0.5) setTimeout(() => this.play(8000, 'hi-pass', 0.05, 0.05), 250);
-            // Synth Lead (Bölüme göre değişen notalar)
-            const notes = [261.63, 329.63, 392.00, 523.25];
-            this.play(notes[Engine.level % 4], 'triangle', 0.4, 0.03);
-        }, 500);
+            const notes = [110, 147, 165, 196]; // Deep bass notes
+            this.play(notes[Game.level % 4], 'sine', 0.5, 0.2); // Her level değişen temel nota
+            if(Math.random() > 0.7) this.play(800 + Math.random()*1000, 'square', 0.1, 0.02);
+        }, 400);
     }
 };
 
 /**
- * OYUN MOTORU VE VFX SİSTEMİ
+ * OYUN MOTORU (PROFESSIONAL DESIGN)
  */
-const Engine = {
+const Game = {
     canvas: document.getElementById('gameCanvas'),
-    ctx: null, level: 1,
-    player: { x: 100, y: 400, vx: 0, vy: 0, w: 25, h: 25, jumps: 0 },
-    platforms: [], hazards: [], particles: [], keys: {}, camera: { x: 0, y: 0 },
-    weather: 'SNOW',
+    ctx: null,
+    level: 1, playerName: "",
+    player: { x: 50, y: 50, vx: 0, vy: 0, w: 25, h: 25, jumps: 0, maxJumps: 2 },
+    platforms: [], lasers: [], movingCrushers: [],
+    celebrities: [
+        { name: "ELON MUSK", img: "https://picsum.photos/200/200?sig=1" },
+        { name: "CRISTIANO RONALDO", img: "https://picsum.photos/200/200?sig=2" },
+        { name: "MR BEAST", img: "https://picsum.photos/200/200?sig=3" },
+        { name: "STEVE JOBS", img: "https://picsum.photos/200/200?sig=4" },
+        { name: "TARKAN", img: "https://picsum.photos/200/200?sig=5" }
+    ],
 
-    start() {
-        document.getElementById('overlay').style.display = 'none';
-        AudioEngine.init();
+    init() {
+        this.playerName = document.getElementById('player-name').value || "PLAYER1";
+        if(this.playerName === "ADINI YAZ ŞAMPİYON") this.playerName = "GHOST";
+        document.getElementById('ui-name').innerText = this.playerName.toUpperCase();
+        document.getElementById('login-overlay').style.display = 'none';
+        
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
+        
+        AudioEngine.init();
+        
         window.addEventListener('keydown', e => this.handleInput(e, true));
         window.addEventListener('keyup', e => this.keys[e.key.toLowerCase()] = false);
+        this.keys = {};
+
         this.loadLevel(1);
         this.loop();
     },
 
-    handleInput(e, state) {
-        let key = e.key.toLowerCase();
-        if(state && (key === 'w' || key === ' ' || key === 'arrowup')) {
-            if(this.player.jumps < 2) {
-                this.player.vy = -12;
-                this.player.jumps++;
-                AudioEngine.play(this.player.jumps === 1 ? 150 : 300, 'square', 0.2);
+    loadLevel(n) {
+        this.level = n;
+        this.player.x = 100; this.player.y = 100; this.player.vx = 0; this.player.vy = 0;
+        
+        // Seviye Verileri
+        const celeb = this.celebrities[(n-1) % this.celebrities.length];
+        document.getElementById('celeb-img').src = celeb.img;
+        document.getElementById('ui-celeb').innerText = celeb.name;
+        document.getElementById('ui-lvl').innerText = n;
+
+        // Oda Tasarımı (Kare Oda)
+        const W = this.canvas.width; const H = this.canvas.height;
+        this.platforms = [
+            { x: 0, y: 0, w: W, h: 20 }, // Tavan
+            { x: 0, y: H-20, w: W, h: 20 }, // Yer
+            { x: 0, y: 0, w: 20, h: H }, // Sol Duvar
+            { x: W-20, y: 0, w: 20, h: H }, // Sağ Duvar
+            { x: 100, y: 200, w: 200, h: 20 } // Start platform
+        ];
+
+        // Hareketli Engeller (Yukarı-Aşağı Giden Bloklar)
+        this.movingCrushers = [];
+        for(let i=0; i<3+(n%4); i++) {
+            this.movingCrushers.push({
+                x: 400 + (i*250), y: 100, w: 40, h: 40, 
+                range: 300, speed: 2 + (n*0.5), offset: Math.random()*Math.PI*2
+            });
+        }
+
+        // Lazerler (Sağa Sola Giden İnce Işınlar)
+        this.lasers = [];
+        if(n > 1) {
+            for(let i=0; i<2; i++) {
+                this.lasers.push({
+                    y: 300 + (i*200), x: 100, w: 200, h: 5, 
+                    dir: 1, speed: 5 + n
+                });
             }
         }
-        this.keys[key] = state;
+
+        // Çıkış Kapısı (Farklı Köşe)
+        this.exit = { x: W - 100, y: H - 120, w: 50, h: 80 };
     },
 
-    loadLevel(num) {
-        this.level = num;
-        this.platforms = []; this.hazards = []; this.particles = [];
-        this.player.x = 100; this.player.y = 400; this.player.vx = 0; this.player.vy = 0;
-        
-        const effects = ['KAR FIRTINASI', 'METEOR YAĞMURU', 'MATRIX YAĞMURU', 'PLAZMA PATLAMASI'];
-        this.weather = ['SNOW', 'METEOR', 'MATRIX', 'PLASMA'][Math.floor((num-1) / 2) % 4];
-        
-        // Announcer Efekti
-        const ann = document.getElementById('effect-announcer');
-        ann.innerText = effects[Math.floor((num-1) / 2) % 4];
-        ann.style.opacity = 1;
-        setTimeout(() => ann.style.opacity = 0, 2000);
-        document.getElementById('weather-tag').innerText = "MOD: " + effects[Math.floor((num-1) / 2) % 4];
-
-        this.platforms.push({ x: 0, y: 550, w: 300, h: 40 });
-        let lx = 300; let ly = 550;
-        for(let i=0; i<10+num; i++) {
-            lx += 150 + Math.random()*100;
-            ly += (Math.random()-0.5)*150;
-            this.platforms.push({ x: lx, y: ly, w: 120, h: 20 });
-            if(num > 2 && Math.random() > 0.5) this.hazards.push({ x: lx+30, y: ly-15, w: 60, h: 15 });
+    handleInput(e, state) {
+        let k = e.key.toLowerCase();
+        if(state && (k === ' ' || k === 'w' || k === 'arrowup')) {
+            if(this.player.jumps < this.player.maxJumps) {
+                this.player.vy = -10;
+                this.player.jumps++;
+                AudioEngine.play(200 + (this.player.jumps*100), 'triangle', 0.2);
+            }
         }
-        this.finish = { x: lx + 200, y: ly - 100, w: 80, h: 200 };
-        document.getElementById('cur-lvl').innerText = num;
-    },
-
-    spawnWeatherParticles() {
-        const cam = this.camera;
-        if(this.weather === 'SNOW') {
-            this.particles.push({ x: Math.random()*this.canvas.width+cam.x, y: cam.y-20, vx: -2, vy: 3, life: 1, color: '#fff', size: 2, type: 'env' });
-        } else if(this.weather === 'METEOR' && Math.random() > 0.9) {
-            this.particles.push({ x: Math.random()*this.canvas.width+cam.x+500, y: cam.y-20, vx: -15, vy: 12, life: 1, color: '#ff4400', size: 10, type: 'meteor' });
-        } else if(this.weather === 'MATRIX') {
-            this.particles.push({ x: Math.random()*this.canvas.width+cam.x, y: cam.y-20, vx: 0, vy: 8, life: 1, color: '#0f0', size: 12, type: 'code' });
-        } else if(this.weather === 'PLASMA') {
-            this.particles.push({ x: Math.random()*this.canvas.width+cam.x, y: Math.random()*this.canvas.height+cam.y, vx: 0, vy: 0, life: 1, color: `hsl(${Math.random()*360}, 100%, 50%)`, size: Math.random()*30, type: 'plasma' });
-        }
+        this.keys[k] = state;
     },
 
     update() {
         const p = this.player;
+        const gravity = 0.45; // Azıcık yerçekimi
+
         if(this.keys['a'] || this.keys['arrowleft']) p.vx -= 0.8;
         if(this.keys['d'] || this.keys['arrowright']) p.vx += 0.8;
-        p.vy += 0.6; p.vx *= 0.85; p.x += p.vx; p.y += p.vy;
+        
+        p.vy += gravity;
+        p.vx *= 0.9;
+        p.x += p.vx; p.y += p.vy;
 
+        // Platform Çarpışma
         this.platforms.forEach(plat => {
-            if(p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y + p.h > plat.y && p.y < plat.y + plat.h) {
-                if(p.vy > 0 && p.y < plat.y) { p.y = plat.y - p.h; p.vy = 0; p.jumps = 0; }
+            if(p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y < plat.y + plat.h && p.y + p.h > plat.y) {
+                let overlapX = Math.min(p.x + p.w - plat.x, plat.x + plat.w - p.x);
+                let overlapY = Math.min(p.y + p.h - plat.y, plat.y + plat.h - p.y);
+                if(overlapX > overlapY) {
+                    if(p.vy > 0 && p.y < plat.y) { p.y = plat.y - p.h; p.vy = 0; p.jumps = 0; }
+                    else if(p.vy < 0) { p.y = plat.y + plat.h; p.vy = 0; }
+                } else {
+                    if(p.vx > 0) p.x = plat.x - p.w; else p.x = plat.x + plat.w;
+                    p.vx = 0;
+                }
             }
         });
 
-        this.spawnWeatherParticles();
-        this.particles.forEach((part, i) => {
-            part.x += part.vx; part.y += part.vy;
-            part.life -= (part.type === 'plasma' || part.type === 'meteor') ? 0.01 : 0.005;
-            if(part.life <= 0) this.particles.splice(i, 1);
+        // Hareketli Engel Mantığı
+        this.movingCrushers.forEach(c => {
+            c.y = 200 + Math.sin(Date.now()*0.002 * c.speed + c.offset) * c.range/2;
+            if(p.x < c.x + c.w && p.x + p.w > c.x && p.y < c.y + c.h && p.y + p.h > c.y) this.die();
         });
 
-        this.camera.x += (p.x - this.canvas.width/2 - this.camera.x) * 0.1;
-        this.camera.y += (p.y - this.canvas.height/2 - this.camera.y) * 0.1;
+        // Lazer Mantığı
+        this.lasers.forEach(l => {
+            l.x += l.speed * l.dir;
+            if(l.x > this.canvas.width - 300 || l.x < 100) l.dir *= -1;
+            if(p.x < l.x + l.w && p.x + p.w > l.x && p.y < l.y + l.h && p.y + p.h > l.y) this.die();
+        });
 
-        if(p.y > 1500 || this.hazards.some(h => p.x < h.x+h.w && p.x+p.w > h.x && p.y+p.h > h.y && p.y < h.y+h.h)) {
-            AudioEngine.play(50, 'sawtooth', 0.4); this.loadLevel(this.level);
+        // Çıkış Kontrolü
+        if(p.x < this.exit.x + this.exit.w && p.x + p.w > this.exit.x && p.y < this.exit.y + this.exit.h && p.y + p.h > this.exit.y) {
+            AudioEngine.play(800, 'sine', 0.5);
+            this.loadLevel(this.level + 1);
         }
-        if(p.x > this.finish.x && p.x < this.finish.x+this.finish.w && p.y > this.finish.y && p.y < this.finish.y+this.finish.h) {
-            AudioEngine.play(600, 'sine', 0.5); this.loadLevel(this.level + 1);
-        }
+    },
+
+    die() {
+        AudioEngine.play(100, 'sawtooth', 0.3);
+        this.loadLevel(this.level);
     },
 
     draw() {
         const ctx = this.ctx;
         ctx.fillStyle = '#020205'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        ctx.save(); ctx.translate(-this.camera.x, -this.camera.y);
 
-        // Platformlar (Glow Efekti)
-        ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff';
-        this.platforms.forEach(p => { ctx.fillStyle = '#101025'; ctx.fillRect(p.x, p.y, p.w, p.h); });
-        
-        // Tehlikeler
-        ctx.shadowColor = '#ff00ff'; ctx.fillStyle = '#ff00ff';
-        this.hazards.forEach(h => { ctx.beginPath(); ctx.moveTo(h.x, h.y+h.h); ctx.lineTo(h.x+h.w/2, h.y); ctx.lineTo(h.x+h.w, h.y+h.h); ctx.fill(); });
+        // Odadaki Izgara Efekti
+        ctx.strokeStyle = 'rgba(0, 242, 255, 0.05)';
+        for(let i=0; i<this.canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,this.canvas.height); ctx.stroke(); }
 
-        // Hava Durumu Efektleri Çizimi
-        ctx.shadowBlur = 0;
-        this.particles.forEach(part => {
-            ctx.globalAlpha = part.life;
-            ctx.fillStyle = part.color;
-            if(part.type === 'code') { ctx.font = part.size+"px monospace"; ctx.fillText(Math.random()>0.5?"1":"0", part.x, part.y); }
-            else if(part.type === 'plasma') { 
-                ctx.beginPath(); ctx.arc(part.x, part.y, part.size * part.life, 0, Math.PI*2); ctx.fill(); 
-            }
-            else if(part.type === 'meteor') {
-                ctx.shadowBlur = 20; ctx.shadowColor = 'red'; ctx.fillRect(part.x, part.y, part.size, part.size); ctx.shadowBlur = 0;
-            }
-            else { ctx.fillRect(part.x, part.y, part.size, part.size); }
-        });
+        // Platformlar
+        ctx.shadowBlur = 10; ctx.shadowColor = varName('--neon-blue');
+        ctx.fillStyle = '#101020';
+        this.platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
 
-        // Bitiş Kapısı
-        ctx.globalAlpha = 0.2; ctx.fillStyle = '#00ff88'; ctx.fillRect(this.finish.x, this.finish.y, this.finish.w, this.finish.h);
-        
-        // Oyuncu
-        ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = '#00f2ff';
+        // Hareketli Crushers
+        ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055';
+        this.movingCrushers.forEach(c => ctx.fillRect(c.x, c.y, c.w, c.h));
+
+        // Lazerler
+        ctx.fillStyle = varName('--neon-green'); ctx.shadowColor = varName('--neon-green');
+        this.lasers.forEach(l => ctx.fillRect(l.x, l.y, l.w, l.h));
+
+        // Çıkış Kapısı
+        ctx.fillStyle = '#0dff00'; ctx.globalAlpha = 0.3; ctx.fillRect(this.exit.x, this.exit.y, this.exit.w, this.exit.h); ctx.globalAlpha = 1;
+
+        // Player (Neon Cube)
+        ctx.fillStyle = 'white'; ctx.shadowBlur = 20; ctx.shadowColor = 'white';
         ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
-
-        ctx.restore();
-    },
-
-    loop() { this.update(); this.draw(); requestAnimationFrame(() => this.loop()); }
+        
+        ctx.shadowBlur = 0;
+        requestAnimationFrame(() => { this.update(); this.draw(); });
+    }
 };
 
-window.addEventListener('resize', () => {
-    if(Engine.ctx) { Engine.canvas.width = window.innerWidth; Engine.canvas.height = window.innerHeight; }
-});
+function varName(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
 </script>
 </body>
 </html>
