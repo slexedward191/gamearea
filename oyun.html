@@ -2,295 +2,333 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Derby Tycoon: Ultimate Evolution</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Poppins:wght@300;600;900&display=swap" rel="stylesheet">
+    <title>Derby Legends: Pro Tycoon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #f1c40f;
-            --secondary: #2ecc71;
-            --danger: #e74c3c;
-            --dark: #121212;
-            --surface: #1e1e1e;
+            --neon-gold: #ffcc00;
+            --neon-blue: #00d4ff;
+            --deep-red: #ff2e63;
+            --ui-dark: #0f172a;
+            --success: #00ff88;
         }
 
         body, html { 
             margin: 0; padding: 0; overflow: hidden; 
-            background: var(--dark); font-family: 'Poppins', sans-serif; color: #fff;
+            background: #020617; font-family: 'Ubuntu', sans-serif; color: #f8fafc;
         }
 
-        /* --- UI OVERLAY --- */
-        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 100; }
+        /* --- PROFESYONEL HUD --- */
+        #ui-container { position: absolute; inset: 0; pointer-events: none; z-index: 100; }
         .pointer { pointer-events: all; }
 
-        /* Üst Bar */
-        .top-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 40px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-        }
-        .currency { font-size: 24px; font-weight: 900; color: var(--primary); text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
-
-        /* Ana Menü / Ahır */
-        .main-menu {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 800px; background: var(--surface); border-radius: 20px;
-            padding: 40px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        .top-nav {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 2px solid var(--neon-gold);
+            padding: 15px 50px; display: flex; justify-content: space-between; align-items: center;
         }
 
-        .stable-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
-        .horse-stats { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; }
-        
-        .stat-row { margin: 10px 0; }
-        .stat-label { font-size: 12px; color: #aaa; text-transform: uppercase; }
-        .progress-bg { height: 8px; background: #333; border-radius: 4px; margin-top: 5px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary); transition: 0.5s; }
+        .balance-tag { font-size: 28px; font-weight: 700; color: var(--neon-gold); filter: drop-shadow(0 0 5px var(--neon-gold)); }
 
-        /* Market */
-        .shop-box { display: flex; gap: 10px; margin-top: 20px; }
-        .shop-item {
-            flex: 1; background: #252525; padding: 15px; border-radius: 10px; text-align: center;
-            border: 1px solid transparent; transition: 0.3s; cursor: pointer;
-        }
-        .shop-item:hover { border-color: var(--primary); background: #2a2a2a; }
-
-        /* Yarış Ekranı */
-        #race-track {
-            position: fixed; inset: 0; background: #1a4a1a; display: none;
-            background-image: repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(255,255,255,0.02) 100px, rgba(255,255,255,0.02) 200px);
-        }
-        .lane { height: 80px; border-bottom: 2px solid rgba(255,255,255,0.1); position: relative; }
-        .horse-sprite {
-            position: absolute; left: 0; top: 10px; width: 80px; height: 60px;
-            background-size: contain; transition: left 0.1s linear;
-        }
-        .horse-name-tag {
-            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
-            font-size: 10px; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+        /* ANA PANEL */
+        #garage-panel {
+            position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+            width: 900px; background: var(--ui-dark); border-radius: 24px;
+            padding: 40px; box-shadow: 0 0 100px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Butonlar */
-        .btn {
-            background: var(--primary); color: #000; border: none; padding: 12px 30px;
-            border-radius: 8px; font-family: 'Oswald'; font-weight: 700; font-size: 18px;
-            cursor: pointer; transition: 0.2s; text-transform: uppercase;
-        }
-        .btn:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--primary); }
-        .btn-upgrade { background: var(--secondary); font-size: 12px; padding: 5px 10px; margin-top: 5px; }
+        .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; }
 
-        .hidden { display: none !important; }
+        /* STATS & UPGRADES */
+        .card { background: rgba(255,255,255,0.03); padding: 25px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .bar-container { height: 12px; background: #1e293b; border-radius: 6px; margin: 10px 0; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        /* YARIŞ MEKANİKLERİ */
+        #race-field {
+            position: fixed; inset: 0; background: #064e3b; display: none;
+            perspective: 1000px;
+        }
+        .turf {
+            height: 100%; width: 100%; 
+            background: linear-gradient(90deg, #065f46 50%, #064e3b 50%);
+            background-size: 200px 100%;
+        }
+
+        .horse-unit {
+            position: absolute; width: 120px; height: 80px; 
+            transition: left 0.1s linear; transform-style: preserve-3d;
+        }
+
+        /* KAMÇI BUTONU (Yarış Anında) */
+        #action-bar {
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px;
+        }
+
+        .whip-btn {
+            width: 100px; height: 100px; border-radius: 50%; background: var(--deep-red);
+            border: 4px solid #fff; color: #fff; font-weight: 900; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(255, 46, 99, 0.4);
+        }
+
+        .whip-btn:active { transform: scale(0.9); background: #fff; color: var(--deep-red); }
+
+        /* HAVA DURUMU PANELİ */
+        .weather-tag { font-size: 14px; padding: 5px 15px; border-radius: 20px; background: #1e293b; margin-top: 10px; display: inline-block; }
+
+        .btn-pro {
+            background: linear-gradient(135deg, var(--neon-gold), #ffaa00);
+            color: #000; border: none; padding: 15px 40px; border-radius: 12px;
+            font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .btn-pro:hover { filter: brightness(1.2); transform: translateY(-2px); }
+
+        #fx-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
     </style>
 </head>
 <body>
 
-<div id="ui-layer">
-    <div class="top-bar">
-        <div class="currency">🪙 <span id="gold-val">1000</span></div>
-        <div style="font-family: 'Oswald'; letter-spacing: 2px;">DERBY TYCOON V2.0</div>
+<div id="ui-container">
+    <div class="top-nav">
+        <div class="balance-tag">🪙 <span id="gold-ui">1500</span></div>
+        <div id="weather-ui" class="weather-tag">☁️ HAVA: BULUTLU</div>
+        <div style="font-family: 'Oswald'; font-size: 20px; color: var(--neon-blue);">PRO DERBY LEGENDS</div>
     </div>
 
-    <div id="main-menu" class="main-menu pointer">
-        <h1 style="margin: 0; font-weight: 900; font-size: 32px;">AHIRINIZ</h1>
-        <p style="color: #888; margin-bottom: 30px;">Atını eğit, ekipman al ve şampiyon ol.</p>
-
-        <div class="stable-grid">
-            <div class="horse-stats">
-                <div style="display: flex; justify-content: space-between;">
-                    <span style="font-weight: bold; color: var(--primary);">BEYGİR X</span>
-                    <span id="horse-lvl">LVL 1</span>
-                </div>
-                
-                <div class="stat-row">
-                    <div class="stat-label">MAX HIZ</div>
-                    <div class="progress-bg"><div id="speed-bar" class="progress-fill" style="width: 30%;"></div></div>
-                    <button class="btn btn-upgrade pointer" onclick="Game.upgrade('speed')">GELİŞTİR (250 🪙)</button>
+    <div id="garage-panel" class="pointer">
+        <div class="grid">
+            <div class="card">
+                <div class="stat-header">
+                    <h2 style="margin:0">SAF KAN SAVAŞÇI</h2>
+                    <span id="horse-lvl" style="color:var(--neon-gold)">LVL 1</span>
                 </div>
 
-                <div class="stat-row">
-                    <div class="stat-label">DAYANIKLILIK</div>
-                    <div class="progress-bg"><div id="stam-bar" class="progress-fill" style="width: 40%;"></div></div>
-                    <button class="btn btn-upgrade pointer" onclick="Game.upgrade('stamina')">GELİŞTİR (300 🪙)</button>
+                <div style="margin-bottom: 25px;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px"><span>HIZ (MAX KM/H)</span> <span id="val-speed">40</span></div>
+                    <div class="bar-container"><div id="bar-speed" class="bar-fill" style="width:40%; background:var(--neon-blue)"></div></div>
+                    <button class="btn-pro pointer" style="padding:5px 15px; font-size:10px" onclick="Game.upgrade('speed')">GÜÇLENDİR (300 🪙)</button>
+                </div>
+
+                <div style="margin-bottom: 25px;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px"><span>DAYANIKLILIK (STAMINA)</span> <span id="val-stam">100</span></div>
+                    <div class="bar-container"><div id="bar-stam" class="bar-fill" style="width:50%; background:var(--success)"></div></div>
+                    <button class="btn-pro pointer" style="padding:5px 15px; font-size:10px" onclick="Game.upgrade('stamina')">GÜÇLENDİR (400 🪙)</button>
                 </div>
             </div>
 
-            <div class="horse-stats">
-                <div class="stat-label">BİLGİ</div>
-                <p style="font-size: 13px; color: #ccc;">Atınız şu anki formuyla orta ölçekli yarışlara hazır. Hız geliştirmesi finiş sprintini etkiler.</p>
-                <div class="shop-item pointer" style="background: var(--danger);" onclick="Game.startRace()">
-                    <div style="font-weight: 900;">YARIŞA KATIL</div>
-                    <div style="font-size: 10px;">Giriş Ücreti: 100 🪙</div>
-                </div>
+            <div class="card" style="text-align:center">
+                <div style="font-size: 14px; color: #888;">FORM DURUMU</div>
+                <div id="moral-emoji" style="font-size: 50px; margin: 10px 0;">🔥</div>
+                <p id="moral-text" style="font-size: 12px;">Atın çok enerjik! Yarışlarda +%10 hız bonusu alır.</p>
+                <hr style="border:0; border-top: 1px solid #333; margin: 20px 0;">
+                <button class="btn-pro pointer" style="width:100%" onclick="Game.prepareRace()">BÜYÜK YARIŞA GİR (200 🪙)</button>
             </div>
         </div>
     </div>
 
-    <div id="race-hud" class="hidden" style="position: absolute; bottom: 40px; width: 100%; text-align: center;">
-        <div style="font-size: 24px; font-weight: 900; color: #fff; text-shadow: 2px 2px #000;">
-            FINISH ÇİZGİSİNE KALAN: <span id="dist-val">1000</span>m
+    <div id="action-bar" class="hidden">
+        <button class="whip-btn pointer" onclick="Game.applyWhip()">KAMÇI!</button>
+        <div style="background:rgba(0,0,0,0.8); padding:10px 30px; border-radius:20px;">
+            <div style="font-size:10px">KAMÇI ENERJİSİ</div>
+            <div class="bar-container" style="width:150px; height:6px;"><div id="whip-energy" class="bar-fill" style="width:100%; background:var(--deep-red)"></div></div>
         </div>
     </div>
 </div>
 
-<div id="race-track">
-    </div>
+<div id="race-field">
+    <div class="turf" id="turf-bg"></div>
+    <div id="horse-lanes"></div>
+</div>
 
-<div id="result-screen" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-    <h1 id="result-text" style="font-size: 64px; color: var(--primary);">TEBRİKLER! 1. OLDUN</h1>
-    <p id="reward-text" style="font-size: 24px;">Kazancın: 500 🪙</p>
-    <button class="btn pointer" onclick="Game.backToMenu()">AHIRA DÖN</button>
+<canvas id="fx-canvas"></canvas>
+
+<div id="finish-modal" class="hidden" style="position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <h1 id="rank-text" style="font-size:80px; font-family:'Oswald'; color:var(--neon-gold)">1. OLDUN!</h1>
+    <p id="payout-text" style="font-size:24px">KAZANCIN: 1000 🪙</p>
+    <button class="btn-pro pointer" style="margin-top:30px" onclick="Game.closeResults()">AHIRA GERİ DÖN</button>
 </div>
 
 <script>
 /**
- * DERBY TYCOON: PROFESSIONAL ENGINE
+ * DERBY LEGENDS: ENGINE V3.0 PRO
  */
 const Game = {
-    gold: 1000,
-    horse: {
-        lvl: 1,
-        speed: 30,
-        stamina: 40,
-        currentPos: 0
-    },
-    rivals: [],
+    gold: 1500,
+    horse: { speed: 40, stamina: 100, level: 1, energy: 100, moral: 1.1 },
+    weather: "Bulutlu",
     isRacing: false,
-    trackLength: 5000,
+    trackDist: 10000,
+    playerPos: 0,
+    rivals: [],
+    whipEnergy: 100,
 
     init() {
         this.updateUI();
+        this.changeWeather();
+    },
+
+    changeWeather() {
+        const list = ["Güneşli", "Yağmurlu", "Fırtınalı", "Bulutlu"];
+        this.weather = list[Math.floor(Math.random()*list.length)];
+        const emojis = { "Güneşli": "☀️", "Yağmurlu": "🌧️", "Fırtınalı": "⚡", "Bulutlu": "☁️" };
+        document.getElementById('weather-ui').innerText = emojis[this.weather] + " HAVA: " + this.weather.toUpperCase();
     },
 
     upgrade(type) {
-        let cost = type === 'speed' ? 250 : 300;
-        if(this.gold >= cost && this.horse[type] < 100) {
+        let cost = type === 'speed' ? 300 : 400;
+        if(this.gold >= cost) {
             this.gold -= cost;
-            this.horse[type] += 10;
+            this.horse[type] += 5;
+            this.horse.level++;
             this.updateUI();
-            this.playSFX(440, 'sine', 0.2);
-        } else {
-            alert("Yetersiz bakiye veya max seviye!");
+            this.playAudio(600, 'square', 0.1);
         }
     },
 
-    startRace() {
-        if(this.gold < 100) return;
-        this.gold -= 100;
-        
+    prepareRace() {
+        if(this.gold < 200) return;
+        this.gold -= 200;
         this.isRacing = true;
-        document.getElementById('main-menu').classList.add('hidden');
-        document.getElementById('race-track').classList.remove('hidden');
-        document.getElementById('race-track').style.display = 'block';
-        document.getElementById('race-hud').classList.remove('hidden');
-
-        this.prepareTrack();
+        this.playerPos = 0;
+        this.whipEnergy = 100;
+        
+        document.getElementById('garage-panel').classList.add('hidden');
+        document.getElementById('race-field').style.display = 'block';
+        document.getElementById('action-bar').classList.remove('hidden');
+        
+        this.setupLanes();
         this.raceLoop();
     },
 
-    prepareTrack() {
-        const track = document.getElementById('race-track');
-        track.innerHTML = '';
+    setupLanes() {
+        const container = document.getElementById('horse-lanes');
+        container.innerHTML = '';
         this.rivals = [];
-        this.horse.currentPos = 0;
-
-        // 5 Kulvar oluştur (1 Oyuncu + 4 Bot)
-        for(let i=0; i<5; i++) {
+        
+        const laneH = window.innerHeight / 6;
+        for(let i=0; i<6; i++) {
             const lane = document.createElement('div');
-            lane.className = 'lane';
+            lane.style.position = 'absolute';
+            lane.style.top = (i * laneH) + 'px';
+            lane.style.width = '100%';
+            lane.style.height = laneH + 'px';
+            lane.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
             
             const horse = document.createElement('div');
-            horse.className = 'horse-sprite';
-            horse.style.backgroundColor = i === 0 ? 'var(--primary)' : '#555';
-            horse.style.borderRadius = '5px';
-            horse.innerHTML = `<div class="horse-name-tag">${i === 0 ? 'SİZİN ATINIZ' : 'RAKİP '+i}</div>`;
+            horse.className = 'horse-unit';
+            horse.style.backgroundColor = i === 0 ? 'var(--neon-gold)' : '#334155';
+            horse.style.borderRadius = '8px';
+            horse.style.top = '20px';
             
             lane.appendChild(horse);
-            track.appendChild(lane);
-
+            container.appendChild(lane);
+            
             if(i === 0) {
                 this.playerEl = horse;
             } else {
                 this.rivals.push({
                     el: horse,
                     pos: 0,
-                    speed: 25 + Math.random() * 15,
-                    drift: Math.random() * 2
+                    speed: (this.horse.speed * 0.8) + Math.random() * 15,
+                    power: 0
                 });
             }
+        }
+    },
+
+    applyWhip() {
+        if(this.whipEnergy >= 20) {
+            this.whipEnergy -= 20;
+            this.horse.energy += 15; // Anlık hız patlaması
+            this.playAudio(200, 'sawtooth', 0.05);
+            this.updateUI();
         }
     },
 
     raceLoop() {
         if(!this.isRacing) return;
 
-        // Oyuncu Hareketi (Stamina ve Hız kombinasyonu)
-        const playerSpeed = (this.horse.speed / 5) + (Math.random() * 2);
-        this.horse.currentPos += playerSpeed;
-        
-        // Ekran Kaydırma (Atı hep görünür kılmak için yüzde kullanıyoruz)
-        const screenWidth = window.innerWidth - 100;
-        const playerVisualPos = (this.horse.currentPos / this.trackLength) * screenWidth;
-        this.playerEl.style.left = playerVisualPos + 'px';
+        // Arka plan kaydırma efekti (Parallax)
+        const turf = document.getElementById('turf-bg');
+        turf.style.backgroundPositionX = (-this.playerPos * 2) + "px";
 
-        // Rakip Hareketleri
-        this.rivals.forEach(rival => {
-            rival.pos += (rival.speed / 5) + (Math.random() * 2);
-            rival.el.style.left = (rival.pos / this.trackLength) * screenWidth + 'px';
+        // Oyuncu Hareket Mantığı
+        let weatherPenalty = (this.weather === "Yağmurlu" || this.weather === "Fırtınalı") ? 0.8 : 1.0;
+        let baseSpeed = (this.horse.speed / 10) * this.horse.moral * weatherPenalty;
+        
+        // Kamçı etkisi sönümlenmesi
+        this.horse.energy *= 0.95;
+        this.playerPos += baseSpeed + (this.horse.energy / 15);
+        
+        // Görsel Konumlandırma (Rakiplere göre farkı gösterir)
+        const screenW = window.innerWidth - 200;
+        this.playerEl.style.left = "100px"; // Oyuncu merkezde, rakipler ona göre geri/ileri gider
+
+        // Rakipleri oyuncuya göre konumlandır
+        this.rivals.forEach(r => {
+            r.pos += r.speed / 10;
+            let relativePos = 100 + (r.pos - this.playerPos);
+            r.el.style.left = relativePos + "px";
+            
+            // Eğer rakip bitişe ulaştıysa (Yarış biter)
+            if(r.pos >= this.trackDist) this.finishRace(false);
         });
 
-        // Kalan Mesafe
-        const remaining = Math.max(0, Math.floor(this.trackLength - this.horse.currentPos));
-        document.getElementById('dist-val').innerText = remaining;
-
-        // Bitiş Kontrolü
-        if(this.horse.currentPos >= this.trackLength) {
-            this.endRace(true);
-        } else if (this.rivals.some(r => r.pos >= this.trackLength)) {
-            this.endRace(false);
+        if(this.playerPos >= this.trackDist) {
+            this.finishRace(true);
         } else {
+            // Kamçı enerjisi yavaşça dolar
+            if(this.whipEnergy < 100) this.whipEnergy += 0.1;
+            document.getElementById('whip-energy').style.width = this.whipEnergy + "%";
             requestAnimationFrame(() => this.raceLoop());
         }
     },
 
-    endRace(isWinner) {
+    finishRace(won) {
         this.isRacing = false;
-        const screen = document.getElementById('result-screen');
-        const txt = document.getElementById('result-text');
-        const reward = document.getElementById('reward-text');
-
-        screen.classList.remove('hidden');
-        if(isWinner) {
-            txt.innerText = "ŞAMPİYON!";
-            txt.style.color = "var(--secondary)";
-            this.gold += 500;
-            reward.innerText = "Kazancın: 500 🪙";
+        document.getElementById('finish-modal').classList.remove('hidden');
+        const rText = document.getElementById('rank-text');
+        const pText = document.getElementById('payout-text');
+        
+        if(won) {
+            rText.innerText = "1. OLDUN!";
+            rText.style.color = "var(--neon-gold)";
+            this.gold += 1000;
+            pText.innerText = "KAZANCIN: 1000 🪙";
         } else {
-            txt.innerText = "KAYBETTİN!";
-            txt.style.color = "var(--danger)";
-            reward.innerText = "Dereceye giremedin.";
+            rText.innerText = "ELENDİN!";
+            rText.style.color = "var(--deep-red)";
+            pText.innerText = "Rakipler seni geçti.";
         }
         this.updateUI();
     },
 
-    backToMenu() {
-        document.getElementById('result-screen').classList.add('hidden');
-        document.getElementById('race-track').style.display = 'none';
-        document.getElementById('race-hud').classList.add('hidden');
-        document.getElementById('main-menu').classList.remove('hidden');
+    closeResults() {
+        document.getElementById('finish-modal').classList.add('hidden');
+        document.getElementById('race-field').style.display = 'none';
+        document.getElementById('action-bar').classList.add('hidden');
+        document.getElementById('garage-panel').classList.remove('hidden');
+        this.changeWeather();
     },
 
     updateUI() {
-        document.getElementById('gold-val').innerText = this.gold;
-        document.getElementById('speed-bar').style.width = this.horse.speed + '%';
-        document.getElementById('stam-bar').style.width = this.horse.stamina + '%';
-        document.getElementById('horse-lvl').innerText = `LVL ${Math.floor((this.horse.speed + this.horse.stamina)/10)}`;
+        document.getElementById('gold-ui').innerText = Math.floor(this.gold);
+        document.getElementById('val-speed').innerText = this.horse.speed;
+        document.getElementById('bar-speed').style.width = this.horse.speed + "%";
+        document.getElementById('val-stam').innerText = this.horse.stamina;
+        document.getElementById('bar-stam').style.width = (this.horse.stamina / 2) + "%";
+        document.getElementById('horse-lvl').innerText = "LVL " + this.horse.level;
     },
 
-    playSFX(freq, type, dur) {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + dur);
+    playAudio(f, t, d) {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ac.createOscillator(); const g = ac.createGain();
+        o.type = t; o.frequency.value = f; g.gain.value = 0.1;
+        o.connect(g); g.connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + d);
     }
 };
 
