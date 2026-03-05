@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameArea Fight - Moving Death Aura</title>
+    <title>GameArea Fight - Balanced Boss HP</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
@@ -372,7 +372,8 @@
     function spawnEnemies(isBoss) {
         if (isBoss) {
             const count = Math.min(5, Math.floor(gameState.wave/5));
-            const bossHp = (gameState.wave / 5) * 5000; 
+            // BOSS HP GÜNCELLEMESİ: 2000, 4000, 6000...
+            const bossHp = (gameState.wave / 5) * 2000; 
             for(let i=0; i<count; i++) enemies.push({ x: Math.random()*1200 + 25, y: -50, hp: bossHp, maxHp: bossHp, size: 70, speed: 1.1, boss: true, color: `hsl(${Math.random()*360}, 100%, 50%)` });
         } else {
             for(let i=0; i<gameState.wave*3.5; i++) enemies.push({ x: Math.random()*1250, y: Math.random() < 0.5 ? -30 : 830, hp: 250, maxHp: 250, size: 25, speed: 1.8 + Math.random(), boss: false, color: `hsl(${Math.random()*360}, 70%, 50%)` });
@@ -422,7 +423,6 @@
         const now = Date.now();
         if (now - lastAreaDamageTime < areaDamageCooldown) return;
         lastAreaDamageTime = now;
-        // Alan artık sadece bir parçacık olarak ekleniyor
         particles.push({ 
             type: 'area', 
             radius: 150, 
@@ -452,10 +452,8 @@
             ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         });
 
-        // PARÇACIKLAR (ALAN HASARI ARTIK BURADA İŞLENİYOR)
         particles.forEach((p, i) => {
             if(p.type === 'area') {
-                // Alan karakteri takip eder
                 ctx.save(); 
                 ctx.globalAlpha = p.life * 0.4; 
                 ctx.fillStyle = p.color;
@@ -464,14 +462,10 @@
                 ctx.fill(); 
                 ctx.restore();
 
-                // Düşmanlara Hasar Ver (Saniyede 60 FPS olduğu için canavarların içindeyken çok hızlı hasar alır)
                 enemies.forEach((e, ei) => {
                     const dist = Math.hypot(e.x - player.x, e.y - player.y);
                     if (dist < p.radius) {
-                        e.hp -= 0.84; // 50 / (60 * 1) saniye başına yaklaşık 50 hasar dengesi için (çok güçlü olmaması için ayarlandı)
-                        // Not: +50 direkt basıldığında verilmiyor, alan üstündeyken toplamda devasa hasar veriyor.
-                        // Eğer anlık 50 hasar istersen e.hp -= 50; yapabiliriz ama bu her karede 50 vurur (tek atar).
-                        
+                        e.hp -= 0.84; 
                         if (e.hp <= 0) {
                             addXP(e.boss ? 14 : 7, "AURA ÖLDÜRMESİ", e.boss);
                             enemies.splice(ei, 1);
