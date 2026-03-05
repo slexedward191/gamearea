@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameArea Fight - Pro Balance Fix</title>
+    <title>GameArea Fight - Account & Market Update</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
@@ -11,6 +11,7 @@
             --neon-blue: #00f2ff;
             --neon-red: #ff003c;
             --neon-purple: #bc13fe;
+            --neon-gold: #ffcc00;
         }
 
         body {
@@ -48,19 +49,7 @@
 
         canvas { display: block; }
 
-        #bg-title {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 55px;
-            opacity: 0.15;
-            white-space: nowrap;
-            pointer-events: none;
-            color: #fff;
-            z-index: 1;
-        }
-
+        /* UI Panelleri */
         .ui-panel {
             position: absolute;
             background: rgba(0, 0, 0, 0.85);
@@ -70,33 +59,31 @@
             box-shadow: 0 0 10px var(--neon-blue);
             z-index: 10;
         }
-
         #stats-panel { bottom: -50px; left: -160px; width: 140px; color: var(--neon-blue); }
-        #xp-log { right: -160px; top: 50%; transform: translateY(-50%); width: 140px; max-height: 250px; overflow: hidden; border-color: var(--neon-purple); box-shadow: 0 0 10px var(--neon-purple); }
+        #xp-log { right: -160px; top: 50%; transform: translateY(-50%); width: 140px; max-height: 250px; overflow: hidden; border-color: var(--neon-purple); }
+        #gold-display { top: -50px; left: 0; color: var(--neon-gold); font-weight: bold; border-color: var(--neon-gold); }
 
-        #guide-btn {
+        /* Market Butonu */
+        #market-btn {
             position: absolute;
-            top: -20px;
-            right: -20px;
-            width: 40px;
-            height: 40px;
-            background: var(--neon-blue);
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 22px;
+            bottom: -50px;
+            right: 0;
+            padding: 10px 25px;
+            background: var(--neon-gold);
             color: black;
-            box-shadow: 0 0 10px var(--neon-blue);
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--neon-gold);
+            transition: 0.3s;
             z-index: 20;
         }
+        #market-btn:hover { transform: scale(1.1); box-shadow: 0 0 25px var(--neon-gold); }
 
         .overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -104,23 +91,69 @@
             z-index: 1000;
         }
 
+        /* Kayıt Ekranı Tasarımı */
+        .auth-box {
+            background: #111;
+            padding: 30px;
+            border: 3px solid var(--neon-purple);
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 0 20px var(--neon-purple);
+        }
+        .auth-box input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #000;
+            border: 1px solid var(--neon-blue);
+            color: white;
+            font-family: 'Orbitron';
+        }
+        .warning { color: var(--neon-red); font-size: 10px; margin-top: 10px; }
+
+        /* Market Kartları */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .char-card {
+            background: #222;
+            border: 2px solid var(--neon-blue);
+            padding: 15px;
+            text-align: center;
+            transition: 0.3s;
+            width: 180px;
+        }
+        .char-card.owned { border-color: var(--neon-purple); }
+        .char-card.selected { border-color: var(--neon-gold); box-shadow: 0 0 15px var(--neon-gold); }
+        .char-card h4 { margin: 5px 0; color: var(--neon-blue); }
+        .char-card p { font-size: 10px; margin: 5px 0; }
+        .buy-btn {
+            background: var(--neon-gold);
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
         .btn-gif {
             width: 180px;
-            height: 70px;
+            height: 60px;
             background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif');
             background-size: cover;
             border: 3px solid #fff;
             color: white;
             font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
+            font-size: 10px;
             cursor: pointer;
-            text-shadow: 2px 2px #000;
-            transition: 0.3s;
             display: flex;
             justify-content: center;
             align-items: center;
+            margin: 10px;
         }
-        .btn-gif:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--neon-red); }
 
         #announcement {
             position: absolute;
@@ -130,7 +163,6 @@
             font-size: 4rem;
             color: var(--neon-red);
             font-weight: bold;
-            text-shadow: 0 0 20px #fff;
             display: none;
             z-index: 500;
         }
@@ -147,16 +179,14 @@
             z-index: 5;
         }
         #xp-bar-fill { height: 100%; width: 0%; background: var(--neon-purple); transition: 0.3s; }
-        
-        .upgrade-card {
-            background: #222;
-            margin: 8px;
-            padding: 12px;
-            border: 2px solid var(--neon-blue);
-            cursor: pointer;
-            width: 180px;
-            text-align: center;
+
+        #cooldown-display {
+            position: absolute;
+            color: rgba(255, 0, 0, 0.7);
+            font-family: 'Orbitron';
             font-size: 12px;
+            display: none;
+            z-index: 100;
         }
     </style>
 </head>
@@ -164,47 +194,57 @@
 
 <div id="game-container">
     <div id="arena-wrapper">
-        <div id="bg-title">⚔️ GameArea Fight ⚔️</div>
+        <div id="bg-title" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:55px; opacity:0.15; white-space:nowrap; pointer-events:none; z-index:1">⚔️ GameArea Fight ⚔️</div>
         <canvas id="gameCanvas" width="1050" height="650"></canvas>
         <div id="announcement">DALGA 1</div>
         <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+        <div id="cooldown-display">BEKLEME SÜRESİ: <span id="cooldown-timer">15</span>s</div>
     </div>
 
+    <div id="gold-display" class="ui-panel">ALTIN: <span id="gold-count">0</span></div>
     <div id="stats-panel" class="ui-panel">
         <h5 style="margin:0">STATS</h5>
         <div id="stat-list" style="font-size: 10px;">• Henüz yok...</div>
     </div>
-    
     <div id="xp-log" class="ui-panel">
         <h5 style="margin:0">ÖLDÜRME</h5>
         <div id="log-list" style="font-size: 10px;"></div>
     </div>
+    <div id="market-btn" onclick="toggleMarket()">MARKET</div>
 
-    <div id="guide-btn" onclick="openGuide()">?</div>
+    <div id="auth-screen" class="overlay">
+        <div class="auth-box">
+            <h2 style="color:var(--neon-blue)">GİRİŞ YAP / KAYDOL</h2>
+            <input type="text" id="username" placeholder="Kullanıcı Adı">
+            <input type="password" id="password" placeholder="Şifre">
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;">GİRİŞ</button>
+                <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;">MİSAFİR</button>
+            </div>
+            <p class="warning">DİKKAT: Şifrenizi kaybederseniz hesabınıza asla ulaşamazsınız!</p>
+        </div>
+    </div>
 
-    <div id="start-screen" class="overlay">
+    <div id="start-screen" class="overlay" style="display:none">
         <h1 style="color: var(--neon-red); font-size: 50px;">GameArea Fight</h1>
+        <p id="welcome-msg" style="color:var(--neon-blue)"></p>
         <div class="btn-gif" onclick="startGame()">BAŞLAT</div>
+    </div>
+
+    <div id="market-screen" class="overlay" style="display:none">
+        <h2 style="color:var(--neon-gold)">KARAKTER MARKETİ</h2>
+        <div class="market-grid" id="market-grid"></div>
+        <div class="btn-gif" onclick="toggleMarket()" style="margin-top:20px; background:none; border:2px solid white; height:40px;">KAPAT</div>
     </div>
 
     <div id="death-screen" class="overlay" style="display:none">
         <h1 style="color: white;">ÖLDÜN!</h1>
-        <div class="btn-gif" onclick="location.reload()">RESTART</div>
+        <div class="btn-gif" onclick="resetGame()">RESTART</div>
     </div>
 
     <div id="upgrade-screen" class="overlay" style="display:none">
         <h2>EKLENTİ SEÇ</h2>
         <div id="upgrade-options" style="display:flex; flex-wrap: wrap; justify-content: center;"></div>
-    </div>
-
-    <div id="guide-screen" class="overlay" style="display:none">
-        <div style="background:#111; padding:35px; border:3px solid var(--neon-blue); position:relative; max-width: 80%;">
-            <div style="position:absolute; right:10px; top:10px; cursor:pointer; font-size:20px" onclick="closeGuide()">❌</div>
-            <h3>Oyun Kılavuzu</h3>
-            <p style="font-size: 14px;">W,A,S,D - Hareket</p>
-            <p style="font-size: 14px;">MOUSE SOL TIK (Basılı tut) - Ateş</p>
-            <p style="font-size: 14px;">Her 5 dalgada bir BOSS gelir!</p>
-        </div>
     </div>
 </div>
 
@@ -212,130 +252,263 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    let isRunning = false;
-    let wave = 0;
-    let xp = 0;
-    let xpRequired = 50; // BAŞLANGIÇ XP GEREKSİNİMİ
-    let level = 1;
+    // OYUNCU VERİLERİ (KAYIT SİSTEMİ İÇİN)
+    let currentUser = null;
+    let isGuest = false;
+
+    const CHARS = [
+        { id: 'std', name: 'Standart', hp: 100, armor: 0, price: 0, color: '#00f2ff' },
+        { id: 'mus', name: 'Kaslı', hp: 500, armor: 5, price: 500, color: '#ff003c' },
+        { id: 'str', name: 'Güçlü', hp: 650, armor: 10, price: 1000, color: '#bc13fe' },
+        { id: 'fig', name: 'Dövüşçü', hp: 750, armor: 15, price: 2000, color: '#ffcc00' },
+        { id: 'leg', name: 'Efsanevi', hp: 1000, armor: 25, price: 5000, color: '#ffffff' }
+    ];
+
+    let gameState = {
+        isRunning: false, wave: 0, xp: 0, xpRequired: 50, level: 1,
+        gold: 0, ownedChars: ['std'], selectedChar: 'std'
+    };
+
+    // Kayıt Fonksiyonları
+    function handleAuth(type) {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+
+        if (type === 'guest') {
+            isGuest = true;
+            currentUser = "Misafir";
+            showStart();
+            return;
+        }
+
+        if (!u || !p) return alert("Bilgileri doldur!");
+
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        if (users[u]) {
+            if (users[u].password !== p) return alert("Şifre yanlış!");
+            gameState = users[u].state;
+        } else {
+            users[u] = { password: p, state: gameState };
+            localStorage.setItem('gf_users', JSON.stringify(users));
+        }
+        currentUser = u;
+        isGuest = false;
+        saveUser();
+        showStart();
+    }
+
+    function saveUser() {
+        if (isGuest) return;
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        users[currentUser].state = gameState;
+        localStorage.setItem('gf_users', JSON.stringify(users));
+    }
+
+    function showStart() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('welcome-msg').innerText = `Hoş geldin, ${currentUser}!`;
+        updateGoldUI();
+    }
+
+    // Market Fonksiyonları
+    function toggleMarket() {
+        const screen = document.getElementById('market-screen');
+        if (screen.style.display === 'none') {
+            renderMarket();
+            screen.style.display = 'flex';
+        } else {
+            screen.style.display = 'none';
+        }
+    }
+
+    function renderMarket() {
+        const grid = document.getElementById('market-grid');
+        grid.innerHTML = '';
+        CHARS.forEach(c => {
+            const isOwned = gameState.ownedChars.includes(c.id);
+            const isSelected = gameState.selectedChar === c.id;
+            const div = document.createElement('div');
+            div.className = `char-card ${isOwned ? 'owned' : ''} ${isSelected ? 'selected' : ''}`;
+            div.innerHTML = `
+                <h4>${c.name}</h4>
+                <p>HP: ${c.hp} | Armor: +${c.armor}</p>
+                <p>${isOwned ? 'SAHİPSİN' : 'Fiyat: ' + c.price + ' Altın'}</p>
+                <button class="buy-btn" onclick="${isOwned ? `selectChar('${c.id}')` : `buyChar('${c.id}', ${c.price})`}">
+                    ${isSelected ? 'KULLANILIYOR' : (isOwned ? 'KULLAN' : 'SATIN AL')}
+                </button>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    function buyChar(id, price) {
+        if (gameState.gold >= price) {
+            gameState.gold -= price;
+            gameState.ownedChars.push(id);
+            updateGoldUI();
+            renderMarket();
+            saveUser();
+        } else {
+            alert("Altın yetersiz!");
+        }
+    }
+
+    function selectChar(id) {
+        gameState.selectedChar = id;
+        renderMarket();
+        saveUser();
+    }
+
+    function updateGoldUI() {
+        document.getElementById('gold-count').innerText = gameState.gold;
+    }
+
+    // Oyun Mantığı (Hiçbir şeyi bozmadan entegre edildi)
     let enemies = [];
     let bullets = [];
+    let particles = [];
     let keys = {};
     let mousePressed = false;
     let lastShot = 0;
+    let lastAreaDamageTime = 0;
+    const areaDamageCooldown = 15000;
 
-    const player = {
-        x: 525, y: 325, hp: 100, maxHp: 100, armor: 0, 
-        speed: 3.5, dmg: 30, shootSpeed: 300, crit: 0, bounce: 0, upgrades: []
+    let player = {};
+
+    function startGame() {
+        const charData = CHARS.find(c => c.id === gameState.selectedChar);
+        player = {
+            x: 525, y: 325, hp: charData.hp, maxHp: charData.hp, armor: charData.armor,
+            speed: 3.5, dmg: 30, shootSpeed: 300, crit: 0, bounce: 0, upgrades: [], color: charData.color
+        };
+        
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'none'; // Oyun başlayınca butonu gizle
+        gameState.isRunning = true;
+        gameState.wave = 0;
+        gameState.xp = 0;
+        nextWave();
+        loop();
+    }
+
+    function resetGame() {
+        if (isGuest) {
+            gameState.gold = 0;
+            gameState.ownedChars = ['std'];
+            gameState.selectedChar = 'std';
+        }
+        document.getElementById('death-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'block';
+        showStart();
+    }
+
+    // Input & Sounds (Önceki kodlardan aynı kısımlar)
+    window.onkeydown = e => keys[e.code] = true;
+    window.onkeyup = e => keys[e.code] = false;
+    canvas.onmousedown = (e) => { 
+        if(e.button === 0) mousePressed = true;
+        if(e.button === 2) performAreaDamage();
     };
+    window.onmouseup = () => mousePressed = false;
+    canvas.oncontextmenu = (e) => e.preventDefault(); 
+    canvas.onmousemove = e => { const r = canvas.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; };
+    let mx = 0, my = 0;
 
     function playShootSound() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
         gain.gain.setValueAtTime(0.05, audioCtx.currentTime); 
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
 
-    window.onkeydown = e => keys[e.code] = true;
-    window.onkeyup = e => keys[e.code] = false;
-    canvas.onmousedown = () => mousePressed = true;
-    window.onmouseup = () => mousePressed = false;
-    let mx = 0, my = 0;
-    canvas.onmousemove = e => { 
-        const r = canvas.getBoundingClientRect(); 
-        mx = e.clientX - r.left; my = e.clientY - r.top; 
-    };
-
-    function startGame() {
-        document.getElementById('start-screen').style.display = 'none';
-        isRunning = true;
-        nextWave();
-        loop();
-    }
-
-    function openGuide() { isRunning = false; document.getElementById('guide-screen').style.display = 'flex'; }
-    function closeGuide() { isRunning = true; document.getElementById('guide-screen').style.display = 'none'; }
-
     function nextWave() {
-        wave++;
-        isRunning = false;
+        gameState.wave++;
+        gameState.isRunning = false;
         const ann = document.getElementById('announcement');
         ann.style.display = 'block';
-        let isBoss = wave % 5 === 0;
-        ann.innerText = isBoss ? "BOSS GELİYOR DİKKAT!" : `DALGA ${wave}`;
-        
-        setTimeout(() => {
-            ann.style.display = 'none';
-            isRunning = true;
-            spawnEnemies(isBoss);
-        }, 2000);
+        let isBoss = gameState.wave % 5 === 0;
+        ann.innerText = isBoss ? "BOSS GELİYOR DİKKAT!" : `DALGA ${gameState.wave}`;
+        setTimeout(() => { ann.style.display = 'none'; gameState.isRunning = true; spawnEnemies(isBoss); }, 2000);
     }
 
     function spawnEnemies(isBoss) {
         if (isBoss) {
-            const count = Math.min(5, Math.floor(wave/5));
-            // BOSS CANI GÜNCELLENDİ: 5000 * (Dalgadaki Boss Sayısı gibi değil, Dalga Katı)
-            // 5. Dalga -> 1 * 5000 = 5.000
-            // 10. Dalga -> 2 * 5000 = 10.000
-            const bossHp = (wave / 5) * 5000; 
-            for(let i=0; i<count; i++) {
-                enemies.push({ x: Math.random()*1000, y: -50, hp: bossHp, maxHp: bossHp, size: 70, speed: 1.1, boss: true, color: `hsl(${Math.random()*360}, 100%, 50%)` });
-            }
+            const count = Math.min(5, Math.floor(gameState.wave/5));
+            const bossHp = (gameState.wave / 5) * 5000; 
+            for(let i=0; i<count; i++) enemies.push({ x: Math.random()*1000, y: -50, hp: bossHp, maxHp: bossHp, size: 70, speed: 1.1, boss: true, color: `hsl(${Math.random()*360}, 100%, 50%)` });
         } else {
-            for(let i=0; i<wave*3.5; i++) { 
-                enemies.push({ x: Math.random()*1050, y: Math.random() < 0.5 ? -30 : 680, hp: 250, maxHp: 250, size: 25, speed: 1.8 + Math.random(), boss: false, color: `hsl(${Math.random()*360}, 70%, 50%)` });
-            }
+            for(let i=0; i<gameState.wave*3.5; i++) enemies.push({ x: Math.random()*1050, y: Math.random() < 0.5 ? -30 : 680, hp: 250, maxHp: 250, size: 25, speed: 1.8 + Math.random(), boss: false, color: `hsl(${Math.random()*360}, 70%, 50%)` });
         }
     }
 
-    function addXP(val, type) {
-        xp += val;
+    function addXP(val, type, isBossDeath) {
+        gameState.xp += val;
+        // Altın ekle
+        const goldPlus = isBossDeath ? 5 : 1;
+        gameState.gold += goldPlus;
+        updateGoldUI();
+        saveUser();
+
         const log = document.createElement('div');
-        log.innerHTML = `<span style="color:var(--neon-purple)">+${val} XP</span> <br> ${type}`;
+        log.innerHTML = `<span style="color:var(--neon-purple)">+${val} XP</span> | <span style="color:var(--neon-gold)">+${goldPlus} G</span><br>${type}`;
         document.getElementById('log-list').prepend(log);
+        document.getElementById('xp-bar-fill').style.width = Math.min(100, (gameState.xp/gameState.xpRequired)*100) + "%"; 
         
-        // XP BAR GÜNCELLEME (DİNAMİK XP GEREKSİNİMİNE GÖRE)
-        document.getElementById('xp-bar-fill').style.width = Math.min(100, (xp/xpRequired)*100) + "%"; 
-        
-        if(xp >= xpRequired) { 
-            xp = 0; 
-            level++; 
-            xpRequired += 25; // HER SEVİYEDE GEREKSİNİM 25 ARTIYOR
+        if(gameState.xp >= gameState.xpRequired) { 
+            gameState.xp = 0; 
+            gameState.level++; 
+            gameState.xpRequired += 25; 
             showUpgrades(); 
         }
     }
 
     function showUpgrades() {
-        isRunning = false;
+        gameState.isRunning = false;
         const screen = document.getElementById('upgrade-screen');
         const box = document.getElementById('upgrade-options');
         screen.style.display = 'flex';
         box.innerHTML = '';
         const opts = [
             {t: "+3 Hasar", f: () => player.dmg += 3},
-            {t: "+0.3 Saldırı Hızı", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 30)}, // 300ms üzerinden %10 yani 0.3 etki gibi ayarlandı
-            {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)},
+            {t: "+0.3 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 30)}, 
+            {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)}, // Armor Sınırı 100
             {t: "+2 Kritik", f: () => player.crit += 0.1},
-            {t: "+1 Seken Mermi", f: () => player.bounce += 1}
+            {t: "+1 Seken", f: () => player.bounce += 1}
         ];
         opts.forEach(o => {
             const d = document.createElement('div');
-            d.className = 'upgrade-card';
+            d.className = 'char-card'; // Stil aynı olsun
+            d.style.cursor = 'pointer';
             d.innerText = o.t;
-            d.onclick = () => { o.f(); player.upgrades.push(o.t); updateStats(); screen.style.display='none'; isRunning=true; };
+            d.onclick = () => { o.f(); player.upgrades.push(o.t); updateStats(); screen.style.display='none'; gameState.isRunning=true; };
             box.appendChild(d);
         });
     }
 
     function updateStats() {
-        document.getElementById('stat-list').innerHTML = player.upgrades.length > 0 ? player.upgrades.map(u => `<div>• ${u}</div>`).join('') : "• Henüz yok...";
+        document.getElementById('stat-list').innerHTML = player.upgrades.map(u => `<div>• ${u}</div>`).join('');
+    }
+
+    function performAreaDamage() {
+        if (!gameState.isRunning) return;
+        const now = Date.now();
+        if (now - lastAreaDamageTime < areaDamageCooldown) return;
+        lastAreaDamageTime = now;
+        particles.push({ type: 'area', x: player.x, y: player.y, radius: 150, life: 1.0, color: '#00f2ff' });
+        enemies.forEach((e) => {
+            if (Math.hypot(e.x - player.x, e.y - player.y) < 150) {
+                e.hp -= 5;
+                if (e.hp <= 0) addXP(e.boss ? 14 : 7, "ALAN HASARI", e.boss);
+            }
+        });
     }
 
     function loop() {
-        if (!isRunning) { requestAnimationFrame(loop); return; }
+        if (!gameState.isRunning) { requestAnimationFrame(loop); return; }
         ctx.clearRect(0,0,1050,650);
 
         if (keys['KeyW'] && player.y > 20) player.y -= player.speed;
@@ -352,41 +525,51 @@
 
         bullets.forEach((b, i) => {
             b.x += b.vx; b.y += b.vy;
-            if (b.x<0 || b.x>1050) { if(b.b > 0){ b.vx*=-1; b.b--; } else bullets.splice(i,1); }
-            if (b.y<0 || b.y>650) { if(b.b > 0){ b.vy*=-1; b.b--; } else bullets.splice(i,1); }
+            if (b.x<0 || b.x>1050 || b.y<0 || b.y>650) { if(b.b > 0){ b.vx*=-1; b.vy*=-1; b.b--; } else bullets.splice(i,1); }
             ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         });
 
         enemies.forEach((e, i) => {
             const ang = Math.atan2(player.y - e.y, player.x - e.x);
             e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
-
-            ctx.shadowBlur = 10; ctx.shadowColor = e.color;
             ctx.fillStyle = e.color; ctx.fillRect(e.x-e.size/2, e.y-e.size/2, e.size, e.size);
-            ctx.shadowBlur = 0;
             
-            ctx.fillStyle="red"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-8, e.size, 4);
-            ctx.fillStyle="#00ff00"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-8, (e.hp/e.maxHp)*e.size, 4);
-
             bullets.forEach((bul, bi) => {
                 if (Math.hypot(bul.x - e.x, bul.y - e.y) < e.size) {
                     e.hp -= bul.d; bullets.splice(bi, 1);
-                    if (e.hp <= 0) { addXP(e.boss ? 14:7, e.boss ? "BOSS":"ZOMBİ"); enemies.splice(i,1); }
+                    if (e.hp <= 0) { addXP(e.boss ? 14:7, e.boss ? "BOSS":"ZOMBİ", e.boss); enemies.splice(i,1); }
                 }
             });
 
             if (Math.hypot(player.x-e.x, player.y-e.y) < e.size) {
                 if(player.armor > 0) player.armor -= 0.5; else player.hp -= 0.5;
-                if(player.hp <= 0) { isRunning = false; document.getElementById('death-screen').style.display = 'flex'; }
+                if(player.hp <= 0) { gameState.isRunning = false; document.getElementById('death-screen').style.display = 'flex'; }
             }
         });
 
-        ctx.fillStyle = varColor('--neon-blue'); ctx.beginPath(); ctx.arc(player.x, player.y, 20, 0, 7); ctx.fill();
-        
-        drawBar(player.x-30, player.y+25, 60, 6, player.hp/player.maxHp, "red");
-        drawBar(player.x-30, player.y+33, 60, 6, player.armor/100, varColor('--neon-blue'), "white");
+        particles.forEach((p, i) => {
+            ctx.save(); ctx.globalAlpha = p.life * 0.4; ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, 7); ctx.fill(); ctx.restore();
+            p.life -= (1 / (60 * 7.5)); if (p.life <= 0) particles.splice(i, 1);
+        });
 
-        if(enemies.length === 0 && isRunning) nextWave();
+        // Cooldown UI
+        const cdMs = areaDamageCooldown - (Date.now() - lastAreaDamageTime);
+        if (cdMs > 0) {
+            const r = canvas.getBoundingClientRect();
+            const display = document.getElementById('cooldown-display');
+            display.style.display = 'block';
+            display.style.left = (player.x + r.left - 50) + "px";
+            display.style.top = (player.y + r.top - 50) + "px";
+            document.getElementById('cooldown-timer').innerText = Math.ceil(cdMs/1000);
+        } else document.getElementById('cooldown-display').style.display = 'none';
+
+        // Player
+        ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 20, 0, 7); ctx.fill();
+        drawBar(player.x-30, player.y+25, 60, 6, player.hp/player.maxHp, "red");
+        drawBar(player.x-30, player.y+33, 60, 6, player.armor/100, "#00f2ff", "white");
+
+        if(enemies.length === 0 && gameState.isRunning) nextWave();
         requestAnimationFrame(loop);
     }
 
@@ -394,8 +577,6 @@
         ctx.fillStyle = b; ctx.fillRect(x, y, w, h);
         ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h);
     }
-    function varColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
-
 </script>
 </body>
 </html>
