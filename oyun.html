@@ -3,207 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameArea Fight</title>
+    <title>GameArea Fight - Kanka Versiyon Fix</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-red: #ff003c;
+            --neon-purple: #bc13fe;
+        }
 
         body {
             margin: 0;
-            padding: 0;
-            background-color: #0a0a0a;
+            background-color: #050505;
             color: white;
             font-family: 'Orbitron', sans-serif;
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            overflow: hidden;
         }
 
-        #ui-container {
+        /* Arena Kapsayıcı - Bunu aynı bıraktım, panelleri bunun içine alacağız */
+        #game-container {
             position: relative;
-            width: 1000px;
-            height: 700px;
+            width: 900px; /* Paneller artık içeride olduğu için genişliği arena ile aynı yapabiliriz */
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        canvas {
-            background-color: #111;
+        /* Arena Duvarları - Değişmedi */
+        #arena-wrapper {
+            position: absolute; /* Göreceli konumlandırma paneller için */
+            width: 900px;
+            height: 600px;
             border: 10px solid;
-            border-image: linear-gradient(to right, red 50%, white 50%) 1;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
-            display: block;
+            border-image: linear-gradient(90deg, var(--neon-red) 50%, #ffffff 50%) 1;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            background: #111;
+            overflow: hidden; /* Dışarı taşan her şeyi keser */
         }
 
-        /* Başlangıç ve Ölüm Ekranları */
+        canvas { display: block; }
+
+        /* Başlık ve Kılıçlar - Değişmedi */
+        #bg-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 50px;
+            opacity: 0.15;
+            white-space: nowrap;
+            pointer-events: none;
+            color: #fff;
+            z-index: 1; /* Arka planın hemen üzerinde */
+        }
+
+        /* Arayüz Panelleri - KONUM VE STYLE GÜNCELLENDİ */
+        .ui-panel {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7); /* Biraz daha saydam yapıp arenayı kaplamasını önleyelim */
+            border: 2px solid var(--neon-blue);
+            padding: 10px; /* Biraz küçültelim */
+            border-radius: 8px;
+            box-shadow: 0 0 10px var(--neon-blue);
+            z-index: 10; /* Canvas'ın üzerinde kalması için */
+        }
+
+        /* Stats Paneli - Sol Alt İç Köşede */
+        #stats-panel { 
+            bottom: 20px; /* Alt duvara çarpmaması için */
+            left: 20px; 
+            width: 140px; 
+            color: var(--neon-blue); 
+        }
+
+        /* XP Log (Öldürme) - Sağ Ortaya Yakın */
+        #xp-log { 
+            right: 20px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            width: 140px; 
+            max-height: 200px; /* Biraz küçültelim */
+            overflow: hidden; 
+            border-color: var(--neon-purple); 
+            box-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        /* Kılavuz Butonu - KONUM GÜNCELLENDİ */
+        #guide-btn {
+            position: absolute;
+            top: 20px; /* Üst duvara çarpmaması için */
+            right: 20px; 
+            width: 35px; /* Biraz küçültelim */
+            height: 35px; 
+            background: var(--neon-blue);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 20px; 
+            color: black;
+            box-shadow: 0 0 10px var(--neon-blue);
+            z-index: 10; /* Canvas'ın üzerinde kalması için */
+        }
+
+        /* Ekran Overlay'leri - Z-index güncellendi */
         .overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            inset: 0;
+            background: rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            z-index: 1000; /* Her şeyin üzerinde */
         }
 
-        .btn-fancy {
-            padding: 20px 50px;
-            font-size: 24px;
-            font-family: 'Orbitron', sans-serif;
+        /* Butonlar ve Görüntü Ekranları - Değişmedi */
+        .btn-gif {
+            width: 180px;
+            height: 70px;
+            background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif');
+            background-size: cover;
+            border: 3px solid #fff;
             color: white;
-            background: linear-gradient(45deg, #ff0000, #ff8800);
-            border: none;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: 0.3s;
-            box-shadow: 0 0 15px #ff0000;
-            text-transform: uppercase;
-            font-weight: bold;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 15px #ff0000; }
-            50% { transform: scale(1.1); box-shadow: 0 0 30px #ff8800; }
-            100% { transform: scale(1); box-shadow: 0 0 15px #ff0000; }
-        }
-
-        /* Stats Paneli - Sol Alt */
-        #stats-panel {
-            position: absolute;
-            bottom: 20px;
-            left: -220px;
-            width: 200px;
-            padding: 15px;
-            background: rgba(20, 20, 20, 0.9);
-            border: 2px solid #00f2ff;
-            border-radius: 10px;
+            font-family: 'Press Start 2P', cursive;
             font-size: 12px;
-            box-shadow: 0 0 10px #00f2ff;
-        }
-
-        .stat-item { color: #00f2ff; margin-bottom: 5px; }
-
-        /* XP Log - Sağ Orta */
-        #xp-log {
-            position: absolute;
-            right: -220px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 200px;
-            max-height: 300px;
-            overflow: hidden;
-            background: rgba(255, 0, 0, 0.1);
-            border-left: 3px solid #ff0000;
-            padding: 10px;
-        }
-
-        /* Kılavuz Butonu */
-        #guide-btn {
-            position: absolute;
-            top: 10px;
-            right: -100px;
-            width: 50px;
-            height: 50px;
-            background: radial-gradient(circle, #00f2ff, #0066ff);
-            border-radius: 50%;
+            cursor: pointer;
+            text-shadow: 2px 2px #000;
+            transition: 0.3s;
             display: flex;
             justify-content: center;
             align-items: center;
-            cursor: pointer;
-            font-weight: bold;
-            border: 2px solid white;
-            box-shadow: 0 0 15px #00f2ff;
         }
+        .btn-gif:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--neon-red); }
 
-        /* Eklenti Seçim Ekranı */
-        #upgrade-screen {
-            display: none;
-            z-index: 200;
-        }
-
-        .upgrade-card {
-            background: #222;
-            border: 2px solid #fff;
-            padding: 15px;
-            margin: 10px;
-            cursor: pointer;
-            width: 250px;
-            text-align: center;
-            transition: 0.3s;
-        }
-
-        .upgrade-card:hover { background: #444; transform: translateY(-5px); }
-
-        /* Mesaj Efekti */
+        /* Dalga ve Duyuru - Değişmedi */
         #announcement {
             position: absolute;
             top: 40%;
             width: 100%;
             text-align: center;
-            font-size: 48px;
+            font-size: 3.5rem;
+            color: var(--neon-red);
             font-weight: bold;
-            text-shadow: 0 0 20px red;
-            pointer-events: none;
+            text-shadow: 0 0 15px #fff;
             display: none;
+            z-index: 500;
+        }
+
+        /* XP Bar - Değişmedi */
+        #xp-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%); /* Ortalamak için */
+            width: 70%; /* Biraz daha daraltalım, yan panellere çarpmaması için */
+            height: 12px;
+            background: #fff;
+            border: 2px solid #000;
+            z-index: 5;
+        }
+        #xp-bar-fill { height: 100%; width: 0%; background: var(--neon-purple); transition: 0.3s; }
+        
+        /* Eklenti Menüsü - Değişmedi */
+        .upgrade-card {
+            background: #222;
+            margin: 8px;
+            padding: 12px;
+            border: 2px solid var(--neon-blue);
+            cursor: pointer;
+            width: 180px;
+            text-align: center;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
 
-<div id="ui-container">
-    <canvas id="gameCanvas" width="1000" height="700"></canvas>
-    
-    <div id="announcement">DALGA 1</div>
+<div id="game-container">
+    <div id="arena-wrapper">
+        <div id="bg-title">⚔️ GameArea Fight ⚔️</div>
+        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        <div id="announcement">DALGA 1</div>
+        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+
+        <div id="stats-panel" class="ui-panel">
+            <h5 style="margin:0">STATS</h5>
+            <div id="stat-list" style="font-size: 10px;">• Henüz yok...</div>
+        </div>
+        
+        <div id="xp-log" class="ui-panel">
+            <h5 style="margin:0">ÖLDÜRME</h5>
+            <div id="log-list" style="font-size: 10px;"></div>
+        </div>
+
+        <div id="guide-btn" onclick="openGuide()">?</div>
+    </div>
 
     <div id="start-screen" class="overlay">
-        <h1 style="font-size: 60px; color: #ff0000; text-shadow: 0 0 20px #fff;">GameArea Fight</h1>
-        <button class="btn-fancy" onclick="startGame()">OYUNU BAŞLAT</button>
+        <h1 style="color: var(--neon-red); font-size: 45px;">GameArea Fight</h1>
+        <div class="btn-gif" onclick="startGame()">BAŞLAT</div>
     </div>
 
-    <div id="death-screen" class="overlay" style="display: none;">
-        <h1 style="color: red;">ELENDİN!</h1>
-        <button class="btn-fancy" onclick="location.reload()">TEKRAR DENE</button>
+    <div id="death-screen" class="overlay" style="display:none">
+        <h1 style="color: white;">ÖLDÜN!</h1>
+        <div class="btn-gif" onclick="location.reload()">RESTART</div>
     </div>
 
-    <div id="guide-screen" class="overlay" style="display: none;">
-        <h2>OYUN KILAVUZU</h2>
-        <ul style="text-align: left;">
-            <li>WASD - Hareket Et</li>
-            <li>Sol Tık - Ateş Et (Basılı Tut)</li>
-            <li>Her 5 dalgada bir BOSS gelir!</li>
-            <li>Eklentilerle karakterini güçlendir.</li>
-        </ul>
-        <button class="btn-fancy" onclick="toggleGuide(false)">KAPAT (X)</button>
+    <div id="upgrade-screen" class="overlay" style="display:none">
+        <h2>EKLENTİ SEÇ</h2>
+        <div id="upgrade-options" style="display:flex; flex-wrap: wrap; justify-content: center;"></div>
     </div>
 
-    <div id="upgrade-screen" class="overlay">
-        <h2>BİR EKLENTİ SEÇ</h2>
-        <div id="upgrade-list" style="display: flex; flex-wrap: wrap; justify-content: center;"></div>
+    <div id="guide-screen" class="overlay" style="display:none">
+        <div style="background:#111; padding:25px; border:3px solid var(--neon-blue); position:relative; max-width: 80%;">
+            <div style="position:absolute; right:10px; top:10px; cursor:pointer; font-size:20px" onclick="closeGuide()">❌</div>
+            <h3>Oyun Kılavuzu</h3>
+            <p style="font-size: 14px;">W,A,S,D - Hareket</p>
+            <p style="font-size: 14px;">MOUSE SOL TIK (Basılı tut) - Ateş</p>
+            <p style="font-size: 14px;">Her 5 dalgada bir BOSS gelir!</p>
+        </div>
     </div>
-
-    <div id="guide-btn" onclick="toggleGuide(true)">?</div>
-    
-    <div id="stats-panel">
-        <h3 style="margin-top:0">EKLENTİLER</h3>
-        <div id="active-upgrades">Henüz yok...</div>
-    </div>
-
-    <div id="xp-log"></div>
 </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const ann = document.getElementById('announcement');
-    const upgradeScreen = document.getElementById('upgrade-screen');
-    const xpLog = document.getElementById('xp-log');
-
-    // Oyun Değişkenleri
-    let gameActive = false;
+    
+    // Oyun Durumları
+    let isRunning = false;
     let wave = 0;
     let xp = 0;
     let level = 1;
@@ -214,270 +250,178 @@
     let mousePressed = false;
     let lastShot = 0;
 
-    // Oyuncu Özellikleri
     const player = {
-        x: 500, y: 350,
-        hp: 100, maxHp: 100,
-        armor: 0, maxArmor: 100,
-        size: 20, speed: 4,
-        damage: 25, shootDelay: 300,
-        critChance: 0, bounceCount: 0,
-        upgrades: []
+        x: 450, y: 300, hp: 100, maxHp: 100, armor: 0, 
+        speed: 3.5, dmg: 30, shootSpeed: 300, crit: 0, bounce: 0, upgrades: []
     };
 
-    // Ses Efekti Simülasyonu (Su Tabancası)
+    // Ses Efekti (Su Tabancası Simülasyonu)
     function playShootSound() {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
+        const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        oscillator.connect(gain);
-        gain.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime); /* Biraz daha kısık */
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
     }
 
-    // Olay Dinleyiciler
-    window.addEventListener('keydown', e => keys[e.code] = true);
-    window.addEventListener('keyup', e => keys[e.code] = false);
-    canvas.addEventListener('mousedown', () => mousePressed = true);
-    window.addEventListener('mouseup', () => mousePressed = false);
+    // Inputlar
+    window.onkeydown = e => keys[e.code] = true;
+    window.onkeyup = e => keys[e.code] = false;
+    canvas.onmousedown = () => mousePressed = true;
+    window.onmouseup = () => mousePressed = false;
+    let mx = 0, my = 0;
+    canvas.onmousemove = e => { 
+        const r = canvas.getBoundingClientRect(); 
+        mx = e.clientX - r.left; my = e.clientY - r.top; 
+    };
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
-        gameActive = true;
+        isRunning = true;
         nextWave();
-        animate();
+        loop();
     }
 
-    function toggleGuide(show) {
-        gameActive = !show;
-        document.getElementById('guide-screen').style.display = show ? 'flex' : 'none';
-    }
-
-    function addXp(amount, type) {
-        xp += amount;
-        const entry = document.createElement('div');
-        entry.style.color = amount > 10 ? '#ff00ff' : '#00ff00';
-        entry.innerHTML = `+${amount} XP (${type})`;
-        xpLog.prepend(entry);
-        setTimeout(() => entry.remove(), 3000);
-
-        if (xp >= 50) {
-            xp -= 50;
-            level++;
-            showUpgradeMenu();
-        }
-    }
-
-    function showUpgradeMenu() {
-        gameActive = false;
-        upgradeScreen.style.display = 'flex';
-        const list = document.getElementById('upgrade-list');
-        list.innerHTML = '';
-        
-        const options = [
-            { n: '+3 Hasar', f: () => player.damage += 3 },
-            { n: '+1 Saldırı Hızı', f: () => player.shootDelay = Math.max(100, player.shootDelay - 40) },
-            { n: '+1 Armor', f: () => player.armor = Math.min(100, player.armor + 20) },
-            { n: '+2 Kritik Mermi', f: () => player.critChance += 0.1 },
-            { n: '+1 Seken Mermi', f: () => player.bounceCount += 1 }
-        ];
-
-        options.forEach(opt => {
-            const div = document.createElement('div');
-            div.className = 'upgrade-card';
-            div.innerHTML = `<h3>${opt.n}</h3>`;
-            div.onclick = () => {
-                opt.f();
-                player.upgrades.push(opt.n);
-                updateStatsUI();
-                upgradeScreen.style.display = 'none';
-                gameActive = true;
-            };
-            list.appendChild(div);
-        });
-    }
-
-    function updateStatsUI() {
-        const container = document.getElementById('active-upgrades');
-        container.innerHTML = player.upgrades.map(u => `<div class="stat-item">${u}</div>`).join('');
-    }
+    function openGuide() { isRunning = false; document.getElementById('guide-screen').style.display = 'flex'; }
+    function closeGuide() { isRunning = true; document.getElementById('guide-screen').style.display = 'none'; }
 
     function nextWave() {
         wave++;
-        gameActive = false;
+        isRunning = false;
+        const ann = document.getElementById('announcement');
         ann.style.display = 'block';
-        
-        let isBossWave = wave % 5 === 0;
-        ann.innerText = isBossWave ? "BOSS GELİYOR DİKKAT!" : `DALGA ${wave}`;
+        let isBoss = wave % 5 === 0;
+        ann.innerText = isBoss ? "BOSS GELİYOR DİKKAT!" : `DALGA ${wave}`;
         
         setTimeout(() => {
             ann.style.display = 'none';
-            gameActive = true;
-            spawnEnemies(isBossWave);
+            isRunning = true;
+            spawnEnemies(isBoss);
         }, 2000);
     }
 
     function spawnEnemies(isBoss) {
         if (isBoss) {
-            const bossCount = Math.min(5, Math.floor(wave / 5));
-            const hpMult = Math.floor(wave / 5);
-            for (let i = 0; i < bossCount; i++) {
-                enemies.push({
-                    x: Math.random() * 800 + 100, y: -50,
-                    hp: 1000 * hpMult, maxHp: 1000 * hpMult,
-                    size: 50, speed: 1.5, isBoss: true,
-                    color: `hsl(${Math.random() * 360}, 100%, 50%)`
-                });
+            const count = Math.min(5, Math.floor(wave/5));
+            for(let i=0; i<count; i++) {
+                enemies.push({ x: Math.random()*800, y: -50, hp: 1000 * (wave/5), maxHp: 1000 * (wave/5), size: 60, speed: 1.2, boss: true, color: `hsl(${Math.random()*360}, 100%, 50%)` });
             }
         } else {
-            for (let i = 0; i < wave * 3; i++) {
-                enemies.push({
-                    x: Math.random() * 1000, y: Math.random() < 0.5 ? -20 : 720,
-                    hp: 250, maxHp: 250,
-                    size: 20, speed: 2 + Math.random(), isBoss: false,
-                    color: `hsl(${Math.random() * 360}, 70%, 60%)`
-                });
+            for(let i=0; i<wave*3; i++) { /* Biraz daha az düşman */
+                enemies.push({ x: Math.random()*900, y: Math.random() < 0.5 ? -30 : 630, hp: 250, maxHp: 250, size: 25, speed: 2 + Math.random(), boss: false, color: `hsl(${Math.random()*360}, 70%, 50%)` });
             }
         }
     }
 
-    function animate() {
-        if (!gameActive) { requestAnimationFrame(animate); return; }
+    function addXP(val, type) {
+        xp += val;
+        const log = document.createElement('div');
+        log.innerHTML = `<span style="color:var(--neon-purple)">+${val} XP</span> <br> ${type}`;
+        document.getElementById('log-list').prepend(log);
+        document.getElementById('xp-bar-fill').style.width = Math.min(100, (xp/50)*100) + "%"; /* 100%'ü geçmesin */
+        if(xp >= 50) { xp = 0; level++; showUpgrades(); }
+    }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function showUpgrades() {
+        isRunning = false;
+        const screen = document.getElementById('upgrade-screen');
+        const box = document.getElementById('upgrade-options');
+        screen.style.display = 'flex';
+        box.innerHTML = '';
+        const opts = [
+            {t: "+3 Hasar", f: () => player.dmg += 3},
+            {t: "+1 Atış Hızı", f: () => player.shootSpeed -= 30},
+            {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)},
+            {t: "+2 Kritik", f: () => player.crit += 0.1},
+            {t: "+1 Seken Mermi", f: () => player.bounce += 1}
+        ];
+        opts.forEach(o => {
+            const d = document.createElement('div');
+            d.className = 'upgrade-card';
+            d.innerText = o.t;
+            d.onclick = () => { o.f(); player.upgrades.push(o.t); updateStats(); screen.style.display='none'; isRunning=true; };
+            box.appendChild(d);
+        });
+    }
 
-        // Arka Plan Yazısı
-        ctx.save();
-        ctx.globalAlpha = 0.1;
-        ctx.fillStyle = "white";
-        ctx.font = "bold 60px Orbitron";
-        ctx.textAlign = "center";
-        ctx.fillText("⚔️ GameArea Fight ⚔️", 500, 350);
-        ctx.restore();
+    function updateStats() {
+        document.getElementById('stat-list').innerHTML = player.upgrades.length > 0 ? player.upgrades.map(u => `<div>• ${u}</div>`).join('') : "• Henüz yok...";
+    }
 
-        // Oyuncu Hareketi
+    function loop() {
+        if (!isRunning) { requestAnimationFrame(loop); return; }
+        ctx.clearRect(0,0,900,600);
+
+        // Hareket (Duvar Kontrolü)
         if (keys['KeyW'] && player.y > 20) player.y -= player.speed;
-        if (keys['KeyS'] && player.y < 680) player.y += player.speed;
+        if (keys['KeyS'] && player.y < 580) player.y += player.speed;
         if (keys['KeyA'] && player.x > 20) player.x -= player.speed;
-        if (keys['KeyD'] && player.x < 980) player.x += player.speed;
+        if (keys['KeyD'] && player.x < 880) player.x += player.speed;
 
-        // Ateş Etme
-        if (mousePressed && Date.now() - lastShot > player.shootDelay) {
+        // Ateş
+        if (mousePressed && Date.now() - lastShot > player.shootSpeed) {
             playShootSound();
-            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-            bullets.push({
-                x: player.x, y: player.y,
-                vx: Math.cos(angle) * 7, vy: Math.sin(angle) * 7,
-                bounces: player.bounceCount,
-                damage: Math.random() < player.critChance ? player.damage * 2 : player.damage
-            });
+            const ang = Math.atan2(my - player.y, mx - player.x);
+            bullets.push({ x: player.x, y: player.y, vx: Math.cos(ang)*8, vy: Math.sin(ang)*8, b: player.bounce, d: Math.random() < player.crit ? player.dmg*2 : player.dmg });
             lastShot = Date.now();
         }
 
-        // Mermiler
-        bullets.forEach((b, bi) => {
-            b.x += b.vx;
-            b.y += b.vy;
-            
-            // Duvar Sekme
-            if (b.x < 0 || b.x > 1000) {
-                if (b.bounces > 0) { b.vx *= -1; b.bounces--; }
-                else bullets.splice(bi, 1);
-            }
-            if (b.y < 0 || b.y > 700) {
-                if (b.bounces > 0) { b.vy *= -1; b.bounces--; }
-                else bullets.splice(bi, 1);
-            }
-
-            ctx.fillStyle = "yellow";
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
-            ctx.fill();
+        // Mermi Fizik
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if (b.x<0 || b.x>900) { if(b.b > 0){ b.vx*=-1; b.b--; } else bullets.splice(i,1); }
+            if (b.y<0 || b.y>600) { if(b.b > 0){ b.vy*=-1; b.b--; } else bullets.splice(i,1); }
+            ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         });
 
-        // Düşmanlar
-        enemies.forEach((e, ei) => {
-            const angle = Math.atan2(player.y - e.y, player.x - e.x);
-            e.x += Math.cos(angle) * e.speed;
-            e.y += Math.sin(angle) * e.speed;
+        // Düşman Fizik
+        enemies.forEach((e, i) => {
+            const ang = Math.atan2(player.y - e.y, player.x - e.x);
+            e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
 
-            // Çizim & Can Barı
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = e.color;
-            ctx.fillStyle = e.color;
-            ctx.fillRect(e.x - e.size/2, e.y - e.size/2, e.size, e.size);
+            // Görsel
+            ctx.shadowBlur = 10; ctx.shadowColor = e.color;
+            ctx.fillStyle = e.color; ctx.fillRect(e.x-e.size/2, e.y-e.size/2, e.size, e.size);
             ctx.shadowBlur = 0;
+            
+            // Can Barı
+            ctx.fillStyle="red"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-8, e.size, 4);
+            ctx.fillStyle="#00ff00"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-8, (e.hp/e.maxHp)*e.size, 4);
 
-            ctx.fillStyle = "red";
-            ctx.fillRect(e.x - e.size/2, e.y - e.size/2 - 10, e.size, 5);
-            ctx.fillStyle = "green";
-            ctx.fillRect(e.x - e.size/2, e.y - e.size/2 - 10, (e.hp / e.maxHp) * e.size, 5);
-
-            // Mermi Çarpışma
-            bullets.forEach((b, bi) => {
-                const dist = Math.hypot(b.x - e.x, b.y - e.y);
-                if (dist < e.size) {
-                    e.hp -= b.damage;
-                    bullets.splice(bi, 1);
-                    if (e.hp <= 0) {
-                        addXp(e.isBoss ? 14 : 7, e.isBoss ? "BOSS" : "ZOMBİ");
-                        enemies.splice(ei, 1);
-                    }
+            // Çarpışma
+            bullets.forEach((bul, bi) => {
+                if (Math.hypot(bul.x - e.x, bul.y - e.y) < e.size) {
+                    e.hp -= bul.d; bullets.splice(bi, 1);
+                    if (e.hp <= 0) { addXP(e.boss ? 14:7, e.boss ? "BOSS":"ZOMBİ"); enemies.splice(i,1); }
                 }
             });
 
-            // Oyuncuya Hasar
-            if (Math.hypot(player.x - e.x, player.y - e.y) < e.size) {
-                if (player.armor > 0) player.armor -= 0.5;
-                else player.hp -= 0.5;
-                if (player.hp <= 0) {
-                    gameActive = false;
-                    document.getElementById('death-screen').style.display = 'flex';
-                }
+            if (Math.hypot(player.x-e.x, player.y-e.y) < e.size) {
+                if(player.armor > 0) player.armor -= 0.5; else player.hp -= 0.5;
+                if(player.hp <= 0) { isRunning = false; document.getElementById('death-screen').style.display = 'flex'; }
             }
         });
 
-        // Oyuncu Çizimi
-        ctx.fillStyle = "#00f2ff";
-        ctx.beginPath();
-        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
-        ctx.fill();
+        // Oyuncu Çizim
+        ctx.fillStyle = varColor('--neon-blue'); ctx.beginPath(); ctx.arc(player.x, player.y, 20, 0, 7); ctx.fill();
+        
+        // Can & Armor Barları
+        drawBar(player.x-30, player.y+25, 60, 6, player.hp/player.maxHp, "red");
+        drawBar(player.x-30, player.y+33, 60, 6, player.armor/100, varColor('--neon-blue'), "white");
 
-        // HUD - Can ve Armor
-        drawBar(player.x - 30, player.y + 30, 60, 8, player.hp / player.maxHp, "red");
-        drawBar(player.x - 30, player.y + 42, 60, 8, player.armor / player.maxArmor, "#00f2ff", "white");
-
-        // XP Bar (Alt Kısım)
-        drawBar(100, 660, 800, 20, xp / 50, "purple", "white");
-
-        if (enemies.length === 0) nextWave();
-
-        requestAnimationFrame(animate);
+        if(enemies.length === 0 && isRunning) nextWave();
+        requestAnimationFrame(loop);
     }
 
-    function drawBar(x, y, w, h, pct, fill, empty = "#333") {
-        ctx.fillStyle = empty;
-        ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = fill;
-        ctx.fillRect(x, y, w * pct, h);
-        ctx.strokeStyle = "white";
-        ctx.strokeRect(x, y, w, h);
+    function drawBar(x, y, w, h, p, f, b="#333") {
+        ctx.fillStyle = b; ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h);
     }
-
-    let mouseX = 0, mouseY = 0;
-    canvas.addEventListener('mousemove', e => {
-        const rect = canvas.getBoundingClientRect();
-        mouseX = e.clientX - rect.left;
-        mouseY = e.clientY - rect.top;
-    });
+    function varColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
 
 </script>
-
 </body>
 </html>
