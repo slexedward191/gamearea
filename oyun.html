@@ -2,37 +2,33 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>MMORPG - Origins</title>
+    <title>Lordz RPG - Boss Hunt</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
-        canvas { display: block; background: #1b5e20; } /* Koyu yeşil zemin */
-        
-        #hud { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; }
-        .bar-container { width: 200px; height: 15px; background: #333; border: 2px solid #000; margin-bottom: 5px; }
-        #hp-bar { width: 100%; height: 100%; background: #e74c3c; transition: width 0.3s; }
-        #xp-bar { width: 0%; height: 100%; background: #3498db; transition: width 0.3s; }
-        
-        #class-select {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9); padding: 30px; color: white; text-align: center;
-            border: 2px solid #f1c40f; border-radius: 15px;
+        canvas { display: block; background: #2c3e50; }
+        #ui { position: absolute; top: 20px; left: 20px; color: white; pointer-events: none; }
+        #skills { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+        .skill-slot { 
+            width: 60px; height: 60px; background: rgba(0,0,0,0.7); border: 2px solid #f1c40f; 
+            border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; font-weight: bold; font-size: 12px;
         }
-        button { padding: 10px 20px; cursor: pointer; background: #f1c40f; border: none; font-weight: bold; margin: 10px; }
+        .cooldown { color: #e74c3c; font-size: 10px; }
+        .stat { font-size: 18px; color: #f1c40f; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="class-select">
-        <h2>SINIFINI SEÇ</h2>
-        <button onclick="startGame('Savaşçı')">SAVAŞÇI (Yüksek Can)</button>
-        <button onclick="startGame('Büyücü')">BÜYÜCÜ (Hızlı Hareket)</button>
+    <div id="ui">
+        <div class="stat">⚔️ Hasar: <span id="dmg">10</span></div>
+        <div class="stat">💎 Ganimet: <span id="loot">0</span></div>
+        <div class="stat">👑 Seviye: <span id="lvl">1</span></div>
     </div>
 
-    <div id="hud" style="display: none;">
-        <div class="stat"><b>Sınıf:</b> <span id="char-class">-</span></div>
-        <div class="stat"><b>Level:</b> <span id="char-lvl">1</span></div>
-        <p>HP</p><div class="bar-container"><div id="hp-bar"></div></div>
-        <p>XP</p><div class="bar-container"><div id="xp-bar"></div></div>
+    <div id="skills">
+        <div class="skill-slot">1<br>Hamle<div id="cd1" class="cooldown">Hazır</div></div>
+        <div class="skill-slot">2<br>Kasırga<div id="cd2" class="cooldown">Hazır</div></div>
+        <div class="skill-slot">3<br>Şok Dalgası<div id="cd3" class="cooldown">Hazır</div></div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -40,151 +36,70 @@
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-let gameRunning = false;
-let player = { 
-    x: 1000, y: 1000, radius: 20, 
-    lvl: 1, xp: 0, nextLvl: 100,
-    hp: 100, maxHp: 100, 
-    speed: 4, class: '', color: '' 
-};
-
-let enemies = [];
-let particles = [];
-let camera = { x: 0, y: 0 };
-let mouse = { x: 0, y: 0 };
-
-function startGame(type) {
-    player.class = type;
-    if(type === 'Savaşçı') {
-        player.maxHp = 150; player.hp = 150; player.speed = 3; player.color = '#e67e22';
-    } else {
-        player.maxHp = 80; player.hp = 80; player.speed = 6; player.color = '#9b59b6';
-    }
-    document.getElementById('class-select').style.display = 'none';
-    document.getElementById('hud').style.display = 'block';
-    document.getElementById('char-class').innerText = type;
-    gameRunning = true;
-    spawnEnemies();
-    animate();
-}
-
-function spawnEnemies() {
-    for(let i=0; i<30; i++) {
-        enemies.push({
-            x: Math.random() * 2000,
-            y: Math.random() * 2000,
-            hp: 50,
-            maxHp: 50,
-            radius: 15,
-            color: '#c0392b'
-        });
-    }
-}
-
-window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
-
-function update() {
-    if(!gameRunning) return;
-
-    // Kamera Takibi
-    camera.x = player.x - canvas.width / 2;
-    camera.y = player.y - canvas.height / 2;
-
-    // Hareket
-    let dx = (mouse.x + camera.x) - player.x;
-    let dy = (mouse.y + camera.y) - player.y;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    if(dist > 10) {
-        player.x += (dx/dist) * player.speed;
-        player.y += (dy/dist) * player.speed;
-    }
-
-    // Düşman Etkileşimi
-    enemies.forEach((en, index) => {
-        let eDist = Math.hypot(player.x - en.x, player.y - en.y);
-        
-        // Saldırı Menzili (MMORPG tarzı otomatik saldırı)
-        if(eDist < 100) {
-            en.hp -= 1; // Her frame hasar
-            if(en.hp <= 0) {
-                enemies.splice(index, 1);
-                gainXp(30);
-                setTimeout(spawnEnemies, 3000); // Yeniden doğma
-            }
-        }
-
-        // Düşman Hasarı
-        if(eDist < player.radius + en.radius) {
-            player.hp -= 0.5;
-            updateHud();
-            if(player.hp <= 0) location.reload();
-        }
-    });
-}
-
-function gainXp(amount) {
-    player.xp += amount;
-    if(player.xp >= player.nextLvl) {
-        player.lvl++;
-        player.xp = 0;
-        player.nextLvl *= 1.5;
-        player.maxHp += 20;
-        player.hp = player.maxHp;
-        alert("LEVEL UP! Artık Seviye: " + player.lvl);
-    }
-    updateHud();
-}
-
-function updateHud() {
-    document.getElementById('hp-bar').style.width = (player.hp / player.maxHp * 100) + "%";
-    document.getElementById('xp-bar').style.width = (player.xp / player.nextLvl * 100) + "%";
-    document.getElementById('char-lvl').innerText = player.lvl;
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.translate(-camera.x, -camera.y);
-
-    // Izgara Çizimi
-    ctx.strokeStyle = "rgba(255,255,255,0.05)";
-    for(let i=0; i<2000; i+=50) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 2000); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(2000, i); ctx.stroke();
-    }
-
-    // Düşmanları Çiz
-    enemies.forEach(en => {
-        ctx.fillStyle = en.color;
-        ctx.beginPath(); ctx.arc(en.x, en.y, en.radius, 0, Math.PI*2); ctx.fill();
-        // Düşman HP Bar
-        ctx.fillStyle = "red";
-        ctx.fillRect(en.x - 15, en.y - 25, 30 * (en.hp/50), 4);
-    });
-
-    // Oyuncu Çiz (Lordz.io tarzı ama sınıf renkli)
-    ctx.shadowBlur = 15; ctx.shadowColor = player.color;
-    ctx.fillStyle = player.color;
-    ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = "white"; ctx.lineWidth = 3; ctx.stroke();
-
-    ctx.restore();
-}
-
-function animate() {
-    update();
-    draw();
-    requestAnimationFrame(animate);
-}
-
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-</script>
-</body>
-</html>
+let player = { 
+    x: canvas.width/2, y: canvas.height/2, radius: 20, 
+    angle: 0, loot: 0, lvl: 1, 
+    isAttacking: false, attackFrame: 0 
+};
+
+let enemies = [];
+let effects = []; // Skill efektleri için
+let loots = [];
+let skills = {
+    1: { name: "Dash", cd: 0, maxCd: 100 },
+    2: { name: "Spin", cd: 0, maxCd: 300 },
+    3: { name: "Shock", cd: 0, maxCd: 500 }
+};
+
+// Başlangıç düşmanları ve Boss
+spawnEnemies();
+function spawnEnemies() {
+    for(let i=0; i<5; i++) spawnMob(false);
+    spawnMob(true); // Bir adet Boss
+}
+
+function spawnMob(isBoss) {
+    enemies.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: isBoss ? 50 : 20,
+        hp: isBoss ? 500 : 50,
+        maxHp: isBoss ? 500 : 50,
+        isBoss: isBoss,
+        color: isBoss ? '#8e44ad' : '#c0392b'
+    });
+}
+
+window.addEventListener('mousemove', (e) => {
+    player.angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
+});
+
+// Sol tık - Kılıç Sallama
+window.addEventListener('mousedown', () => {
+    if(!player.isAttacking) {
+        player.isAttacking = true;
+        checkHit(120, 1.5); // Kılıç menzili ve hasar çarpanı
+    }
+});
+
+// Skill Tuşları
+window.addEventListener('keydown', (e) => {
+    if(e.key === '1' && skills[1].cd <= 0) useSkill1();
+    if(e.key === '2' && skills[2].cd <= 0) useSkill2();
+    if(e.key === '3' && skills[3].cd <= 0) useSkill3();
+});
+
+function useSkill1() { // DASH (Hızlı İleri Atılma)
+    player.x += Math.cos(player.angle) * 150;
+    player.y += Math.sin(player.angle) * 150;
+    createEffect(player.x, player.y, 40, '#3498db', 'circle');
+    skills[1].cd = skills[1].maxCd;
+}
+
+function useSkill2() { // SPIN (Kasırga Saldırısı)
+    player.isAttacking = true;
+    checkHit(200, 3); // Geniş menzil, yüksek hasar
+    createEffect(
