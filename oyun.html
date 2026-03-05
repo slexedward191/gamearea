@@ -2,265 +2,285 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Vault: Celebrity Escape</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <title>Neon Vault: Ultimate Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root { --neon-blue: #00f2ff; --neon-pink: #ff00ff; --neon-green: #0dff00; --bg: #020205; }
+        :root { --p: #00f2ff; --s: #ff00ff; --g: #0dff00; --bg: #010103; }
         body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Orbitron', sans-serif; color: white; }
-        canvas { display: block; filter: contrast(1.2) brightness(1.1); }
+        canvas { display: block; cursor: crosshair; }
         
-        /* GİRİŞ EKRANI */
-        #login-overlay {
-            position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+        /* GİRİŞ PANELİ - ULTRA MODERN */
+        #boot-screen {
+            position: fixed; inset: 0; background: radial-gradient(circle, #050510 0%, #000 100%); z-index: 1000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 10px solid #00f2ff22;
         }
+        .scanner { width: 300px; height: 2px; background: var(--p); position: absolute; box-shadow: 0 0 20px var(--p); animation: scan 2s infinite; }
+        @keyframes scan { 0% { top: 30%; } 100% { top: 70%; } }
+
         input { 
-            background: transparent; border: 2px solid var(--neon-blue); color: white;
-            padding: 15px; font-size: 20px; font-family: 'Orbitron'; text-align: center; margin: 20px;
-            box-shadow: 0 0 15px var(--neon-blue); outline: none;
+            background: rgba(0, 242, 255, 0.05); border: 1px solid var(--p); color: white;
+            padding: 20px; font-size: 18px; font-family: 'Syncopate'; text-align: center; width: 350px;
+            letter-spacing: 5px; margin: 30px; outline: none; transition: 0.3s;
         }
-        .btn { 
-            background: var(--neon-blue); border: none; padding: 15px 40px; 
-            font-family: 'Syncopate'; font-weight: 700; cursor: pointer; transition: 0.3s;
-        }
-        .btn:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--neon-blue); }
+        input:focus { background: rgba(0, 242, 255, 0.15); box-shadow: 0 0 30px var(--p); }
 
         /* OYUN UI */
         #hud {
-            position: absolute; top: 20px; left: 20px; pointer-events: none; z-index: 10;
-            display: flex; flex-direction: column; gap: 5px;
+            position: absolute; inset: 0; pointer-events: none; z-index: 100; padding: 30px;
+            display: flex; justify-content: space-between; align-items: flex-start;
         }
-        .celeb-frame {
-            position: absolute; top: 20px; right: 20px; width: 150px; height: 150px;
-            border: 3px solid var(--neon-pink); border-radius: 15px; overflow: hidden;
-            box-shadow: 0 0 20px var(--neon-pink); opacity: 0.8;
+        .celeb-card {
+            width: 180px; height: 240px; border: 2px solid var(--s); background: #000;
+            position: relative; overflow: hidden; transform: skewX(-5deg); box-shadow: -10px 10px 0 var(--s);
         }
-        .celeb-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .celeb-card img { width: 100%; height: 70%; object-fit: cover; filter: grayscale(1) contrast(1.5); }
+        .celeb-name { padding: 10px; font-size: 12px; font-family: 'Syncopate'; background: var(--s); color: black; font-weight: 900; }
+        
+        .level-info { font-family: 'Syncopate'; border-left: 5px solid var(--p); padding-left: 15px; }
     </style>
 </head>
 <body>
 
-<div id="login-overlay">
-    <h1 style="font-family: 'Syncopate'; font-size: 40px; color: var(--neon-blue);">NEON VAULT PRO</h1>
-    <input type="text" id="player-name" placeholder="ADINI YAZ ŞAMPİYON" maxlength="12">
-    <button class="btn" onclick="Game.init()">SİSTEME GİR</button>
+<div id="boot-screen">
+    <div class="scanner"></div>
+    <h1 style="font-family: 'Syncopate'; font-size: 50px; letter-spacing: 15px; text-shadow: 0 0 20px var(--p);">NEON VAULT</h1>
+    <p style="color: var(--p); font-size: 10px; letter-spacing: 3px;">AUTHENTICATION REQUIRED</p>
+    <input type="text" id="p-name" placeholder="IDENT_NAME" maxlength="15">
+    <button class="btn" style="background: var(--p); color: black; border: none; padding: 20px 60px; font-family: 'Syncopate'; cursor: pointer; font-weight: 900;" onclick="App.start()">INITIATE SYSTEM</button>
 </div>
 
 <div id="hud">
-    <div style="font-size: 20px; color: var(--neon-blue);">PLAYER: <span id="ui-name">---</span></div>
-    <div style="font-size: 14px;">LEVEL: <span id="ui-lvl">1</span></div>
-    <div style="font-size: 12px; color: var(--neon-pink);">STATUS: <span id="ui-celeb">PENDING</span></div>
+    <div class="level-info">
+        <div style="font-size: 10px; color: var(--p);">AGENT STATUS: ACTIVE</div>
+        <div id="ui-user" style="font-size: 24px; margin: 5px 0;">---</div>
+        <div style="color: var(--s);">SECTOR: <span id="ui-lvl">01</span></div>
+    </div>
+    <div class="celeb-card">
+        <img src="" id="celeb-img">
+        <div class="celeb-name" id="celeb-name">TARGET</div>
+    </div>
 </div>
 
-<div class="celeb-frame" id="celeb-box">
-    <img src="" id="celeb-img" alt="Celebrity">
-</div>
-
-<canvas id="gameCanvas"></canvas>
+<canvas id="canvas"></canvas>
 
 <script>
 /**
- * PROFESYONEL SES VE MÜZİK ÜRETECİ (Dinamik)
+ * AUDIO MASTER (Procedural Synth)
  */
-const AudioEngine = {
+const Synth = {
     ctx: null,
-    osc: null,
-    init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.playMusic(); },
+    init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.loop(); },
     play(f, t, d, v=0.1) {
         const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-        o.type = t; o.frequency.setValueAtTime(f, this.ctx.currentTime);
-        g.gain.setValueAtTime(v, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + d);
+        o.type = t; o.frequency.value = f; g.gain.setValueAtTime(v, this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + d);
         o.connect(g); g.connect(this.ctx.destination);
         o.start(); o.stop(this.ctx.currentTime + d);
     },
-    playMusic() {
+    loop() {
         setInterval(() => {
-            const notes = [110, 147, 165, 196]; // Deep bass notes
-            this.play(notes[Game.level % 4], 'sine', 0.5, 0.2); // Her level değişen temel nota
-            if(Math.random() > 0.7) this.play(800 + Math.random()*1000, 'square', 0.1, 0.02);
-        }, 400);
+            const base = 50 + (App.level * 2);
+            this.play(base, 'sine', 0.8, 0.2); // Bass Kick
+            if(Math.random() > 0.8) this.play(base * 4, 'sawtooth', 0.2, 0.02); // Glitch Synth
+        }, 500);
     }
 };
 
 /**
- * OYUN MOTORU (PROFESSIONAL DESIGN)
+ * CORE GAME ENGINE
  */
-const Game = {
-    canvas: document.getElementById('gameCanvas'),
-    ctx: null,
-    level: 1, playerName: "",
-    player: { x: 50, y: 50, vx: 0, vy: 0, w: 25, h: 25, jumps: 0, maxJumps: 2 },
-    platforms: [], lasers: [], movingCrushers: [],
+const App = {
+    level: 1, 
+    shake: 0,
+    particles: [],
+    player: { x: 100, y: 100, vx: 0, vy: 0, w: 30, h: 30, jumps: 0, color: '#fff' },
     celebrities: [
-        { name: "ELON MUSK", img: "https://picsum.photos/200/200?sig=1" },
-        { name: "CRISTIANO RONALDO", img: "https://picsum.photos/200/200?sig=2" },
-        { name: "MR BEAST", img: "https://picsum.photos/200/200?sig=3" },
-        { name: "STEVE JOBS", img: "https://picsum.photos/200/200?sig=4" },
-        { name: "TARKAN", img: "https://picsum.photos/200/200?sig=5" }
+        { n: "Elon Musk", i: "https://picsum.photos/200/300?sig=10" },
+        { n: "The Rock", i: "https://picsum.photos/200/300?sig=21" },
+        { n: "Rihanna", i: "https://picsum.photos/200/300?sig=33" },
+        { n: "Messi", i: "https://picsum.photos/200/300?sig=45" },
+        { n: "Keanu Reeves", i: "https://picsum.photos/200/300?sig=99" }
     ],
 
-    init() {
-        this.playerName = document.getElementById('player-name').value || "PLAYER1";
-        if(this.playerName === "ADINI YAZ ŞAMPİYON") this.playerName = "GHOST";
-        document.getElementById('ui-name').innerText = this.playerName.toUpperCase();
-        document.getElementById('login-overlay').style.display = 'none';
+    start() {
+        const name = document.getElementById('p-name').value || "UNKNOWN";
+        document.getElementById('ui-user').innerText = name.toUpperCase();
+        document.getElementById('boot-screen').style.opacity = 0;
+        setTimeout(() => document.getElementById('boot-screen').remove(), 500);
         
-        this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        this.ctx = canvas.getContext('2d');
+        this.resize();
+        Synth.init();
         
-        AudioEngine.init();
-        
-        window.addEventListener('keydown', e => this.handleInput(e, true));
-        window.addEventListener('keyup', e => this.keys[e.key.toLowerCase()] = false);
+        window.onkeydown = (e) => this.input(e, true);
+        window.onkeyup = (e) => this.keys[e.key.toLowerCase()] = false;
         this.keys = {};
-
-        this.loadLevel(1);
-        this.loop();
+        
+        this.load(1);
+        this.run();
     },
 
-    loadLevel(n) {
+    resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; },
+
+    load(n) {
         this.level = n;
         this.player.x = 100; this.player.y = 100; this.player.vx = 0; this.player.vy = 0;
         
-        // Seviye Verileri
-        const celeb = this.celebrities[(n-1) % this.celebrities.length];
-        document.getElementById('celeb-img').src = celeb.img;
-        document.getElementById('ui-celeb').innerText = celeb.name;
-        document.getElementById('ui-lvl').innerText = n;
+        const c = this.celebrities[(n-1)%this.celebrities.length];
+        document.getElementById('celeb-img').src = c.i;
+        document.getElementById('celeb-name').innerText = c.n.toUpperCase();
+        document.getElementById('ui-lvl').innerText = n.toString().padStart(2, '0');
 
-        // Oda Tasarımı (Kare Oda)
-        const W = this.canvas.width; const H = this.canvas.height;
+        // Level Design: Kare Oda + Sabit Platformlar
+        const W = canvas.width; const H = canvas.height;
         this.platforms = [
-            { x: 0, y: 0, w: W, h: 20 }, // Tavan
-            { x: 0, y: H-20, w: W, h: 20 }, // Yer
-            { x: 0, y: 0, w: 20, h: H }, // Sol Duvar
-            { x: W-20, y: 0, w: 20, h: H }, // Sağ Duvar
-            { x: 100, y: 200, w: 200, h: 20 } // Start platform
+            {x: 0, y: H-30, w: W, h: 30}, // Zemin
+            {x: 0, y: 0, w: W, h: 30}, // Tavan
+            {x: 0, y: 0, w: 30, h: H}, // Sol
+            {x: W-30, y: 0, w: 30, h: H}, // Sağ
+            {x: 100, y: 250, w: 200, h: 20}, // Start
+            {x: W-300, y: H-250, w: 200, h: 20} // Exit support
         ];
 
-        // Hareketli Engeller (Yukarı-Aşağı Giden Bloklar)
-        this.movingCrushers = [];
-        for(let i=0; i<3+(n%4); i++) {
-            this.movingCrushers.push({
-                x: 400 + (i*250), y: 100, w: 40, h: 40, 
-                range: 300, speed: 2 + (n*0.5), offset: Math.random()*Math.PI*2
+        // Hareketli Tuzaklar (Akıllı)
+        this.traps = [];
+        for(let i=0; i<2+n; i++) {
+            this.traps.push({
+                x: 400 + (Math.random()*(W-800)), 
+                y: 100 + (Math.random()*(H-200)),
+                w: 40, h: 40,
+                vy: 2 + n*0.5, dir: 1,
+                type: 'crusher'
             });
         }
 
-        // Lazerler (Sağa Sola Giden İnce Işınlar)
+        // Lazer Duvarları (Dinamik)
         this.lasers = [];
-        if(n > 1) {
-            for(let i=0; i<2; i++) {
-                this.lasers.push({
-                    y: 300 + (i*200), x: 100, w: 200, h: 5, 
-                    dir: 1, speed: 5 + n
-                });
-            }
+        for(let i=0; i<(n>3?2:1); i++) {
+            this.lasers.push({ y: 200 + (i*200), x: 50, w: 100, speed: 4+n, dir: 1 });
         }
 
-        // Çıkış Kapısı (Farklı Köşe)
-        this.exit = { x: W - 100, y: H - 120, w: 50, h: 80 };
+        this.exit = { x: W-100, y: H-120, w: 40, h: 80 };
     },
 
-    handleInput(e, state) {
-        let k = e.key.toLowerCase();
-        if(state && (k === ' ' || k === 'w' || k === 'arrowup')) {
-            if(this.player.jumps < this.player.maxJumps) {
-                this.player.vy = -10;
+    input(e, s) {
+        const k = e.key.toLowerCase();
+        if(s && (k === 'w' || k === ' ' || k === 'arrowup')) {
+            if(this.player.jumps < 2) {
+                this.player.vy = -12;
                 this.player.jumps++;
-                AudioEngine.play(200 + (this.player.jumps*100), 'triangle', 0.2);
+                Synth.play(200 * this.player.jumps, 'square', 0.2);
+                this.burst(this.player.x+15, this.player.y+30, '#00f2ff');
             }
         }
-        this.keys[k] = state;
+        this.keys[k] = s;
+    },
+
+    burst(x, y, color) {
+        for(let i=0; i<15; i++) {
+            this.particles.push({ x, y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, l: 1, c: color });
+        }
     },
 
     update() {
         const p = this.player;
-        const gravity = 0.45; // Azıcık yerçekimi
-
-        if(this.keys['a'] || this.keys['arrowleft']) p.vx -= 0.8;
-        if(this.keys['d'] || this.keys['arrowright']) p.vx += 0.8;
+        if(this.keys['a'] || this.keys['arrowleft']) p.vx -= 1;
+        if(this.keys['d'] || this.keys['arrowright']) p.vx += 1;
         
-        p.vy += gravity;
-        p.vx *= 0.9;
+        p.vy += 0.5; // Gravity
+        p.vx *= 0.85; // Friction
         p.x += p.vx; p.y += p.vy;
 
-        // Platform Çarpışma
-        this.platforms.forEach(plat => {
-            if(p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y < plat.y + plat.h && p.y + p.h > plat.y) {
-                let overlapX = Math.min(p.x + p.w - plat.x, plat.x + plat.w - p.x);
-                let overlapY = Math.min(p.y + p.h - plat.y, plat.y + plat.h - p.y);
-                if(overlapX > overlapY) {
-                    if(p.vy > 0 && p.y < plat.y) { p.y = plat.y - p.h; p.vy = 0; p.jumps = 0; }
-                    else if(p.vy < 0) { p.y = plat.y + plat.h; p.vy = 0; }
-                } else {
-                    if(p.vx > 0) p.x = plat.x - p.w; else p.x = plat.x + plat.w;
-                    p.vx = 0;
-                }
+        // Collision: Platforms
+        this.platforms.forEach(b => {
+            if(p.x < b.x+b.w && p.x+p.w > b.x && p.y < b.y+b.h && p.y+p.h > b.y) {
+                if(p.vy > 0 && p.y < b.y) { p.y = b.y-p.h; p.vy = 0; p.jumps = 0; }
+                else if(p.vy < 0 && p.y > b.y) { p.y = b.y+b.h; p.vy = 0; }
+                else { p.vx = 0; p.x = (p.vx > 0) ? b.x-p.w : b.x+b.w; }
             }
         });
 
-        // Hareketli Engel Mantığı
-        this.movingCrushers.forEach(c => {
-            c.y = 200 + Math.sin(Date.now()*0.002 * c.speed + c.offset) * c.range/2;
-            if(p.x < c.x + c.w && p.x + p.w > c.x && p.y < c.y + c.h && p.y + p.h > c.y) this.die();
+        // Trap Logic
+        this.traps.forEach(t => {
+            t.y += t.vy * t.dir;
+            if(t.y > canvas.height - 100 || t.y < 100) t.dir *= -1;
+            if(p.x < t.x+t.w && p.x+p.w > t.x && p.y < t.y+t.h && p.y+p.h > t.y) this.die();
         });
 
-        // Lazer Mantığı
+        // Laser Logic
         this.lasers.forEach(l => {
             l.x += l.speed * l.dir;
-            if(l.x > this.canvas.width - 300 || l.x < 100) l.dir *= -1;
-            if(p.x < l.x + l.w && p.x + p.w > l.x && p.y < l.y + l.h && p.y + p.h > l.y) this.die();
+            if(l.x > canvas.width - 200 || l.x < 50) l.dir *= -1;
+            if(p.x < l.x+l.w && p.x+p.w > l.x && p.y < l.y+5 && p.y+p.h > l.y) this.die();
         });
 
-        // Çıkış Kontrolü
-        if(p.x < this.exit.x + this.exit.w && p.x + p.w > this.exit.x && p.y < this.exit.y + this.exit.h && p.y + p.h > this.exit.y) {
-            AudioEngine.play(800, 'sine', 0.5);
-            this.loadLevel(this.level + 1);
-        }
+        // Exit
+        if(p.x > this.exit.x && p.y > this.exit.y) { Synth.play(800, 'sine', 0.5); this.load(this.level+1); }
+
+        this.particles.forEach((pt, i) => { 
+            pt.x += pt.vx; pt.y += pt.vy; pt.l -= 0.02;
+            if(pt.l <= 0) this.particles.splice(i, 1);
+        });
+
+        if(this.shake > 0) this.shake *= 0.9;
     },
 
     die() {
-        AudioEngine.play(100, 'sawtooth', 0.3);
-        this.loadLevel(this.level);
+        this.shake = 20;
+        this.burst(this.player.x, this.player.y, '#ff00ff');
+        Synth.play(100, 'sawtooth', 0.5);
+        this.load(this.level);
     },
 
     draw() {
         const ctx = this.ctx;
-        ctx.fillStyle = '#020205'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Odadaki Izgara Efekti
-        ctx.strokeStyle = 'rgba(0, 242, 255, 0.05)';
-        for(let i=0; i<this.canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,this.canvas.height); ctx.stroke(); }
-
-        // Platformlar
-        ctx.shadowBlur = 10; ctx.shadowColor = varName('--neon-blue');
-        ctx.fillStyle = '#101020';
-        this.platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
-
-        // Hareketli Crushers
-        ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055';
-        this.movingCrushers.forEach(c => ctx.fillRect(c.x, c.y, c.w, c.h));
-
-        // Lazerler
-        ctx.fillStyle = varName('--neon-green'); ctx.shadowColor = varName('--neon-green');
-        this.lasers.forEach(l => ctx.fillRect(l.x, l.y, l.w, l.h));
-
-        // Çıkış Kapısı
-        ctx.fillStyle = '#0dff00'; ctx.globalAlpha = 0.3; ctx.fillRect(this.exit.x, this.exit.y, this.exit.w, this.exit.h); ctx.globalAlpha = 1;
-
-        // Player (Neon Cube)
-        ctx.fillStyle = 'white'; ctx.shadowBlur = 20; ctx.shadowColor = 'white';
-        ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        ctx.shadowBlur = 0;
-        requestAnimationFrame(() => { this.update(); this.draw(); });
-    }
-};
+        ctx.save();
+        if(this.shake > 1) ctx.translate((Math.random()-0.5)*this.shake, (Math.random()-0.5)*this.shake);
 
-function varName(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
+        // BG Glow
+        const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width);
+        grad.addColorStop(0, '#050515'); grad.addColorStop(1, '#000');
+        ctx.fillStyle = grad; ctx.fillRect(0,0, canvas.width, canvas.height);
+
+        // Grid
+        ctx.strokeStyle = '#00f2ff11';
+        for(let i=0; i<canvas.width; i+=100) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+
+        // Platforms
+        ctx.shadowBlur = 15; ctx.shadowColor = '#00f2ff';
+        ctx.fillStyle = '#0a0a15';
+        this.platforms.forEach(b => {
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            ctx.strokeStyle = '#00f2ff55'; ctx.strokeRect(b.x, b.y, b.w, b.h);
+        });
+
+        // Traps & Lasers
+        this.traps.forEach(t => { ctx.fillStyle = '#ff0055'; ctx.shadowColor = '#ff0055'; ctx.fillRect(t.x, t.y, t.w, t.h); });
+        this.lasers.forEach(l => { ctx.fillStyle = '#0dff00'; ctx.shadowColor = '#0dff00'; ctx.fillRect(l.x, l.y, l.w, 5); });
+
+        // Particles
+        this.particles.forEach(pt => { ctx.globalAlpha = pt.l; ctx.fillStyle = pt.c; ctx.fillRect(pt.x, pt.y, 4, 4); });
+        ctx.globalAlpha = 1;
+
+        // Player
+        ctx.fillStyle = '#fff'; ctx.shadowBlur = 25; ctx.shadowColor = '#00f2ff';
+        ctx.fillRect(this.player.x, this.player.y, this.player.w, this.player.h);
+
+        // Exit
+        ctx.fillStyle = '#0dff0022'; ctx.strokeStyle = '#0dff00';
+        ctx.fillRect(this.exit.x, this.exit.y, this.exit.w, this.exit.h);
+        ctx.strokeRect(this.exit.x, this.exit.y, this.exit.w, this.exit.h);
+
+        ctx.restore();
+        requestAnimationFrame(() => this.run());
+    },
+
+    run() { this.update(); this.draw(); }
+};
+window.onresize = () => App.resize();
 </script>
 </body>
 </html>
