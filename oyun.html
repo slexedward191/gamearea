@@ -2,152 +2,482 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Bakım Modu | SeaWolf</title>
-    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameArea Fight</title>
     <style>
-        :root {
-            --gold: #ffd700;
-            --neon: #00f2ff;
-            --deep-ocean: #000a1a;
-            --btn-gradient: linear-gradient(45deg, #ff0044, #ff8800);
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background: var(--deep-ocean);
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden; font-family: 'Pirata One', cursive;
-        }
-
-        /* --- ARKA PLAN VE PARTIKÜLLER --- */
-        .ocean-bg {
-            position: absolute; inset: 0;
-            background: radial-gradient(circle at center, #001a33 0%, #00050a 100%);
-            z-index: -1;
-        }
-
-        /* --- SOL ÜST ANASAYFA BUTONU --- */
-        .home-btn {
-            position: absolute; top: 30px; left: 30px;
-            background: var(--btn-gradient);
-            color: white; border: 2px solid var(--gold);
-            padding: 15px 35px; font-size: 22px; border-radius: 8px;
-            cursor: pointer; text-decoration: none;
-            box-shadow: 0 0 25px rgba(255, 0, 68, 0.6);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 1000; pointer-events: auto;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0a;
+            color: white;
             font-family: 'Orbitron', sans-serif;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .home-btn:hover {
-            transform: scale(1.1) translateX(10px);
-            box-shadow: 0 0 50px var(--gold);
-            filter: brightness(1.3);
-        }
-
-        /* --- MERKEZ YAZI --- */
-        .maintenance-box { text-align: center; z-index: 10; padding: 20px; }
-
-        .main-text {
-            font-size: clamp(40px, 8vw, 90px);
-            background: linear-gradient(to right, #00f2ff, #ffd700, #ff0044, #00f2ff);
-            background-size: 200% auto;
-            color: transparent;
-            -webkit-background-clip: text;
-            background-clip: text;
-            animation: shine 3s linear infinite, float 4s ease-in-out infinite;
-            line-height: 1.1;
-            filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.4));
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
-        .sub-text {
+        #ui-container {
+            position: relative;
+            width: 1000px;
+            height: 700px;
+        }
+
+        canvas {
+            background-color: #111;
+            border: 10px solid;
+            border-image: linear-gradient(to right, red 50%, white 50%) 1;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            display: block;
+        }
+
+        /* Başlangıç ve Ölüm Ekranları */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .btn-fancy {
+            padding: 20px 50px;
+            font-size: 24px;
             font-family: 'Orbitron', sans-serif;
-            color: var(--neon); font-size: clamp(12px, 2vw, 18px); 
-            letter-spacing: 8px; margin-top: 30px;
-            animation: blink 2s infinite; text-shadow: 0 0 10px var(--neon);
+            color: white;
+            background: linear-gradient(45deg, #ff0000, #ff8800);
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: 0.3s;
+            box-shadow: 0 0 15px #ff0000;
+            text-transform: uppercase;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
         }
 
-        @keyframes shine { to { background-position: 200% center; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
-        @keyframes blink { 50% { opacity: 0.1; transform: scale(0.95); } }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px #ff0000; }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px #ff8800; }
+            100% { transform: scale(1); box-shadow: 0 0 15px #ff0000; }
+        }
 
-        /* --- GİRİŞ KATMANI (Müzik için) --- */
-        #overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            z-index: 9999; display: flex; justify-content: center; align-items: center;
-            color: var(--gold); cursor: pointer; text-align: center;
+        /* Stats Paneli - Sol Alt */
+        #stats-panel {
+            position: absolute;
+            bottom: 20px;
+            left: -220px;
+            width: 200px;
+            padding: 15px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 2px solid #00f2ff;
+            border-radius: 10px;
+            font-size: 12px;
+            box-shadow: 0 0 10px #00f2ff;
+        }
+
+        .stat-item { color: #00f2ff; margin-bottom: 5px; }
+
+        /* XP Log - Sağ Orta */
+        #xp-log {
+            position: absolute;
+            right: -220px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            max-height: 300px;
+            overflow: hidden;
+            background: rgba(255, 0, 0, 0.1);
+            border-left: 3px solid #ff0000;
+            padding: 10px;
+        }
+
+        /* Kılavuz Butonu */
+        #guide-btn {
+            position: absolute;
+            top: 10px;
+            right: -100px;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #00f2ff, #0066ff);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            border: 2px solid white;
+            box-shadow: 0 0 15px #00f2ff;
+        }
+
+        /* Eklenti Seçim Ekranı */
+        #upgrade-screen {
+            display: none;
+            z-index: 200;
+        }
+
+        .upgrade-card {
+            background: #222;
+            border: 2px solid #fff;
+            padding: 15px;
+            margin: 10px;
+            cursor: pointer;
+            width: 250px;
+            text-align: center;
+            transition: 0.3s;
+        }
+
+        .upgrade-card:hover { background: #444; transform: translateY(-5px); }
+
+        /* Mesaj Efekti */
+        #announcement {
+            position: absolute;
+            top: 40%;
+            width: 100%;
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 0 0 20px red;
+            pointer-events: none;
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="overlay" onclick="startEverything()">
-        <div style="animation: pulse 1s infinite;">
-            <h2 style="font-size: 40px;">SİSTEMİ BAŞLATMAK İÇİN TIKLA</h2>
-            <p style="font-family: 'Orbitron'; font-size: 14px; letter-spacing: 3px;">KORSAN EZGİLERİ YÜKLENİYOR...</p>
-        </div>
+<div id="ui-container">
+    <canvas id="gameCanvas" width="1000" height="700"></canvas>
+    
+    <div id="announcement">DALGA 1</div>
+
+    <div id="start-screen" class="overlay">
+        <h1 style="font-size: 60px; color: #ff0000; text-shadow: 0 0 20px #fff;">GameArea Fight</h1>
+        <button class="btn-fancy" onclick="startGame()">OYUNU BAŞLAT</button>
     </div>
 
-    <div class="ocean-bg"></div>
-
-    <a href="https://slexedward191.github.io/ts3-music-bot/" class="home-btn">
-        <span>🏠</span> ANASAYFAYA DÖN
-    </a>
-
-    <div class="maintenance-box">
-        <h1 class="main-text">YAKINDA YAPILICAK<br>ŞUANLIK BAKIMDAYIZ</h1>
-        <div class="sub-text">MODÜLLER %87 YÜKLENDİ...</div>
+    <div id="death-screen" class="overlay" style="display: none;">
+        <h1 style="color: red;">ELENDİN!</h1>
+        <button class="btn-fancy" onclick="location.reload()">TEKRAR DENE</button>
     </div>
 
-    <script>
-        function startEverything() {
-            // Giriş ekranını kaldır
-            document.getElementById('overlay').style.display = 'none';
-            
-            // Müzik Motorunu Başlat (Web Audio API - Browser uyumlu)
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            function playPirateTune() {
-                const now = audioCtx.currentTime;
-                
-                // Derin Gemi Gıcırtısı/Uğultusu (Baslar)
-                oscillatorNote(55, 'sine', now, 5, 0.15); 
-                oscillatorNote(110, 'sine', now + 1, 4, 0.1);
+    <div id="guide-screen" class="overlay" style="display: none;">
+        <h2>OYUN KILAVUZU</h2>
+        <ul style="text-align: left;">
+            <li>WASD - Hareket Et</li>
+            <li>Sol Tık - Ateş Et (Basılı Tut)</li>
+            <li>Her 5 dalgada bir BOSS gelir!</li>
+            <li>Eklentilerle karakterini güçlendir.</li>
+        </ul>
+        <button class="btn-fancy" onclick="toggleGuide(false)">KAPAT (X)</button>
+    </div>
 
-                // Mistik Melodi (Tizler)
-                const melody = [220, 247, 261, 329, 293, 261, 247]; // Korsan vari notalar
-                melody.forEach((freq, i) => {
-                    oscillatorNote(freq, 'triangle', now + (i * 0.8), 1.5, 0.04);
+    <div id="upgrade-screen" class="overlay">
+        <h2>BİR EKLENTİ SEÇ</h2>
+        <div id="upgrade-list" style="display: flex; flex-wrap: wrap; justify-content: center;"></div>
+    </div>
+
+    <div id="guide-btn" onclick="toggleGuide(true)">?</div>
+    
+    <div id="stats-panel">
+        <h3 style="margin-top:0">EKLENTİLER</h3>
+        <div id="active-upgrades">Henüz yok...</div>
+    </div>
+
+    <div id="xp-log"></div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const ann = document.getElementById('announcement');
+    const upgradeScreen = document.getElementById('upgrade-screen');
+    const xpLog = document.getElementById('xp-log');
+
+    // Oyun Değişkenleri
+    let gameActive = false;
+    let wave = 0;
+    let xp = 0;
+    let level = 1;
+    let enemies = [];
+    let bullets = [];
+    let particles = [];
+    let keys = {};
+    let mousePressed = false;
+    let lastShot = 0;
+
+    // Oyuncu Özellikleri
+    const player = {
+        x: 500, y: 350,
+        hp: 100, maxHp: 100,
+        armor: 0, maxArmor: 100,
+        size: 20, speed: 4,
+        damage: 25, shootDelay: 300,
+        critChance: 0, bounceCount: 0,
+        upgrades: []
+    };
+
+    // Ses Efekti Simülasyonu (Su Tabancası)
+    function playShootSound() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+    }
+
+    // Olay Dinleyiciler
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+    canvas.addEventListener('mousedown', () => mousePressed = true);
+    window.addEventListener('mouseup', () => mousePressed = false);
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        gameActive = true;
+        nextWave();
+        animate();
+    }
+
+    function toggleGuide(show) {
+        gameActive = !show;
+        document.getElementById('guide-screen').style.display = show ? 'flex' : 'none';
+    }
+
+    function addXp(amount, type) {
+        xp += amount;
+        const entry = document.createElement('div');
+        entry.style.color = amount > 10 ? '#ff00ff' : '#00ff00';
+        entry.innerHTML = `+${amount} XP (${type})`;
+        xpLog.prepend(entry);
+        setTimeout(() => entry.remove(), 3000);
+
+        if (xp >= 50) {
+            xp -= 50;
+            level++;
+            showUpgradeMenu();
+        }
+    }
+
+    function showUpgradeMenu() {
+        gameActive = false;
+        upgradeScreen.style.display = 'flex';
+        const list = document.getElementById('upgrade-list');
+        list.innerHTML = '';
+        
+        const options = [
+            { n: '+3 Hasar', f: () => player.damage += 3 },
+            { n: '+1 Saldırı Hızı', f: () => player.shootDelay = Math.max(100, player.shootDelay - 40) },
+            { n: '+1 Armor', f: () => player.armor = Math.min(100, player.armor + 20) },
+            { n: '+2 Kritik Mermi', f: () => player.critChance += 0.1 },
+            { n: '+1 Seken Mermi', f: () => player.bounceCount += 1 }
+        ];
+
+        options.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'upgrade-card';
+            div.innerHTML = `<h3>${opt.n}</h3>`;
+            div.onclick = () => {
+                opt.f();
+                player.upgrades.push(opt.n);
+                updateStatsUI();
+                upgradeScreen.style.display = 'none';
+                gameActive = true;
+            };
+            list.appendChild(div);
+        });
+    }
+
+    function updateStatsUI() {
+        const container = document.getElementById('active-upgrades');
+        container.innerHTML = player.upgrades.map(u => `<div class="stat-item">${u}</div>`).join('');
+    }
+
+    function nextWave() {
+        wave++;
+        gameActive = false;
+        ann.style.display = 'block';
+        
+        let isBossWave = wave % 5 === 0;
+        ann.innerText = isBossWave ? "BOSS GELİYOR DİKKAT!" : `DALGA ${wave}`;
+        
+        setTimeout(() => {
+            ann.style.display = 'none';
+            gameActive = true;
+            spawnEnemies(isBossWave);
+        }, 2000);
+    }
+
+    function spawnEnemies(isBoss) {
+        if (isBoss) {
+            const bossCount = Math.min(5, Math.floor(wave / 5));
+            const hpMult = Math.floor(wave / 5);
+            for (let i = 0; i < bossCount; i++) {
+                enemies.push({
+                    x: Math.random() * 800 + 100, y: -50,
+                    hp: 1000 * hpMult, maxHp: 1000 * hpMult,
+                    size: 50, speed: 1.5, isBoss: true,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`
                 });
             }
-
-            function oscillatorNote(freq, type, start, duration, vol) {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, start);
-                
-                gain.gain.setValueAtTime(0, start);
-                gain.gain.linearRampToValueAtTime(vol, start + 0.2);
-                gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(start);
-                osc.stop(start + duration);
+        } else {
+            for (let i = 0; i < wave * 3; i++) {
+                enemies.push({
+                    x: Math.random() * 1000, y: Math.random() < 0.5 ? -20 : 720,
+                    hp: 250, maxHp: 250,
+                    size: 20, speed: 2 + Math.random(), isBoss: false,
+                    color: `hsl(${Math.random() * 360}, 70%, 60%)`
+                });
             }
+        }
+    }
 
-            // Müziği döngüye sok
-            playPirateTune();
-            setInterval(playPirateTune, 6000);
+    function animate() {
+        if (!gameActive) { requestAnimationFrame(animate); return; }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Arka Plan Yazısı
+        ctx.save();
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = "white";
+        ctx.font = "bold 60px Orbitron";
+        ctx.textAlign = "center";
+        ctx.fillText("⚔️ GameArea Fight ⚔️", 500, 350);
+        ctx.restore();
+
+        // Oyuncu Hareketi
+        if (keys['KeyW'] && player.y > 20) player.y -= player.speed;
+        if (keys['KeyS'] && player.y < 680) player.y += player.speed;
+        if (keys['KeyA'] && player.x > 20) player.x -= player.speed;
+        if (keys['KeyD'] && player.x < 980) player.x += player.speed;
+
+        // Ateş Etme
+        if (mousePressed && Date.now() - lastShot > player.shootDelay) {
+            playShootSound();
+            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+            bullets.push({
+                x: player.x, y: player.y,
+                vx: Math.cos(angle) * 7, vy: Math.sin(angle) * 7,
+                bounces: player.bounceCount,
+                damage: Math.random() < player.critChance ? player.damage * 2 : player.damage
+            });
+            lastShot = Date.now();
         }
 
-        // Pulse animasyonu için CSS eklemesi
-        const style = document.createElement('style');
-        style.innerHTML = `@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }`;
-        document.head.appendChild(style);
-    </script>
+        // Mermiler
+        bullets.forEach((b, bi) => {
+            b.x += b.vx;
+            b.y += b.vy;
+            
+            // Duvar Sekme
+            if (b.x < 0 || b.x > 1000) {
+                if (b.bounces > 0) { b.vx *= -1; b.bounces--; }
+                else bullets.splice(bi, 1);
+            }
+            if (b.y < 0 || b.y > 700) {
+                if (b.bounces > 0) { b.vy *= -1; b.bounces--; }
+                else bullets.splice(bi, 1);
+            }
+
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Düşmanlar
+        enemies.forEach((e, ei) => {
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            e.x += Math.cos(angle) * e.speed;
+            e.y += Math.sin(angle) * e.speed;
+
+            // Çizim & Can Barı
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = e.color;
+            ctx.fillStyle = e.color;
+            ctx.fillRect(e.x - e.size/2, e.y - e.size/2, e.size, e.size);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "red";
+            ctx.fillRect(e.x - e.size/2, e.y - e.size/2 - 10, e.size, 5);
+            ctx.fillStyle = "green";
+            ctx.fillRect(e.x - e.size/2, e.y - e.size/2 - 10, (e.hp / e.maxHp) * e.size, 5);
+
+            // Mermi Çarpışma
+            bullets.forEach((b, bi) => {
+                const dist = Math.hypot(b.x - e.x, b.y - e.y);
+                if (dist < e.size) {
+                    e.hp -= b.damage;
+                    bullets.splice(bi, 1);
+                    if (e.hp <= 0) {
+                        addXp(e.isBoss ? 14 : 7, e.isBoss ? "BOSS" : "ZOMBİ");
+                        enemies.splice(ei, 1);
+                    }
+                }
+            });
+
+            // Oyuncuya Hasar
+            if (Math.hypot(player.x - e.x, player.y - e.y) < e.size) {
+                if (player.armor > 0) player.armor -= 0.5;
+                else player.hp -= 0.5;
+                if (player.hp <= 0) {
+                    gameActive = false;
+                    document.getElementById('death-screen').style.display = 'flex';
+                }
+            }
+        });
+
+        // Oyuncu Çizimi
+        ctx.fillStyle = "#00f2ff";
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // HUD - Can ve Armor
+        drawBar(player.x - 30, player.y + 30, 60, 8, player.hp / player.maxHp, "red");
+        drawBar(player.x - 30, player.y + 42, 60, 8, player.armor / player.maxArmor, "#00f2ff", "white");
+
+        // XP Bar (Alt Kısım)
+        drawBar(100, 660, 800, 20, xp / 50, "purple", "white");
+
+        if (enemies.length === 0) nextWave();
+
+        requestAnimationFrame(animate);
+    }
+
+    function drawBar(x, y, w, h, pct, fill, empty = "#333") {
+        ctx.fillStyle = empty;
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, w * pct, h);
+        ctx.strokeStyle = "white";
+        ctx.strokeRect(x, y, w, h);
+    }
+
+    let mouseX = 0, mouseY = 0;
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = e.clientY - rect.top;
+    });
+
+</script>
+
 </body>
 </html>
