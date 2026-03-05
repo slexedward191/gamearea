@@ -2,13 +2,14 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Bakımdayız | SeaWolf Legends</title>
+    <title>Bakım Modu | SeaWolf</title>
     <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --gold: #ffd700;
             --neon: #00f2ff;
             --deep-ocean: #000a1a;
+            --btn-gradient: linear-gradient(45deg, #ff0044, #ff8800);
         }
 
         body, html {
@@ -18,7 +19,7 @@
             overflow: hidden; font-family: 'Pirata One', cursive;
         }
 
-        /* --- ARKA PLAN DALGA EFEKTİ --- */
+        /* --- ARKA PLAN VE PARTIKÜLLER --- */
         .ocean-bg {
             position: absolute; inset: 0;
             background: radial-gradient(circle at center, #001a33 0%, #00050a 100%);
@@ -28,112 +29,125 @@
         /* --- SOL ÜST ANASAYFA BUTONU --- */
         .home-btn {
             position: absolute; top: 30px; left: 30px;
-            background: linear-gradient(45deg, #ff0044, #ff8800);
+            background: var(--btn-gradient);
             color: white; border: 2px solid var(--gold);
-            padding: 12px 30px; font-size: 24px; border-radius: 50px;
+            padding: 15px 35px; font-size: 22px; border-radius: 8px;
             cursor: pointer; text-decoration: none;
-            box-shadow: 0 0 20px rgba(255, 0, 68, 0.5);
-            transition: 0.3s all; z-index: 100;
+            box-shadow: 0 0 25px rgba(255, 0, 68, 0.6);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000; pointer-events: auto;
             font-family: 'Orbitron', sans-serif;
+            display: flex; align-items: center; gap: 10px;
         }
         .home-btn:hover {
-            transform: scale(1.1) rotate(-2deg);
-            box-shadow: 0 0 40px var(--gold);
-            filter: brightness(1.2);
+            transform: scale(1.1) translateX(10px);
+            box-shadow: 0 0 50px var(--gold);
+            filter: brightness(1.3);
         }
 
-        /* --- MERKEZ YAZI VE EFEKT --- */
-        .maintenance-container {
-            text-align: center; z-index: 10;
-        }
+        /* --- MERKEZ YAZI --- */
+        .maintenance-box { text-align: center; z-index: 10; padding: 20px; }
 
         .main-text {
-            font-size: 80px;
+            font-size: clamp(40px, 8vw, 90px);
             background: linear-gradient(to right, #00f2ff, #ffd700, #ff0044, #00f2ff);
             background-size: 200% auto;
             color: transparent;
             -webkit-background-clip: text;
             background-clip: text;
             animation: shine 3s linear infinite, float 4s ease-in-out infinite;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.5));
+            line-height: 1.1;
+            filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.4));
         }
 
         .sub-text {
             font-family: 'Orbitron', sans-serif;
-            color: white; font-size: 18px; letter-spacing: 10px;
-            margin-top: 20px; opacity: 0.7;
-            animation: blink 1.5s infinite;
+            color: var(--neon); font-size: clamp(12px, 2vw, 18px); 
+            letter-spacing: 8px; margin-top: 30px;
+            animation: blink 2s infinite; text-shadow: 0 0 10px var(--neon);
         }
 
-        /* --- ANİMASYONLAR --- */
-        @keyframes shine {
-            to { background-position: 200% center; }
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-        @keyframes blink {
-            50% { opacity: 0.2; }
-        }
+        @keyframes shine { to { background-position: 200% center; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
+        @keyframes blink { 50% { opacity: 0.1; transform: scale(0.95); } }
 
-        /* --- MÜZİK KONTROLÜ (GİZLİ BAŞLATICI) --- */
-        #music-trigger {
-            position: fixed; bottom: 20px; color: rgba(255,255,255,0.2);
-            font-size: 12px; cursor: pointer;
+        /* --- GİRİŞ KATMANI (Müzik için) --- */
+        #overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+            color: var(--gold); cursor: pointer; text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="ocean-bg"></div>
-
-    <a href="#" class="home-btn" onclick="location.reload()">🏠 ANASAYFAYA DÖN</a>
-
-    <div class="maintenance-container">
-        <h1 class="main-text">YAKINDA YAPILICAK<br>ŞUANLIK BAKIMDAYIZ</h1>
-        <div class="sub-text">SİSTEMLER GÜNCELLENİYOR...</div>
+    <div id="overlay" onclick="startEverything()">
+        <div style="animation: pulse 1s infinite;">
+            <h2 style="font-size: 40px;">SİSTEMİ BAŞLATMAK İÇİN TIKLA</h2>
+            <p style="font-family: 'Orbitron'; font-size: 14px; letter-spacing: 3px;">KORSAN EZGİLERİ YÜKLENİYOR...</p>
+        </div>
     </div>
 
-    <div id="music-trigger">Sesi açmak için ekrana tıkla 🎵</div>
+    <div class="ocean-bg"></div>
+
+    <a href="https://slexedward191.github.io/ts3-music-bot/" class="home-btn">
+        <span>🏠</span> ANASAYFAYA DÖN
+    </a>
+
+    <div class="maintenance-box">
+        <h1 class="main-text">YAKINDA YAPILICAK<br>ŞUANLIK BAKIMDAYIZ</h1>
+        <div class="sub-text">MODÜLLER %87 YÜKLENDİ...</div>
+    </div>
 
     <script>
-        // Arka Plan Müzik Modülü (Web Audio API)
-        let audioStarted = false;
-        
-        window.onclick = () => {
-            if (audioStarted) return;
-            audioStarted = true;
-            document.getElementById('music-trigger').style.display = 'none';
+        function startEverything() {
+            // Giriş ekranını kaldır
+            document.getElementById('overlay').style.display = 'none';
             
-            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            // Müzik Motorunu Başlat (Web Audio API - Browser uyumlu)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Derin Deniz Uğultusu ve Melodi
-            function playNote(freq, type, startTime, duration, vol) {
-                const osc = ac.createOscillator();
-                const gain = ac.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, startTime);
-                gain.gain.setValueAtTime(vol, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-                osc.connect(gain);
-                gain.connect(ac.destination);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
+            function playPirateTune() {
+                const now = audioCtx.currentTime;
+                
+                // Derin Gemi Gıcırtısı/Uğultusu (Baslar)
+                oscillatorNote(55, 'sine', now, 5, 0.15); 
+                oscillatorNote(110, 'sine', now + 1, 4, 0.1);
+
+                // Mistik Melodi (Tizler)
+                const melody = [220, 247, 261, 329, 293, 261, 247]; // Korsan vari notalar
+                melody.forEach((freq, i) => {
+                    oscillatorNote(freq, 'triangle', now + (i * 0.8), 1.5, 0.04);
+                });
             }
 
-            // Sonsuz Döngü Müziği
-            setInterval(() => {
-                const now = ac.currentTime;
-                // Derin baslar
-                playNote(60, 'sine', now, 4, 0.2);
-                // Hafif mistik melodi
-                playNote(220, 'triangle', now + 1, 3, 0.05);
-                playNote(261, 'triangle', now + 2, 3, 0.05);
-            }, 4000);
-        };
+            function oscillatorNote(freq, type, start, duration, vol) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, start);
+                
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(vol, start + 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(start);
+                osc.stop(start + duration);
+            }
+
+            // Müziği döngüye sok
+            playPirateTune();
+            setInterval(playPirateTune, 6000);
+        }
+
+        // Pulse animasyonu için CSS eklemesi
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }`;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
