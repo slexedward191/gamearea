@@ -2,201 +2,292 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Piano Highway | Rhythm Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <title>SeaWolf: Pirate Legends</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Spectral:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p: #00f2ff; --s: #ff00ff; --bg: #020205; }
-        body, html { margin: 0; padding: 0; overflow: hidden; background: var(--bg); font-family: 'Orbitron'; color: white; }
-        canvas { display: block; }
+        :root { --gold: #ffd700; --wood: #5d4037; --ocean: #0077be; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Spectral', serif; color: white; }
+        canvas { display: block; cursor: crosshair; }
 
-        /* MENU UI */
-        #menu {
-            position: fixed; inset: 0; background: rgba(2,2,5,0.95);
-            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
-            border: 5px solid var(--p); margin: 50px;
+        /* GİRİŞ EKRANI */
+        #boot-screen {
+            position: fixed; inset: 0; background: url('https://images.unsplash.com/photo-1516146483970-bbdf002547bf?auto=format&fit=crop&q=80&w=2000') center/cover;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000;
         }
-        .stat { font-size: 20px; margin: 10px; color: var(--s); }
-        .btn {
-            background: var(--p); color: black; border: none; padding: 20px 50px;
-            font-family: 'Syncopate'; cursor: pointer; font-weight: 900; margin-top: 30px;
+        .pirate-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
+        .boot-box { position: relative; z-index: 10; text-align: center; }
+        input { 
+            background: rgba(0,0,0,0.8); border: 2px solid var(--gold); color: var(--gold);
+            padding: 15px; font-size: 20px; font-family: 'Pirata One'; width: 300px; text-align: center; margin: 20px;
+        }
+        .btn { 
+            background: var(--gold); color: #000; border: none; padding: 15px 50px; 
+            font-family: 'Pirata One'; font-size: 24px; cursor: pointer; transition: 0.3s;
         }
 
+        /* MARKET SİSTEMİ */
+        #market {
+            position: fixed; top: 10%; left: 10%; right: 10%; bottom: 10%;
+            background: rgba(45, 33, 27, 0.95); border: 4px solid var(--gold);
+            display: none; padding: 20px; z-index: 500;
+        }
+        .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .item { border: 1px solid var(--gold); padding: 10px; text-align: center; background: rgba(0,0,0,0.3); }
+        .item img { width: 80px; height: 80px; object-fit: contain; }
+
+        /* HUD */
         #hud {
-            position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-around;
-            pointer-events: none; text-shadow: 0 0 10px var(--p);
+            position: absolute; top: 20px; left: 20px; pointer-events: none;
+            text-shadow: 2px 2px 5px #000; display: flex; gap: 40px; font-family: 'Pirata One'; font-size: 28px;
         }
     </style>
 </head>
 <body>
 
+<div id="boot-screen">
+    <div class="pirate-overlay"></div>
+    <div class="boot-box">
+        <h1 style="font-family: 'Pirata One'; font-size: 80px; color: var(--gold); margin: 0;">SEAWOLF</h1>
+        <p style="letter-spacing: 3px;">KORSANIN LANETİ</p>
+        <input type="text" id="p-name" placeholder="KAPTANIN ADI...">
+        <br>
+        <button class="btn" onclick="Game.init()">DENİZE AÇIL</button>
+    </div>
+</div>
+
+<div id="market">
+    <h2 style="font-family: 'Pirata One'; color: var(--gold); text-align: center; font-size: 40px;">KAPTANIN CEPHANESİ</h2>
+    <div class="market-grid" id="market-items"></div>
+    <button class="btn" style="margin-top: 20px; width: 100%;" onclick="Game.toggleMarket()">SAVAŞA DÖN</button>
+</div>
+
 <div id="hud">
-    <div>TRACK: <span id="track-name">STORM_SONATA</span></div>
-    <div>SCORE: <span id="score">0000</span></div>
-    <div>PROGRESS: <span id="prog">0%</span></div>
+    <div id="ui-name">KAPTAN: ---</div>
+    <div style="color: var(--gold);">ALTIN: <span id="ui-gold">500</span></div>
+    <div style="color: #ff4444;">CAN: <span id="ui-health">100</span></div>
+    <div style="color: #00f2ff;">M: MARKETİ AÇ</div>
 </div>
 
-<div id="menu">
-    <h1 style="font-family: 'Syncopate'; font-size: 40px;">COMPOSITION COMPLETE</h1>
-    <div class="stat">ACCURACY: <span id="stat-acc">0%</span></div>
-    <div class="stat">NOTES HIT: <span id="stat-hits">0</span></div>
-    <button class="btn" onclick="Engine.nextTrack()">NEXT TRACK</button>
-</div>
-
-<canvas id="view"></canvas>
+<canvas id="gameCanvas"></canvas>
 
 <script>
 /**
- * PRO AUDIO SAMPLES
+ * AMBIENCE & AUDIO ENGINE
  */
 const AudioEngine = {
     ctx: null,
-    freqs: [261.63, 293.66, 329.63, 349.23], // C, D, E, F
-    init() { this.ctx = new AudioContext(); },
-    play(i) {
+    init() { 
+        this.ctx = new AudioContext(); 
+        this.oceanAmbience();
+    },
+    oceanAmbience() {
+        setInterval(() => {
+            // Deniz uğultusu (Noise)
+            this.playFreq(Math.random()*50 + 50, 'sine', 2, 0.05);
+            // Martı Sesi (Yüksek frekanslı pitch-up)
+            if(Math.random() > 0.97) {
+                this.playFreq(800 + Math.random()*400, 'triangle', 0.5, 0.02);
+            }
+        }, 1000);
+    },
+    playFreq(f, t, d, v) {
         const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-        o.type = 'triangle'; o.frequency.value = this.freqs[i];
-        g.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.5);
+        o.type = t; o.frequency.value = f; g.gain.value = v;
+        g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + d);
         o.connect(g); g.connect(this.ctx.destination);
-        o.start(); o.stop(this.ctx.currentTime + 0.5);
+        o.start(); o.stop(this.ctx.currentTime + d);
     }
 };
 
 /**
- * HIGHWAY ENGINE
+ * PIRATE GAME CORE
  */
-const Engine = {
-    lvl: 1, score: 0, hits: 0, totalInTrack: 40,
-    notes: [], keys: [false, false, false, false],
-    tracks: [
-        { name: "NEON_BEETHOVEN", speed: 5, count: 30 },
-        { name: "CYBER_MOZART", speed: 8, count: 50 },
-        { name: "QUANTUM_SYNTH", speed: 12, count: 80 }
+const Game = {
+    gold: 500, health: 100, waveOffset: 0,
+    items: [
+        { id: 1, name: "Çelik Toplar", price: 200, img: "https://www.freeiconspng.com/uploads/cannon-ball-png-1.png", power: 2 },
+        { id: 2, name: "Hızlı Yelken", price: 400, img: "https://www.freeiconspng.com/uploads/sailboat-ship-png-2.png", speed: 2 },
+        { id: 3, name: "Zırhlı Gövde", price: 600, img: "https://www.freeiconspng.com/uploads/treasure-chest-png-7.png", armor: 50 }
     ],
-
+    shipImg: new Image(),
+    enemyImg: new Image(),
+    cannonImg: new Image(),
+    
     init() {
-        this.cvs = document.getElementById('view');
+        this.name = document.getElementById('p-name').value || "Bilinmeyen Kaptan";
+        document.getElementById('ui-name').innerText = "KAPTAN: " + this.name.toUpperCase();
+        document.getElementById('boot-screen').style.display = 'none';
+        
+        this.cvs = document.getElementById('gameCanvas');
         this.ctx = this.cvs.getContext('2d');
-        this.resize();
-        window.onresize = () => this.resize();
+        this.cvs.width = window.innerWidth;
+        this.cvs.height = window.innerHeight;
+
+        // PNG Assetleri Yükle
+        this.shipImg.src = "https://www.freeiconspng.com/uploads/pirate-ship-png-image-6.png";
+        this.enemyImg.src = "https://www.freeiconspng.com/uploads/pirate-ship-png-2.png";
+        this.cannonImg.src = "https://www.freeiconspng.com/uploads/cannon-png-1.png";
+
+        this.player = { x: 200, y: 200, angle: 0, speed: 0, r: 40 };
+        this.bullets = [];
+        this.enemies = [];
+        this.keys = {};
         
+        this.setupMarket();
         AudioEngine.init();
-        
-        window.onkeydown = (e) => this.handleKey(e.key, true);
-        window.onkeyup = (e) => this.handleKey(e.key, false);
-        
-        this.startTrack(0);
+
+        window.onkeydown = (e) => {
+            this.keys[e.key.toLowerCase()] = true;
+            if(e.key.toLowerCase() === 'm') this.toggleMarket();
+            if(e.key === ' ') this.fire();
+        };
+        window.onkeyup = (e) => this.keys[e.key.toLowerCase()] = false;
+
+        this.spawnEnemy();
         this.loop();
     },
 
-    resize() { this.cvs.width = window.innerWidth; this.cvs.height = window.innerHeight; },
-
-    handleKey(k, s) {
-        const map = { 'a': 0, 's': 1, 'd': 2, 'f': 3 };
-        const idx = map[k.toLowerCase()];
-        if(idx !== undefined) {
-            this.keys[idx] = s;
-            if(s) {
-                AudioEngine.play(idx);
-                this.checkHit(idx);
-            }
-        }
-    },
-
-    startTrack(idx) {
-        this.currentTrackIdx = idx;
-        const t = this.tracks[idx];
-        this.lvl = idx + 1;
-        this.score = 0; this.hits = 0;
-        this.notes = [];
-        this.totalInTrack = t.count;
-        this.spawned = 0;
-        document.getElementById('track-name').innerText = t.name;
-        document.getElementById('menu').style.display = 'none';
-        this.active = true;
-    },
-
-    checkHit(lane) {
-        const hitZoneY = this.cvs.height - 100;
-        this.notes.forEach(n => {
-            if(!n.hit && n.lane === lane && Math.abs(n.y - hitZoneY) < 50) {
-                n.hit = true;
-                this.hits++;
-                this.score += 100;
-                document.getElementById('score').innerText = this.score;
-            }
+    setupMarket() {
+        const grid = document.getElementById('market-items');
+        this.items.forEach(item => {
+            grid.innerHTML += `
+                <div class="item">
+                    <img src="${item.img}">
+                    <h3>${item.name}</h3>
+                    <p style="color:gold">${item.price} Altın</p>
+                    <button onclick="Game.buy(${item.id})" class="btn" style="font-size:14px; padding:5px 15px;">SATIN AL</button>
+                </div>
+            `;
         });
     },
 
-    nextTrack() {
-        const next = (this.currentTrackIdx + 1) % this.tracks.length;
-        this.startTrack(next);
+    toggleMarket() {
+        const m = document.getElementById('market');
+        m.style.display = m.style.display === 'none' || m.style.display === '' ? 'block' : 'none';
+        this.isPaused = m.style.display === 'block';
+    },
+
+    buy(id) {
+        const item = this.items.find(i => i.id === id);
+        if(this.gold >= item.price) {
+            this.gold -= item.price;
+            document.getElementById('ui-gold').innerText = this.gold;
+            if(item.power) this.player.power = (this.player.power || 1) + item.power;
+            alert(item.name + " ALINDI! KAPTAN!");
+        } else {
+            alert("YETERLİ ALTININ YOK KORSAN!");
+        }
+    },
+
+    spawnEnemy() {
+        setInterval(() => {
+            if(!this.isPaused) {
+                this.enemies.push({
+                    x: Math.random() * this.cvs.width + this.cvs.width,
+                    y: Math.random() * this.cvs.height,
+                    speed: 2 + Math.random() * 2,
+                    health: 50
+                });
+            }
+        }, 3000);
+    },
+
+    fire() {
+        AudioEngine.playFreq(100, 'sawtooth', 0.2, 0.1);
+        this.bullets.push({
+            x: this.player.x, y: this.player.y,
+            vx: Math.cos(this.player.angle) * 10,
+            vy: Math.sin(this.player.angle) * 10
+        });
     },
 
     update() {
-        if(!this.active) return;
-        const t = this.tracks[this.currentTrackIdx];
-        
-        // Spawn notes based on rhythm
-        if(this.spawned < t.count && Math.random() < 0.05) {
-            this.notes.push({ lane: Math.floor(Math.random()*4), y: -50, hit: false });
-            this.spawned++;
-        }
+        if(this.isPaused) return;
 
-        this.notes.forEach((n, i) => {
-            n.y += t.speed;
-            if(n.y > this.cvs.height) {
-                if(!n.hit) this.score = Math.max(0, this.score - 50);
-                this.notes.splice(i, 1);
-                if(this.spawned >= t.count && this.notes.length === 0) this.endTrack();
-            }
+        if(this.keys['w']) this.player.speed = 3;
+        else if(this.keys['s']) this.player.speed = -2;
+        else this.player.speed *= 0.95;
+
+        if(this.keys['a']) this.player.angle -= 0.05;
+        if(this.keys['d']) this.player.angle += 0.05;
+
+        this.player.x += Math.cos(this.player.angle) * this.player.speed;
+        this.player.y += Math.sin(this.player.angle) * this.player.speed;
+
+        this.bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if(b.x < 0 || b.x > this.cvs.width || b.y < 0 || b.y > this.cvs.height) this.bullets.splice(i, 1);
         });
 
-        document.getElementById('prog').innerText = Math.floor((this.spawned / t.count) * 100) + "%";
-    },
+        this.enemies.forEach((e, ei) => {
+            e.x -= e.speed;
+            if(Math.hypot(e.x - this.player.x, e.y - this.player.y) < 60) {
+                this.health -= 0.5;
+                document.getElementById('ui-health').innerText = Math.floor(this.health);
+            }
+            this.bullets.forEach((b, bi) => {
+                if(Math.hypot(e.x - b.x, e.y - b.y) < 40) {
+                    this.enemies.splice(ei, 1);
+                    this.bullets.splice(bi, 1);
+                    this.gold += 50;
+                    document.getElementById('ui-gold').innerText = this.gold;
+                }
+            });
+        });
 
-    endTrack() {
-        this.active = false;
-        document.getElementById('menu').style.display = 'flex';
-        document.getElementById('stat-acc').innerText = Math.floor((this.hits / this.totalInTrack) * 100) + "%";
-        document.getElementById('stat-hits').innerText = this.hits;
+        this.waveOffset += 0.05;
+        if(this.health <= 0) location.reload();
     },
 
     draw() {
         const ctx = this.ctx;
-        ctx.fillStyle = '#020205'; ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
+        // Okyanus Rengi
+        ctx.fillStyle = '#005a9c';
+        ctx.fillRect(0, 0, this.cvs.width, this.cvs.height);
 
-        const laneW = 100;
-        const startX = this.cvs.width/2 - 200;
-
-        // Highway Lanes
-        for(let i=0; i<4; i++) {
-            ctx.strokeStyle = this.keys[i] ? varName('--p') : '#111122';
-            ctx.lineWidth = this.keys[i] ? 4 : 1;
-            ctx.strokeRect(startX + i*laneW, 0, laneW, this.cvs.height);
-            
-            // Hit Zone
-            ctx.fillStyle = this.keys[i] ? 'rgba(0, 242, 255, 0.2)' : 'rgba(255,255,255,0.02)';
-            ctx.fillRect(startX + i*laneW, this.cvs.height - 120, laneW, 40);
+        // Dalga Efekti (Abartılı Sistemli)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
+        for(let j=0; j<this.cvs.height; j+=40) {
+            ctx.beginPath();
+            for(let i=0; i<this.cvs.width; i+=20) {
+                ctx.lineTo(i, j + Math.sin(i*0.01 + this.waveOffset + j) * 15);
+            }
+            ctx.stroke();
         }
 
-        // Notes
-        this.notes.forEach(n => {
-            if(n.hit) return;
-            ctx.fillStyle = n.lane % 2 === 0 ? varName('--p') : varName('--s');
-            ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
-            ctx.fillRect(startX + n.lane*laneW + 10, n.y, laneW - 20, 20);
+        // Gemi Çizimi (PNG)
+        ctx.save();
+        ctx.translate(this.player.x, this.player.y);
+        ctx.rotate(this.player.angle + Math.PI/2);
+        ctx.drawImage(this.shipImg, -40, -40, 80, 80);
+        ctx.restore();
+
+        // Düşmanlar (PNG)
+        this.enemies.forEach(e => {
+            ctx.drawImage(this.enemyImg, e.x-40, e.y-40, 80, 80);
         });
 
-        ctx.shadowBlur = 0;
-        requestAnimationFrame(() => this.loop());
+        // Top Mermileri
+        ctx.fillStyle = '#333';
+        this.bullets.forEach(b => {
+            ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI*2); ctx.fill();
+        });
+
+        // Martı Çizimi (Vektörel Küçük Martılar)
+        if(Math.sin(this.waveOffset) > 0.8) {
+            ctx.strokeStyle = "white"; ctx.beginPath();
+            ctx.moveTo(100, 100); ctx.quadraticCurveTo(110, 90, 120, 100);
+            ctx.stroke();
+        }
     },
 
-    loop() { this.update(); this.draw(); }
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(() => this.loop());
+    }
 };
-
-function varName(n) { return getComputedStyle(document.documentElement).getPropertyValue(n); }
-Engine.init();
 </script>
 </body>
 </html>
