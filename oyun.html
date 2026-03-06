@@ -3,265 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Korsanlar Kralı - Giriş</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Pirata+One&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <title>Korsanlar Kralı - Kızıl Deniz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Pirata+One&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold: #d4af37;
-            --dark-blue: #0a141d;
-            --button-red: #8b0000;
-            --text-color: #e0e0e0;
+            --crimson: #8b0000;
+            --dark-red: #4a0000;
+            --gold: #ffcc33;
+            --gold-glow: rgba(255, 204, 51, 0.4);
+            --panel-bg: rgba(5, 10, 15, 0.95);
         }
 
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--dark-blue);
-            color: var(--text-color);
+            font-family: 'Arial', sans-serif;
+            background: #000;
             overflow: hidden;
-            background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1516339901600-2e1a62986307?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-        }
-
-        .container {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
 
+        /* Kızıl Deniz Efekti Arka Plan */
+        .background-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(74, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
+                url('https://images.unsplash.com/photo-1516339901600-2e1a62986307?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            filter: sepia(0.5) hue-rotate(-50deg) saturate(1.5);
+            z-index: -1;
+            animation: pulseBg 10s infinite alternate;
+        }
+
+        @keyframes pulseBg {
+            from { filter: sepia(0.5) hue-rotate(-50deg) saturate(1.5) brightness(0.8); }
+            to { filter: sepia(0.5) hue-rotate(-40deg) saturate(1.8) brightness(1); }
+        }
+
+        /* Bayraklar Bölümü */
+        .flags {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .flags img {
+            width: 25px;
+            height: 15px;
+            cursor: pointer;
+            border: 1px solid #444;
+            transition: transform 0.2s;
+        }
+
+        .flags img:hover { transform: scale(1.2); border-color: var(--gold); }
+
         /* Ana Panel */
-        .login-box {
-            background: rgba(10, 20, 29, 0.9);
-            border: 3px solid var(--gold);
-            border-radius: 10px;
-            padding: 40px;
-            width: 400px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(212, 175, 55, 0.2);
-            text-align: center;
+        .main-frame {
             position: relative;
+            width: 900px;
+            height: 500px;
+            background: var(--panel-bg);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 50px rgba(139, 0, 0, 0.6), inset 0 0 20px #000;
+            display: flex;
+            border-radius: 5px;
+        }
+
+        /* Sol Taraf: Giriş Formu */
+        .login-side {
+            width: 45%;
+            padding: 40px;
+            z-index: 2;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         .game-title {
             font-family: 'Pirata One', cursive;
-            font-size: 50px;
+            font-size: 45px;
             color: var(--gold);
-            text-shadow: 3px 3px 5px #000;
-            margin-bottom: 30px;
-            text-transform: uppercase;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 204, 51, 0.5), 3px 3px 0 #000;
+            letter-spacing: 2px;
         }
 
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
+        .subtitle { color: var(--gold); font-size: 12px; margin-bottom: 15px; display: block; }
 
-        label {
-            display: block;
-            color: var(--gold);
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        input[type="text"], input[type="password"], select {
-            width: 100%;
-            padding: 10px;
-            background: #1a2a3a;
-            border: 1px solid #3d4a5a;
+        .form-row { display: flex; align-items: center; margin-bottom: 10px; }
+        .form-row label { width: 100px; color: var(--gold); font-size: 13px; font-weight: bold; }
+        .form-row input, .form-row select {
+            flex: 1;
+            background: #2a343d;
+            border: 1px solid #555;
             color: white;
-            border-radius: 4px;
-            box-sizing: border-box;
+            padding: 5px;
+            border-radius: 3px;
         }
 
-        /* Butonlar */
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn-login {
-            flex: 2;
-            background: linear-gradient(to bottom, #7d5a2d, #4e361a);
+        .actions { margin-left: 100px; margin-top: 15px; display: flex; align-items: center; gap: 10px; }
+        
+        .btn-giris {
+            background: linear-gradient(to bottom, #7d5e2d, #4e361a);
             border: 1px solid var(--gold);
             color: white;
-            padding: 12px;
-            font-weight: bold;
+            padding: 5px 25px;
             cursor: pointer;
-            border-radius: 4px;
-            transition: 0.3s;
-        }
-
-        .btn-login:hover {
-            filter: brightness(1.2);
-        }
-
-        .btn-fb {
-            flex: 1;
-            background: #3b5998;
-            border: none;
-            color: white;
             font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
-        .btn-register {
-            display: block;
-            width: 100%;
-            margin-top: 25px;
-            background: linear-gradient(to bottom, #a00, #600);
-            border: 2px solid #ff4500;
+        .btn-fb { background: #3b5998; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+
+        .extra-links { margin-left: 100px; margin-top: 10px; font-size: 11px; color: #aaa; }
+        .extra-links a { color: #ccc; text-decoration: none; display: block; margin-top: 5px; }
+
+        .register-footer {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+            width: 320px;
+            text-align: center;
+        }
+
+        .legal-text { font-size: 10px; color: var(--gold); margin-bottom: 10px; line-height: 1.4; }
+
+        .btn-kayit {
+            background: linear-gradient(to bottom, #8b0000, #4a0000);
+            border: 2px solid var(--gold);
             color: white;
-            padding: 15px;
+            padding: 12px 40px;
             font-family: 'Cinzel', serif;
-            font-size: 18px;
-            text-decoration: none;
-            border-radius: 50px;
+            font-size: 16px;
+            border-radius: 30px;
             cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 204, 51, 0.3);
             transition: 0.3s;
         }
+        .btn-kayit:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--gold); }
 
-        .btn-register:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #ff4500;
+        /* Sağ Taraf: Gemi Görseli ve Efektler */
+        .ship-side {
+            width: 55%;
+            background: url('https://www.transparentpng.com/download/ship/3L6Yw3-pirate-ship-transparent-background.png'); /* Örnek Gemi */
+            background-size: 120%;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
         }
 
-        /* Kayıt Modal */
-        #register-form {
+        .ship-side::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(139, 0, 0, 0.2) 0%, transparent 70%);
+        }
+
+        /* Kayıt Formu Overlay */
+        #reg-modal {
             display: none;
-        }
-
-        .footer-links {
-            margin-top: 15px;
-            font-size: 12px;
-        }
-
-        .footer-links a {
-            color: #888;
-            text-decoration: none;
-        }
-
-        .footer-links a:hover {
-            color: var(--gold);
-        }
-
-        .status-msg {
-            margin-top: 10px;
-            font-size: 14px;
-            min-height: 20px;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="login-box">
-        <h1 class="game-title">KORSANLAR KRALI</h1>
+<div class="background-overlay"></div>
 
-        <div id="login-form">
-            <div class="form-group">
+<div class="flags">
+    <img src="https://flagcdn.com/tr.svg">
+    <img src="https://flagcdn.com/gb.svg">
+    <img src="https://flagcdn.com/es.svg">
+    <img src="https://flagcdn.com/fr.svg">
+    <img src="https://flagcdn.com/it.svg">
+    <img src="https://flagcdn.com/de.svg">
+    <img src="https://flagcdn.com/br.svg">
+</div>
+
+<div class="main-frame">
+    <div class="login-side">
+        <div class="logo-area">
+            <h1 class="game-title">KORSANLAR KRALI</h1>
+            <span class="subtitle">Üye Girişi</span>
+        </div>
+
+        <div id="login-fields">
+            <div class="form-row">
                 <label>Kullanıcı adı:</label>
-                <input type="text" id="login-user" placeholder="Adınızı girin...">
+                <input type="text" id="user">
             </div>
-            <div class="form-group">
+            <div class="form-row">
                 <label>Şifre:</label>
-                <input type="password" id="login-pass" placeholder="******">
+                <input type="password" id="pass">
             </div>
-            <div class="form-group">
+            <div class="form-row">
                 <label>Server / Client:</label>
                 <select>
-                    <option>KRAL-TR1 (Global)</option>
-                    <option>KRAL-TR2 (Yeni)</option>
+                    <option>Kızıl Deniz - TR</option>
+                    <option>Engin Denizler - EU</option>
                 </select>
             </div>
 
-            <div class="btn-row">
-                <button class="btn-login" onclick="attemptLogin()">Giriş</button>
+            <div class="actions">
+                <button class="btn-giris" onclick="checkLogin()">Giriş</button>
                 <button class="btn-fb">f</button>
             </div>
 
-            <div class="footer-links">
-                <input type="checkbox" id="remember"> <label style="display:inline;" for="remember">Beni Hatırla</label><br><br>
+            <div class="extra-links">
+                <input type="checkbox" id="rem"> <label for="rem">Beni Hatırla</label>
                 <a href="#">Parolamı Unuttum</a>
             </div>
-
-            <button class="btn-register" onclick="toggleForms()">ÜCRETSİZ KAYIT OL</button>
         </div>
 
-        <div id="register-form">
-            <h2 style="color: var(--gold); font-family: 'Cinzel';">Yeni Kaptan Kaydı</h2>
-            <div class="form-group">
-                <label>Kullanıcı Adı Seçin:</label>
-                <input type="text" id="reg-user">
-            </div>
-            <div class="form-group">
-                <label>Şifre Belirleyin:</label>
-                <input type="password" id="reg-pass">
-            </div>
-            <button class="btn-login" style="width: 100%;" onclick="saveUser()">KAPTANLIĞA BAŞLA</button>
-            <p onclick="toggleForms()" style="cursor:pointer; margin-top:15px; font-size:13px;">Geri Dön</p>
+        <div class="register-footer">
+            <p class="legal-text">Girişimle beraber hizmet sözleşmesini kabul ediyorum</p>
+            <button class="btn-kayit" onclick="openReg()">ÜCRETSİZ KAYIT OL</button>
         </div>
+    </div>
 
-        <p class="status-msg" id="msg"></p>
+    <div class="ship-side"></div>
+
+    <div id="reg-modal">
+        <h2 style="color:var(--gold); font-family:'Pirata One'; font-size:40px;">YENİ KAPTAN KAYDI</h2>
+        <div style="width:300px;">
+            <div class="form-row"><label>Adın:</label><input type="text" id="reg-u"></div>
+            <div class="form-row"><label>Şifren:</label><input type="password" id="reg-p"></div>
+            <br>
+            <button class="btn-giris" style="width:100%" onclick="saveReg()">DENİZE AÇIL</button>
+            <button class="btn-fb" style="width:100%; margin-top:10px; background:#444;" onclick="openReg()">VAZGEÇ</button>
+        </div>
     </div>
 </div>
 
 <script>
-    // Formlar arası geçiş
-    function toggleForms() {
-        const login = document.getElementById('login-form');
-        const reg = document.getElementById('register-form');
-        const msg = document.getElementById('msg');
-        
-        msg.innerText = "";
-        if(login.style.display === "none") {
-            login.style.display = "block";
-            reg.style.display = "none";
-        } else {
-            login.style.display = "none";
-            reg.style.display = "block";
+    function openReg() {
+        const modal = document.getElementById('reg-modal');
+        modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function saveReg() {
+        const u = document.getElementById('reg-u').value;
+        const p = document.getElementById('reg-p').value;
+        if(u && p) {
+            localStorage.setItem('kaptan_ad', u);
+            localStorage.setItem('kaptan_sifre', p);
+            alert("Kaptan " + u + ", Kızıl Deniz'e hoş geldin! Şimdi giriş yapabilirsin.");
+            openReg();
         }
     }
 
-    // Kullanıcı Kayıt Fonksiyonu (Local Storage)
-    function saveUser() {
-        const user = document.getElementById('reg-user').value;
-        const pass = document.getElementById('reg-pass').value;
-        const msg = document.getElementById('msg');
+    function checkLogin() {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        const s_u = localStorage.getItem('kaptan_ad');
+        const s_p = localStorage.getItem('kaptan_sifre');
 
-        if(user && pass) {
-            localStorage.setItem('pirateUser', user);
-            localStorage.setItem('piratePass', pass);
-            msg.style.color = "#4CAF50";
-            msg.innerText = "Kayıt Başarılı! Giriş yapabilirsiniz.";
-            setTimeout(toggleForms, 1500);
+        if(u === s_u && p === s_p && u !== null) {
+            alert("Giriş Başarılı! Gemi limandan ayrılıyor...");
         } else {
-            msg.style.color = "#f44336";
-            msg.innerText = "Lütfen tüm alanları doldurun!";
-        }
-    }
-
-    // Giriş Fonksiyonu
-    function attemptLogin() {
-        const user = document.getElementById('login-user').value;
-        const pass = document.getElementById('login-pass').value;
-        const msg = document.getElementById('msg');
-
-        const savedUser = localStorage.getItem('pirateUser');
-        const savedPass = localStorage.getItem('piratePass');
-
-        if(user === savedUser && pass === savedPass && user !== null) {
-            msg.style.color = "#4CAF50";
-            msg.innerText = "Giriş yapılıyor... Gemi hazırlanıyor!";
-            // Burada oyun sahnesine geçiş yapılacak
-        } else {
-            msg.style.color = "#f44336";
-            msg.innerText = "Hatalı kullanıcı adı veya şifre!";
+            alert("Hatalı mürettebat bilgisi!");
         }
     }
 </script>
