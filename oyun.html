@@ -1,210 +1,62 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <title>Dönerci Usta - Simülasyon</title>
-    <style>
-        :root { --brown: #5d4037; --red: #e74c3c; --yellow: #f1c40f; --green: #2ecc71; }
-        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; }
+import time
+import random
+
+class BipolarGame:
+    def __init__(self, name):
+        self.name = name
+        self.energy = 50
+        self.mood = 50  # 0: Depresyon, 100: Mani
+        self.days = 1
+        self.game_over = False
+
+    def check_status(self):
+        print(f"\n--- Gün {self.days} | {self.name}'in Durumu ---")
+        print(f"Enerji: {self.energy} | Ruh Hali: {self.mood}")
+        if self.mood > 90:
+            print("Durum: Manik bir atak geçiriyorsun! Çok hızlı hareket ediyorsun.")
+        elif self.mood < 10:
+            print("Durum: Derin bir depresyon evresindesin. Yataktan kalkmak zor.")
+        else:
+            print("Durum: Dengeli seyrediyor.")
+
+    def play_turn(self):
+        print("\nNe yapmak istersin?")
+        print("1. Yoğun bir projeye başla (Enerji harca, Manik tetikleme)")
+        print("2. Dinlen ve kitap oku (Dengeyi koru)")
+        print("3. İnsanlarla sosyalleş (Ruh halini yükselt)")
         
-        #game-wrapper { width: 800px; background: #34495e; padding: 20px; border-bottom: 10px solid #2c3e50; position: relative; }
+        choice = input("> ")
         
-        /* Üst Panel */
-        .stats { display: flex; justify-content: space-around; background: #222; padding: 10px; border-radius: 10px; margin-bottom: 20px; }
-        .gold { color: var(--yellow); font-weight: bold; font-size: 1.2rem; }
-
-        /* Müşteri Alanı */
-        #customer-area { height: 120px; display: flex; gap: 20px; justify-content: center; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px dashed #95a5a6; }
-        .customer { width: 60px; height: 80px; background: #ecf0f1; border-radius: 10px 10px 0 0; position: relative; animation: slideIn 0.5s; color: black; text-align: center; font-size: 10px; }
-        .bubble { position: absolute; top: -50px; background: white; padding: 5px; border-radius: 5px; width: 80px; font-weight: bold; }
-
-        /* Mutfak Alanı */
-        #kitchen { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
-        .doner-stand { background: #95a5a6; padding: 20px; border-radius: 10px; text-align: center; }
-        #doner-meat { width: 60px; height: 150px; background: var(--brown); margin: 0 auto; border-radius: 10px; transition: height 0.3s; border-right: 5px solid #3e2723; }
-        
-        .prep-table { background: #bdc3c7; padding: 15px; border-radius: 10px; color: #2c3e50; }
-        .lavas { width: 100%; height: 100px; background: #f3e5ab; border-radius: 50px; margin: 10px 0; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border: 2px solid #d4c48a; }
-        
-        /* Malzemeler */
-        .ingredients { display: flex; gap: 10px; margin-top: 10px; }
-        .ing-btn { padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-meat { background: var(--brown); color: white; }
-        .btn-tomato { background: var(--red); color: white; }
-        .btn-onion { background: #ecf0f1; }
-        .btn-lettuce { background: var(--green); color: white; }
-
-        /* Market */
-        #market { margin-top: 20px; background: #27ae60; padding: 15px; border-radius: 10px; width: 100%; box-sizing: border-box; }
-        .market-grid { display: flex; gap: 10px; }
-        .market-item { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 5px; flex: 1; text-align: center; }
-
-        .lavas-content { display: flex; gap: 5px; z-index: 2; }
-        .ing-piece { width: 20px; height: 20px; border-radius: 50%; }
-
-        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    </style>
-</head>
-<body>
-
-    <h1>🌯 Dönerci Ustası Pro</h1>
-
-    <div id="game-wrapper">
-        <div class="stats">
-            <div>Altın: <span id="gold-val" class="gold">100</span> 🪙</div>
-            <div>Stok: Et (<span id="stock-meat">10</span>) | Lavaş (<span id="stock-lavas">5</span>)</div>
-        </div>
-
-        <div id="customer-area">
-            </div>
-
-        <div id="kitchen">
-            <div class="doner-stand">
-                <p>DÖNER TEZGAHI</p>
-                <div id="doner-meat"></div>
-                <button class="ing-btn btn-meat" onclick="cutMeat()">ET KES (5 birim)</button>
-            </div>
-
-            <div class="prep-table">
-                <strong>HAZIRLAMA TEZGAHI</strong>
-                <div class="lavas" id="current-lavas">
-                    <span id="lavas-status">LAVAŞ KOYUN</span>
-                </div>
-                
-                <div class="ingredients">
-                    <button class="ing-btn btn-tomato" onclick="addIngredient('Domates', '#e74c3c')">Domates</button>
-                    <button class="ing-btn btn-onion" onclick="addIngredient('Soğan', '#fff')">Soğan</button>
-                    <button class="ing-btn btn-lettuce" onclick="addIngredient('Marul', '#2ecc71')">Marul</button>
-                </div>
-                <br>
-                <button class="ing-btn" style="background:var(--yellow); width:100%" onclick="serveOrder()">MÜŞTERİYE VER!</button>
-            </div>
-        </div>
-
-        <div id="market">
-            <strong>🚚 MARKET (Stok Al)</strong>
-            <div class="market-grid">
-                <div class="market-item">
-                    Et (20br) <br> <button onclick="buy('meat')">30 Altın</button>
-                </div>
-                <div class="market-item">
-                    Lavaş (10ad) <br> <button onclick="buy('lavas')">20 Altın</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let gold = 100;
-        let stocks = { meat: 10, lavas: 5 };
-        let currentLavas = null; // { hasMeat: false, extras: [] }
-        let activeCustomer = null;
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        function sound(freq, type, duration) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function updateUI() {
-            document.getElementById('gold-val').innerText = gold;
-            document.getElementById('stock-meat').innerText = stocks.meat;
-            document.getElementById('stock-lavas').innerText = stocks.lavas;
-        }
-
-        function spawnCustomer() {
-            if (activeCustomer) return;
-            const area = document.getElementById('customer-area');
-            const needs = ["Domates", "Soğan", "Marul"].filter(() => Math.random() > 0.5);
-            if(needs.length === 0) needs.push("Domates");
+        if choice == "1":
+            self.energy -= 20
+            self.mood += 15
+            print("West: 'Dünyayı değiştireceğim!'")
+        elif choice == "2":
+            self.energy += 10
+            self.mood -= 5
+            print("West: 'Sessizlik iyi geliyor.'")
+        elif choice == "3":
+            self.energy -= 5
+            self.mood += 10
+            print("West: 'Biraz arkadaşlık iyi geldi.'")
             
-            activeCustomer = { needs: needs };
-            
-            const div = document.createElement('div');
-            div.className = 'customer';
-            div.id = 'active-customer-div';
-            div.innerHTML = `<div class="bubble">Etli + ${needs.join(", ")} olsun!</div>👨‍💼`;
-            area.appendChild(div);
-            sound(400, 'triangle', 0.2);
-        }
+        self.days += 1
+        self.validate_state()
 
-        function cutMeat() {
-            if (stocks.meat <= 0) return alert("Et bitti! Marketten al.");
-            if (!currentLavas) {
-                if (stocks.lavas <= 0) return alert("Lavaş bitti!");
-                currentLavas = { hasMeat: false, extras: [] };
-                stocks.lavas--;
-                document.getElementById('lavas-status').innerHTML = '<div class="lavas-content" id="lavas-c"></div>';
-            }
-            
-            if (!currentLavas.hasMeat) {
-                currentLavas.hasMeat = true;
-                stocks.meat -= 1;
-                const meatDiv = document.createElement('div');
-                meatDiv.className = 'ing-piece';
-                meatDiv.style.background = 'var(--brown)';
-                meatDiv.style.width = '60px';
-                document.getElementById('lavas-c').appendChild(meatDiv);
-                sound(150, 'sawtooth', 0.1);
-                updateUI();
-            }
-        }
+    def validate_state(self):
+        if self.energy <= 0:
+            print("\nEnerjin tükendi! West bir süreliğine çöktü.")
+            self.energy = 20
+        if self.mood > 120:
+            print("\nÇok yüksek bir manik atak! Kontrolü kaybettin.")
+            self.game_over = True
+        if self.mood < -20:
+            print("\nDepresyon çok ağırlaştı. Hastaneye kaldırıldın.")
+            self.game_over = True
 
-        function addIngredient(name, color) {
-            if (!currentLavas || !currentLavas.hasMeat) return alert("Önce et kes usta!");
-            currentLavas.extras.push(name);
-            const div = document.createElement('div');
-            div.className = 'ing-piece';
-            div.style.background = color;
-            document.getElementById('lavas-c').appendChild(div);
-            sound(600, 'sine', 0.05);
-        }
-
-        function serveOrder() {
-            if (!activeCustomer || !currentLavas) return;
-
-            // Kontrol: Malzemeler tam mı?
-            const isCorrect = activeCustomer.needs.every(n => currentLavas.extras.includes(n));
-            
-            if (isCorrect && currentLavas.hasMeat) {
-                gold += 50;
-                alert("Müşteri bayıldı! +50 Altın");
-                sound(800, 'sine', 0.3);
-            } else {
-                gold += 10;
-                alert("Müşteri: Bu ne biçim döner? (Az kazandın)");
-            }
-
-            // Temizlik
-            document.getElementById('customer-area').innerHTML = "";
-            document.getElementById('lavas-status').innerText = "LAVAŞ KOYUN";
-            activeCustomer = null;
-            currentLavas = null;
-            updateUI();
-            setTimeout(spawnCustomer, 2000);
-        }
-
-        function buy(item) {
-            if (item === 'meat' && gold >= 30) {
-                gold -= 30; stocks.meat += 20;
-            } else if (item === 'lavas' && gold >= 20) {
-                gold -= 20; stocks.lavas += 10;
-            } else {
-                alert("Para yetersiz usta!");
-            }
-            updateUI();
-        }
-
-        // Başlat
-        updateUI();
-        setTimeout(spawnCustomer, 1000);
-
-    </script>
-</body>
-</html>
+# Oyun Başlatıcı
+west = BipolarGame("West")
+while not west.game_over:
+    west.check_status()
+    west.play_turn()
+    time.sleep(1)
