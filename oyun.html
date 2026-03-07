@@ -2,54 +2,72 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameArea Fight - Final</title>
+    <title>Pro Fishing HTML5</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
-        :root { --neon-blue: #00f2ff; --neon-red: #ff003c; --neon-purple: #bc13fe; --neon-gold: #ffcc00; }
-        body { margin: 0; background-color: #050505; color: white; font-family: 'Orbitron', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #game-container { position: relative; width: 1250px; height: 800px; display: flex; justify-content: center; align-items: center; }
-        #arena-wrapper { position: relative; width: 1250px; height: 800px; border: 10px solid; border-image: linear-gradient(90deg, var(--neon-red) 50%, #ffffff 50%) 1; box-shadow: 0 0 40px rgba(255, 0, 0, 0.4); background: #111; overflow: hidden; z-index: 5; }
-        canvas { display: block; }
-        .ui-panel { position: absolute; background: rgba(0, 0, 0, 0.85); border: 2px solid var(--neon-blue); padding: 10px; border-radius: 8px; z-index: 10; }
-        .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        .btn-gif { width: 180px; height: 60px; background: #ff003c; color: white; border: 3px solid #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 10px; }
+        body { margin: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { border: 5px solid #fff; background: linear-gradient(#87CEEB, #1E90FF); cursor: crosshair; }
     </style>
 </head>
 <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
-<div id="game-container">
-    <div id="arena-wrapper">
-        <canvas id="gameCanvas" width="1250" height="800"></canvas>
-    </div>
-</div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+        // Oyun Değişkenleri
+        let score = 0;
+        let fish = { x: 400, y: 300, vx: 2, vy: 1 };
+        let hook = { x: 400, y: 100, isMoving: false };
 
-    // --- GÖRSELLERİ BURAYA EKLEDİM ---
-    const imgNinja = new Image(); imgNinja.src = 'https://r.jina.ai/i/6c21e69da59846399c546e339f993319';
-    const imgEnemy = new Image(); imgEnemy.src = 'https://r.jina.ai/i/9e0bb662fb1642c6b328a8d11d013ac0';
-    const imgBoss = new Image(); imgBoss.src = 'https://r.jina.ai/i/05e10e7ca10f443586c57f2ca29388c3';
+        // Oyun Döngüsü (Game Loop)
+        function update() {
+            // Balık hareketi
+            fish.x += fish.vx;
+            fish.y += fish.vy;
+            if (fish.x < 0 || fish.x > 800) fish.vx *= -1;
+            if (fish.y < 200 || fish.y > 550) fish.vy *= -1;
 
-    // Senin oyun mantığın ve kayıt sistemin burada başlıyor (orijinal kodundan alıp buraya koyuyorum)
-    // ... [Buraya senin o uzun kod bloğunu yapıştıracaksın] ...
+            draw();
+            requestAnimationFrame(update);
+        }
 
-    // ÇİZİM KISMINDA ŞUNU KULLAN:
-    function drawEntities() {
-        // Ninja (Oyuncu)
-        ctx.drawImage(imgNinja, player.x - 25, player.y - 25, 50, 50);
-        
-        // Düşmanlar
-        enemies.forEach(e => {
-            if(e.boss) {
-                ctx.drawImage(imgBoss, e.x - 50, e.y - 50, 100, 100);
-            } else {
-                ctx.drawImage(imgEnemy, e.x - 25, e.y - 25, 50, 50);
+        function draw() {
+            ctx.clearRect(0, 0, 800, 600);
+            
+            // Çizim: Balık
+            ctx.fillStyle = "orange";
+            ctx.fillRect(fish.x, fish.y, 40, 20);
+
+            // Çizim: Olta
+            ctx.strokeStyle = "white";
+            ctx.beginPath();
+            ctx.moveTo(400, 0);
+            ctx.lineTo(hook.x, hook.y);
+            ctx.stroke();
+            ctx.fillStyle = "gray";
+            ctx.fillRect(hook.x-5, hook.y, 10, 10);
+            
+            // Skor
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("Skor: " + score, 20, 30);
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            hook.x = e.clientX - canvas.offsetLeft;
+            hook.y = e.clientY - canvas.offsetTop;
+        });
+
+        canvas.addEventListener('click', () => {
+            // Basit vuruş algılama
+            if(Math.abs(hook.x - fish.x) < 50 && Math.abs(hook.y - fish.y) < 50) {
+                score += 10;
+                fish.x = Math.random() * 700;
             }
         });
-    }
-</script>
+
+        update();
+    </script>
 </body>
 </html>
