@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameArea Fight - Progressive XP System</title>
+    <title>GameArea Fight - Full Edition</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
@@ -14,163 +14,39 @@
             --neon-gold: #ffcc00;
         }
 
-        body {
-            margin: 0;
-            background-color: #050505;
-            color: white;
-            font-family: 'Orbitron', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+        body { margin: 0; background-color: #050505; color: white; font-family: 'Orbitron', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
 
-        #game-container {
-            position: relative;
-            width: 1250px; 
-            height: 800px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        #game-container { position: relative; width: 1250px; height: 800px; display: flex; justify-content: center; align-items: center; }
 
-        #arena-wrapper {
-            position: relative;
-            width: 1250px;
-            height: 800px;
-            border: 10px solid;
-            border-image: linear-gradient(90deg, var(--neon-red) 50%, #ffffff 50%) 1;
-            box-shadow: 0 0 40px rgba(255, 0, 0, 0.4);
-            background: #111;
-            overflow: hidden;
-            z-index: 5;
-        }
+        #arena-wrapper { position: relative; width: 1250px; height: 800px; border: 10px solid; border-image: linear-gradient(90deg, var(--neon-red) 50%, #ffffff 50%) 1; box-shadow: 0 0 40px rgba(255, 0, 0, 0.4); background: #111; overflow: hidden; z-index: 5; }
 
         canvas { display: block; }
 
-        .ui-panel {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.85);
-            border: 2px solid var(--neon-blue);
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px var(--neon-blue);
-            z-index: 10;
-        }
+        .ui-panel { position: absolute; background: rgba(0, 0, 0, 0.85); border: 2px solid var(--neon-blue); padding: 10px; border-radius: 8px; box-shadow: 0 0 10px var(--neon-blue); z-index: 10; }
 
         #stats-panel { bottom: -50px; left: -160px; width: 140px; color: var(--neon-blue); }
         #xp-log { right: -160px; top: 50%; transform: translateY(-50%); width: 140px; max-height: 300px; overflow: hidden; border-color: var(--neon-purple); }
         #gold-display { top: -50px; left: 0; color: var(--neon-gold); font-weight: bold; border-color: var(--neon-gold); }
         #enemy-counter { top: -50px; right: 0; color: var(--neon-red); font-weight: bold; border-color: var(--neon-red); display: none; }
 
-        #market-btn {
-            position: absolute;
-            bottom: -50px;
-            right: 0;
-            padding: 10px 25px;
-            background: var(--neon-gold);
-            color: black;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 0 15px var(--neon-gold);
-            z-index: 20;
-        }
+        #market-btn { position: absolute; bottom: -50px; right: 0; padding: 10px 25px; background: var(--neon-gold); color: black; font-weight: bold; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px var(--neon-gold); z-index: 20; }
 
-        .overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
+        .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
 
-        .auth-box {
-            background: #111;
-            padding: 30px;
-            border: 3px solid var(--neon-purple);
-            text-align: center;
-            width: 350px;
-        }
-        .auth-box input {
-            width: 80%;
-            padding: 10px;
-            margin: 10px 0;
-            background: #000;
-            border: 1px solid var(--neon-blue);
-            color: white;
-            font-family: 'Orbitron';
-        }
-
-        .market-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .char-card {
-            background: #222;
-            border: 2px solid var(--neon-blue);
-            padding: 15px;
-            text-align: center;
-            width: 180px;
-        }
+        .auth-box { background: #111; padding: 30px; border: 3px solid var(--neon-purple); text-align: center; width: 350px; }
+        .auth-box input { width: 80%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--neon-blue); color: white; font-family: 'Orbitron'; }
+        
+        .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .char-card { background: #222; border: 2px solid var(--neon-blue); padding: 15px; text-align: center; width: 180px; }
         .char-card.selected { border-color: var(--neon-gold); box-shadow: 0 0 15px var(--neon-gold); }
 
-        .btn-gif {
-            width: 180px;
-            height: 60px;
-            background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif');
-            background-size: cover;
-            border: 3px solid #fff;
-            color: white;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 10px;
-        }
+        .btn-gif { width: 180px; height: 60px; background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif'); background-size: cover; border: 3px solid #fff; color: white; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 10px; }
 
-        #announcement {
-            position: absolute;
-            top: 40%;
-            width: 100%;
-            text-align: center;
-            font-size: 5rem;
-            color: var(--neon-red);
-            font-weight: bold;
-            display: none;
-            z-index: 500;
-        }
+        #announcement { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 5rem; color: var(--neon-red); font-weight: bold; display: none; z-index: 500; }
 
-        #xp-bar-container {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 16px;
-            background: #fff;
-            border: 2px solid #000;
-            z-index: 5;
-        }
+        #xp-bar-container { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 80%; height: 16px; background: #fff; border: 2px solid #000; z-index: 5; }
         #xp-bar-fill { height: 100%; width: 0%; background: var(--neon-purple); transition: 0.3s; }
-
-        #cooldown-display {
-            position: absolute;
-            color: rgba(255, 0, 0, 0.7);
-            font-family: 'Orbitron';
-            font-size: 12px;
-            display: none;
-            z-index: 100;
-            pointer-events: none;
-        }
+        #cooldown-display { position: absolute; color: rgba(255, 0, 0, 0.7); font-family: 'Orbitron'; font-size: 12px; display: none; z-index: 100; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -186,14 +62,8 @@
 
     <div id="gold-display" class="ui-panel">ALTIN: <span id="gold-count">0</span></div>
     <div id="enemy-counter" class="ui-panel">KALAN: <span id="enemy-count">0</span></div>
-    <div id="stats-panel" class="ui-panel">
-        <h5 style="margin:0">STATS</h5>
-        <div id="stat-list" style="font-size: 10px;">• Henüz yok...</div>
-    </div>
-    <div id="xp-log" class="ui-panel">
-        <h5 style="margin:0">ÖLDÜRME</h5>
-        <div id="log-list" style="font-size: 10px;"></div>
-    </div>
+    <div id="stats-panel" class="ui-panel"><h5 style="margin:0">STATS</h5><div id="stat-list" style="font-size: 10px;">• Henüz yok...</div></div>
+    <div id="xp-log" class="ui-panel"><h5 style="margin:0">ÖLDÜRME</h5><div id="log-list" style="font-size: 10px;"></div></div>
     <div id="market-btn" onclick="toggleMarket()">MARKET</div>
 
     <div id="auth-screen" class="overlay">
@@ -201,10 +71,27 @@
             <h2 style="color:var(--neon-blue)">GİRİŞ YAP / KAYDOL</h2>
             <input type="text" id="username" placeholder="Kullanıcı Adı">
             <input type="password" id="password" placeholder="Şifre">
-            <div style="display:flex; justify-content:center; gap:10px;">
-                <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;">GİRİŞ</button>
-                <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;">MİSAFİR</button>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;">GİRİŞ</button>
+                    <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;">MİSAFİR</button>
+                </div>
+                <button onclick="showGuide()" style="background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:10px; cursor:pointer; width:100%;">NASIL OYNANIR?</button>
             </div>
+        </div>
+    </div>
+
+    <div id="guide-screen" class="overlay" style="display:none; z-index: 2000;">
+        <div class="auth-box" style="width: 600px; text-align: left; border-color: var(--neon-gold);">
+            <h2 style="color:var(--neon-gold); text-align:center;">OYUN KILAVUZU</h2>
+            <div style="font-size: 14px; line-height: 1.8; max-height: 400px; overflow-y: auto; padding: 10px; color: #ccc;">
+                <p><strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.</p>
+                <p><strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!</p>
+                <p><strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir "Alan Hasarı" (Aura) yaratıp etrafındaki düşmanları erit.</p>
+                <p><strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.</p>
+                <p><strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.</p>
+            </div>
+            <button onclick="document.getElementById('guide-screen').style.display='none'" style="width:100%; padding:15px; background:var(--neon-red); border:none; color:white; cursor:pointer; margin-top:15px; font-weight:bold;">ANLADIM, BAŞLA!</button>
         </div>
     </div>
 
@@ -251,6 +138,8 @@
         isRunning: false, wave: 0, xp: 0, xpRequired: 50, level: 1,
         gold: 0, ownedChars: ['std'], selectedChar: 'std'
     };
+
+    function showGuide() { document.getElementById('guide-screen').style.display = 'flex'; }
 
     function handleAuth(type) {
         const u = document.getElementById('username').value;
@@ -316,7 +205,6 @@
 
     function selectChar(id) { gameState.selectedChar = id; renderMarket(); saveUser(); }
     function updateGoldUI() { document.getElementById('gold-count').innerText = gameState.gold; }
-    
     function updateEnemyCountUI() { document.getElementById('enemy-count').innerText = enemies.length; }
 
     let enemies = [];
@@ -340,10 +228,7 @@
         document.getElementById('market-btn').style.display = 'none';
         document.getElementById('enemy-counter').style.display = 'block';
         gameState.isRunning = true;
-        gameState.wave = 0;
-        gameState.xp = 0;
-        gameState.xpRequired = 50; 
-        gameState.level = 1;
+        gameState.wave = 0; gameState.xp = 0; gameState.xpRequired = 50; gameState.level = 1;
         nextWave();
         if(!animationId) loop();
     }
@@ -395,18 +280,12 @@
         gameState.gold += goldPlus;
         updateGoldUI(); saveUser();
         updateEnemyCountUI();
-        
         const log = document.createElement('div');
         log.innerHTML = `<span style="color:var(--neon-purple)">+${xpReward} XP</span> | <span style="color:var(--neon-gold)">+${goldPlus} G</span><br>${type}`;
         document.getElementById('log-list').prepend(log);
-        
         document.getElementById('xp-bar-fill').style.width = Math.min(100, (gameState.xp/gameState.xpRequired)*100) + "%"; 
-        
         if(gameState.xp >= gameState.xpRequired) { 
-            gameState.xp = 0; 
-            gameState.level++; 
-            gameState.xpRequired += 50;
-            showUpgrades(); 
+            gameState.xp = 0; gameState.level++; gameState.xpRequired += 50; showUpgrades(); 
         }
     }
 
@@ -445,71 +324,49 @@
     function loop() {
         if (!gameState.isRunning) { animationId = requestAnimationFrame(loop); return; }
         ctx.clearRect(0,0,1250,800);
-
         if (keys['KeyW'] && player.y > 20) player.y -= player.speed;
         if (keys['KeyS'] && player.y < 780) player.y += player.speed;
         if (keys['KeyA'] && player.x > 20) player.x -= player.speed;
         if (keys['KeyD'] && player.x < 1230) player.x += player.speed;
-
         if (mousePressed && Date.now() - lastShot > player.shootSpeed) {
             const ang = Math.atan2(my - player.y, mx - player.x);
             bullets.push({ x: player.x, y: player.y, vx: Math.cos(ang)*8, vy: Math.sin(ang)*8, b: player.bounce, d: Math.random() < player.crit ? player.dmg*2 : player.dmg });
             lastShot = Date.now();
         }
-
         bullets.forEach((b, i) => {
             b.x += b.vx; b.y += b.vy;
             if (b.x<0 || b.x>1250 || b.y<0 || b.y>800) { if(b.b > 0){ b.vx*=-1; b.vy*=-1; b.b--; } else bullets.splice(i,1); }
             ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
         });
-
         particles.forEach((p, i) => {
             if(p.type === 'area') {
-                ctx.save(); 
-                ctx.globalAlpha = p.life * 0.4; 
-                ctx.fillStyle = p.color;
-                ctx.beginPath(); 
-                ctx.arc(player.x, player.y, p.radius, 0, 7); 
-                ctx.fill(); 
-                ctx.restore();
-
+                ctx.save(); ctx.globalAlpha = p.life * 0.4; ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(player.x, player.y, p.radius, 0, 7); ctx.fill(); ctx.restore();
                 enemies.forEach((e, ei) => {
-                    const dist = Math.hypot(e.x - player.x, e.y - player.y);
-                    if (dist < p.radius) {
-                        e.hp -= 0.84; 
-                        if (e.hp <= 0) {
-                            addXP(0, "AURA ÖLDÜRMESİ", e.boss); 
-                            enemies.splice(ei, 1);
-                            updateEnemyCountUI();
-                        }
+                    if (Math.hypot(e.x - player.x, e.y - player.y) < p.radius) {
+                        e.hp -= 0.84; if (e.hp <= 0) { addXP(0, "AURA ÖLDÜRMESİ", e.boss); enemies.splice(ei, 1); updateEnemyCountUI(); }
                     }
                 });
-
-                p.life -= (1 / (60 * 7.5)); 
-                if (p.life <= 0) particles.splice(i, 1);
+                p.life -= (1 / (60 * 7.5)); if (p.life <= 0) particles.splice(i, 1);
             }
         });
-
         enemies.forEach((e, i) => {
             const ang = Math.atan2(player.y - e.y, player.x - e.x);
             e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
             ctx.fillStyle = e.color; ctx.fillRect(e.x-e.size/2, e.y-e.size/2, e.size, e.size);
             ctx.fillStyle = "red"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-10, e.size, 5);
             ctx.fillStyle = "#00ff00"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-10, (e.hp/e.maxHp)*e.size, 5);
-
             bullets.forEach((bul, bi) => {
                 if (Math.hypot(bul.x - e.x, bul.y - e.y) < e.size) {
                     e.hp -= bul.d; bullets.splice(bi, 1);
                     if (e.hp <= 0) { addXP(0, e.boss ? "BOSS":"ZOMBİ", e.boss); enemies.splice(i,1); updateEnemyCountUI(); }
                 }
             });
-
             if (Math.hypot(player.x-e.x, player.y-e.y) < e.size) {
                 if(player.armor > 0) player.armor -= 0.5; else player.hp -= 0.5;
                 if(player.hp <= 0) { gameState.isRunning = false; document.getElementById('death-screen').style.display = 'flex'; }
             }
         });
-
         const cdMs = areaDamageCooldown - (Date.now() - lastAreaDamageTime);
         if (cdMs > 0) {
             const r = canvas.getBoundingClientRect();
@@ -519,19 +376,13 @@
             display.style.top = (player.y + r.top - 50) + "px";
             document.getElementById('cooldown-timer').innerText = Math.ceil(cdMs/1000);
         } else document.getElementById('cooldown-display').style.display = 'none';
-
         ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 20, 0, 7); ctx.fill();
         drawBar(player.x-30, player.y+25, 60, 6, player.hp/player.maxHp, "red");
         drawBar(player.x-30, player.y+33, 60, 6, player.armor/100, "#00f2ff", "white");
-
         if(enemies.length === 0 && gameState.isRunning) nextWave();
         animationId = requestAnimationFrame(loop);
     }
-
-    function drawBar(x, y, w, h, p, f, b="#333") {
-        ctx.fillStyle = b; ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h);
-    }
+    function drawBar(x, y, w, h, p, f, b="#333") { ctx.fillStyle = b; ctx.fillRect(x, y, w, h); ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h); }
 </script>
 </body>
 </html>
