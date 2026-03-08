@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameArea Fight - Full Edition</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Press+Start+2P&display=swap');
 
         :root {
             --neon-blue: #00f2ff;
@@ -35,12 +35,12 @@
 
         .auth-box { background: #111; padding: 30px; border: 3px solid var(--neon-purple); text-align: center; width: 350px; }
         .auth-box input { width: 80%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--neon-blue); color: white; font-family: 'Orbitron'; }
-        
+
         .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
         .char-card { background: #222; border: 2px solid var(--neon-blue); padding: 15px; text-align: center; width: 180px; }
         .char-card.selected { border-color: var(--neon-gold); box-shadow: 0 0 15px var(--neon-gold); }
 
-        .btn-gif { width: 180px; height: 60px; background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif'); background-size: cover; border: 3px solid #fff; color: white; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 10px; }
+        .btn-gif { width: 180px; height: 60px; background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif'); background-size: cover; border: 3px solid #fff; color: white; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 10px; }
 
         #announcement { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 5rem; color: var(--neon-red); font-weight: bold; display: none; z-index: 500; }
 
@@ -131,11 +131,123 @@
         }
         .status-current { background: var(--neon-purple); color: white; }
         .status-completed { background: var(--neon-gold); color: black; }
+
+        /* YENİ - Banner ve Bayrak Stilleri */
+        #banner-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-banner {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 15px 40px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        inset 0 0 20px rgba(0, 242, 255, 0.05);
+        }
+
+        .game-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 10px var(--neon-blue),
+                         0 0 20px var(--neon-blue),
+                         0 0 40px var(--neon-purple);
+            letter-spacing: 4px;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, var(--neon-blue), var(--neon-purple), var(--neon-red), #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+        }
+
+        .lang-flags {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .flag-btn {
+            width: 36px;
+            height: 24px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+            object-fit: cover;
+        }
+
+        .flag-btn:hover {
+            transform: scale(1.2);
+            opacity: 1;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .flag-btn.active {
+            opacity: 1;
+            border-color: var(--neon-gold);
+            box-shadow: 0 0 15px var(--neon-gold);
+        }
+
+        /* Auth screen adjustments */
+        #auth-screen {
+            z-index: 1500;
+        }
+
+        #auth-screen .auth-box {
+            margin-top: 180px;
+        }
     </style>
 </head>
 <body>
 
 <div id="game-container">
+    <!-- Banner ve Bayraklar -->
+    <div id="banner-container">
+        <div class="game-banner">
+            <h1 class="game-title">GAMEAREA FIGHT</h1>
+            <div class="subtitle">Full Edition</div>
+        </div>
+        <div class="lang-flags">
+            <img src="https://flagcdn.com/w80/tr.png" alt="Türkçe" class="flag-btn active" data-lang="tr" onclick="changeLanguage('tr')">
+            <img src="https://flagcdn.com/w80/fr.png" alt="Français" class="flag-btn" data-lang="fr" onclick="changeLanguage('fr')">
+            <img src="https://flagcdn.com/w80/de.png" alt="Deutsch" class="flag-btn" data-lang="de" onclick="changeLanguage('de')">
+            <img src="https://flagcdn.com/w80/gb.png" alt="English" class="flag-btn" data-lang="en" onclick="changeLanguage('en')">
+            <img src="https://flagcdn.com/w80/ru.png" alt="Русский" class="flag-btn" data-lang="ru" onclick="changeLanguage('ru')">
+        </div>
+    </div>
+
     <div id="arena-wrapper">
         <div id="bg-title" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:65px; opacity:0.12; white-space:nowrap; pointer-events:none; z-index:1">⚔️ GameArea Fight ⚔️</div>
         <canvas id="gameCanvas" width="1250" height="800"></canvas>
@@ -152,30 +264,30 @@
 
     <div id="auth-screen" class="overlay">
         <div class="auth-box">
-            <h2 style="color:var(--neon-blue)">GİRİŞ YAP / KAYDOL</h2>
-            <input type="text" id="username" placeholder="Kullanıcı Adı">
-            <input type="password" id="password" placeholder="Şifre">
+            <h2 style="color:var(--neon-blue)" data-i18n="authTitle">GİRİŞ YAP / KAYDOL</h2>
+            <input type="text" id="username" data-i18n-placeholder="usernamePlaceholder" placeholder="Kullanıcı Adı">
+            <input type="password" id="password" data-i18n-placeholder="passwordPlaceholder" placeholder="Şifre">
             <div style="display:flex; flex-direction:column; gap:10px;">
                 <div style="display:flex; justify-content:center; gap:10px;">
-                    <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;">GİRİŞ</button>
-                    <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;">MİSAFİR</button>
+                    <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;" data-i18n="loginBtn">GİRİŞ</button>
+                    <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;" data-i18n="guestBtn">MİSAFİR</button>
                 </div>
-                <button onclick="showGuide()" style="background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:10px; cursor:pointer; width:100%;">NASIL OYNANIR?</button>
+                <button onclick="showGuide()" style="background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:10px; cursor:pointer; width:100%;" data-i18n="guideBtn">NASIL OYNANIR?</button>
             </div>
         </div>
     </div>
 
     <div id="guide-screen" class="overlay" style="display:none; z-index: 2000;">
         <div class="auth-box" style="width: 600px; text-align: left; border-color: var(--neon-gold);">
-            <h2 style="color:var(--neon-gold); text-align:center;">OYUN KILAVUZU</h2>
+            <h2 style="color:var(--neon-gold); text-align:center;" data-i18n="guideTitle">OYUN KILAVUZU</h2>
             <div style="font-size: 14px; line-height: 1.8; max-height: 400px; overflow-y: auto; padding: 10px; color: #ccc;">
-                <p><strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.</p>
-                <p><strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!</p>
-                <p><strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir "Alan Hasarı" (Aura) yaratıp etrafındaki düşmanları erit.</p>
-                <p><strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.</p>
-                <p><strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.</p>
+                <p data-i18n="guide1"><strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.</p>
+                <p data-i18n="guide2"><strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!</p>
+                <p data-i18n="guide3"><strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir "Alan Hasarı" (Aura) yaratıp etrafındaki düşmanları erit.</p>
+                <p data-i18n="guide4"><strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.</p>
+                <p data-i18n="guide5"><strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.</p>
             </div>
-            <button onclick="document.getElementById('guide-screen').style.display='none'" style="width:100%; padding:15px; background:var(--neon-red); border:none; color:white; cursor:pointer; margin-top:15px; font-weight:bold;">ANLADIM, BAŞLA!</button>
+            <button onclick="document.getElementById('guide-screen').style.display='none'" style="width:100%; padding:15px; background:var(--neon-red); border:none; color:white; cursor:pointer; margin-top:15px; font-weight:bold;" data-i18n="understoodBtn">ANLADIM, BAŞLA!</button>
         </div>
     </div>
 
@@ -183,50 +295,50 @@
         <h1 style="color: var(--neon-red); font-size: 55px;">GameArea Fight</h1>
         <p id="welcome-msg" style="color:var(--neon-blue)"></p>
         <div style="display: flex; flex-direction: column; gap: 15px;">
-            <div class="btn-gif" onclick="showChapterMenu()">BÖLÜM SEÇ</div>
-            <div class="btn-gif" onclick="startGame()" style="background:none; border:2px solid white; color:white;">HIZLI BAŞLAT</div>
+            <div class="btn-gif" onclick="showChapterMenu()" data-i18n="chapterSelect">BÖLÜM SEÇ</div>
+            <div class="btn-gif" onclick="startGame()" style="background:none; border:2px solid white; color:white;" data-i18n="quickStart">HIZLI BAŞLAT</div>
         </div>
     </div>
 
     <div id="market-screen" class="overlay" style="display:none">
-        <h2 style="color:var(--neon-gold)">KARAKTER MARKETİ</h2>
+        <h2 style="color:var(--neon-gold)" data-i18n="marketTitle">KARAKTER MARKETİ</h2>
         <div class="market-grid" id="market-grid"></div>
-        <div class="btn-gif" onclick="toggleMarket()" style="margin-top:20px; background:none; border:2px solid white; height:40px;">KAPAT</div>
+        <div class="btn-gif" onclick="toggleMarket()" style="margin-top:20px; background:none; border:2px solid white; height:40px;" data-i18n="closeBtn">KAPAT</div>
     </div>
 
     <div id="death-screen" class="overlay" style="display:none">
-        <h1 style="color: white; font-size: 50px;">ÖLDÜN!</h1>
-        <div class="btn-gif" onclick="resetGame()">RESTART</div>
+        <h1 style="color: white; font-size: 50px;" data-i18n="deathTitle">ÖLDÜN!</h1>
+        <div class="btn-gif" onclick="resetGame()" data-i18n="restartBtn">RESTART</div>
     </div>
 
     <div id="chapter-complete-screen" class="overlay" style="display:none">
-        <h1 style="color: var(--neon-gold); font-size: 45px;">BÖLÜM TAMAMLANDI!</h1>
+        <h1 style="color: var(--neon-gold); font-size: 45px;" data-i18n="chapterCompleteTitle">BÖLÜM TAMAMLANDI!</h1>
         <p id="chapter-complete-msg" style="color: var(--neon-blue); font-size: 24px;"></p>
-        <div class="btn-gif" onclick="nextChapter()">SONRAKİ BÖLÜM</div>
+        <div class="btn-gif" onclick="nextChapter()" data-i18n="nextChapterBtn">SONRAKİ BÖLÜM</div>
     </div>
 
     <div id="game-complete-screen" class="overlay" style="display:none">
-        <h1 style="color: var(--neon-gold); font-size: 50px;">OYUN BİTTİ!</h1>
-        <p style="color: var(--neon-blue); font-size: 20px; text-align: center; max-width: 600px; margin: 20px auto;">
+        <h1 style="color: var(--neon-gold); font-size: 50px;" data-i18n="gameCompleteTitle">OYUN BİTTİ!</h1>
+        <p style="color: var(--neon-blue); font-size: 20px; text-align: center; max-width: 600px; margin: 20px auto;" data-i18n="gameCompleteMsg">
             Tebrikler! Tüm bölümleri başarıyla tamamladın!<br><br>
-            <span style="color: var(--neon-red); font-size: 24px;">Tekrar Oynamak İçin Güncellemeyi Bekle!</span>
+            <span style="color: var(--neon-red); font-size: 24px;" data-i18n="waitForUpdate">Tekrar Oynamak İçin Güncellemeyi Bekle!</span>
         </p>
-        <div class="btn-gif" onclick="returnToMenu()">MENÜYE DÖN</div>
+        <div class="btn-gif" onclick="returnToMenu()" data-i18n="backToMenuBtn">MENÜYE DÖN</div>
     </div>
 
     <!-- BÖLÜM SEÇİM MENÜSÜ -->
     <div id="chapter-menu-screen" class="overlay" style="display:none">
-        <h1 style="color: var(--neon-purple); font-size: 40px; text-shadow: 0 0 20px var(--neon-purple); margin-bottom: 10px;">BÖLÜM SEÇ</h1>
+        <h1 style="color: var(--neon-purple); font-size: 40px; text-shadow: 0 0 20px var(--neon-purple); margin-bottom: 10px;" data-i18n="chapterSelectTitle">BÖLÜM SEÇ</h1>
         <p id="chapter-menu-status" style="color: var(--neon-blue); font-size: 16px; margin-bottom: 20px;"></p>
         <div id="chapter-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-height: 500px; overflow-y: auto; padding: 20px;"></div>
         <div style="display: flex; gap: 15px; margin-top: 20px;">
-            <div class="btn-gif" onclick="backToStart()">GERİ</div>
+            <div class="btn-gif" onclick="backToStart()" data-i18n="backBtn">GERİ</div>
             <div class="btn-gif" onclick="toggleMarketFromMenu()" style="background:none; border:2px solid var(--neon-gold); color: var(--neon-gold);">MARKET</div>
         </div>
     </div>
 
     <div id="upgrade-screen" class="overlay" style="display:none">
-        <h2>EKLENTİ SEÇ</h2>
+        <h2 data-i18n="upgradeTitle">EKLENTİ SEÇ</h2>
         <div id="upgrade-options" style="display:flex; flex-wrap: wrap; justify-content: center;"></div>
     </div>
 </div>
@@ -234,6 +346,387 @@
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+
+    // Dil Sistemleri
+    const translations = {
+        tr: {
+            authTitle: "GİRİŞ YAP / KAYDOL",
+            usernamePlaceholder: "Kullanıcı Adı",
+            passwordPlaceholder: "Şifre",
+            loginBtn: "GİRİŞ",
+            guestBtn: "MİSAFİR",
+            guideBtn: "NASIL OYNANIR?",
+            guideTitle: "OYUN KILAVUZU",
+            guide1: "<strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.",
+            guide2: "<strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!",
+            guide3: "<strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir \"Alan Hasarı\" (Aura) yaratıp etrafındaki düşmanları erit.",
+            guide4: "<strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.",
+            guide5: "<strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.",
+            understoodBtn: "ANLADIM, BAŞLA!",
+            chapterSelect: "BÖLÜM SEÇ",
+            quickStart: "HIZLI BAŞLAT",
+            marketTitle: "KARAKTER MARKETİ",
+            closeBtn: "KAPAT",
+            deathTitle: "ÖLDÜN!",
+            restartBtn: "RESTART",
+            chapterCompleteTitle: "BÖLÜM TAMAMLANDI!",
+            nextChapterBtn: "SONRAKİ BÖLÜM",
+            gameCompleteTitle: "OYUN BİTTİ!",
+            gameCompleteMsg: "Tebrikler! Tüm bölümleri başarıyla tamamladın!<br><br>",
+            waitForUpdate: "Tekrar Oynamak İçin Güncellemeyi Bekle!",
+            backToMenuBtn: "MENÜYE DÖN",
+            chapterSelectTitle: "BÖLÜM SEÇ",
+            backBtn: "GERİ",
+            upgradeTitle: "EKLENTİ SEÇ",
+            goldLabel: "ALTIN",
+            statsLabel: "STATS",
+            killsLabel: "ÖLDÜRME",
+            waveLabel: "DALGA",
+            chapterLabel: "BÖLÜM",
+            remainingLabel: "KALAN",
+            cooldownText: "BEKLEME SÜRESİ:",
+            chapterStart: "BÖLÜM",
+            waveStart: "DALGA",
+            bossWave: "BOSS GELİYOR!",
+            marketCharName: "HP:",
+            marketArmor: "Armor:",
+            marketOwned: "KULLANILIYOR",
+            marketUse: "KULLAN",
+            marketBuy: "SATIN AL (",
+            guestWarning: "MİSAFİR - İlerlemen kaydedilmez. Kayıt olarek ilerlemeni koruyabilirsin!",
+            welcomeBack: "Hoş geldin",
+            continueGame: "DEVAM",
+            completed: "TAMAMLANDI",
+            lockedChapter: "Bu bölüm henüz kilitli. Önceki bölümleri tamamla!",
+            guestChapterLimit: "Misafir olarak yalnızca 1. Bölümü oynayabilirsin! İlerlemeni kaydetmek için kayıt ol!",
+            notEnoughGold: "Altın yetersiz!",
+            fillInfo: "Bilgileri doldur!",
+            wrongPassword: "Şifre yanlış!",
+            chapterPrefix: "BÖLÜM",
+            waveCount: "Dalga",
+            difficultyNovice: "Novice",
+            difficultyRookie: "Rookie",
+            difficultyEasy: "Easy",
+            difficultyNormal: "Normal",
+            difficultyHard: "Hard",
+            difficultyExpert: "Expert",
+            difficultyMaster: "Master",
+            difficultyLegendary: "Legendary",
+            difficultyGodlike: "GODLIKE"
+        },
+        fr: {
+            authTitle: "CONNEXION / INSCRIPTION",
+            usernamePlaceholder: "Nom d'utilisateur",
+            passwordPlaceholder: "Mot de passe",
+            loginBtn: "CONNEXION",
+            guestBtn: "INVITÉ",
+            guideBtn: "COMMENT JOUER?",
+            guideTitle: "GUIDE DU JEU",
+            guide1: "<strong>🕹️ Contrôles de base:</strong><br> Utilisez les touches WASD pour vous déplacer, visez avec la souris et tirez avec le clic gauche.",
+            guide2: "<strong>🌊 Système de vagues:</strong><br> Chaque nouvelle vague apporte des ennemis plus difficiles. Les vagues multiples de 5 (5, 10, 15...) sont des vagues <strong>BOSS</strong>!",
+            guide3: "<strong>⚡ Capacité spéciale:</strong><br> Cliquez avec le bouton droit de la souris pour créer une \"Dégât de zone\" (Aura) toutes les 15 secondes et faire fondre les ennemis autour.",
+            guide4: "<strong>💰 Marché & Progression:</strong><br> Gagnez de l'or en tuant des ennemis. Achetez des personnages avec plus de HP et d'Armure sur le marché.",
+            guide5: "<strong>📈 Monter en niveau:</strong><br> Quand la barre XP est pleine, vous montez de niveau. À ce stade, vous choisissez parmi 5 avantages aléatoires (Dommage, Vitesse, Critique, etc.) pour spécialiser votre personnage.",
+            understoodBtn: "COMPRIS, COMMENCER!",
+            chapterSelect: "CHOIX DU CHAPITRE",
+            quickStart: "DÉMARRAGE RAPIDE",
+            marketTitle: "MARCHÉ DES PERSONNAGES",
+            closeBtn: "FERMER",
+            deathTitle: "TU ES MORT!",
+            restartBtn: "REDÉMARRER",
+            chapterCompleteTitle: "CHAPITRE TERMINÉ!",
+            nextChapterBtn: "CHAPITRE SUIVANT",
+            gameCompleteTitle: "FIN DU JEU!",
+            gameCompleteMsg: "Félicitations! Vous avez terminé tous les chapitres!<br><br>",
+            waitForUpdate: "Attendez la mise à jour pour rejouer!",
+            backToMenuBtn: "RETOUR AU MENU",
+            chapterSelectTitle: "CHOIX DU CHAPITRE",
+            backBtn: "RETOUR",
+            upgradeTitle: "CHOIX AMÉLIORATION",
+            goldLabel: "OR",
+            statsLabel: "STATS",
+            killsLabel: "TUER",
+            waveLabel: "VAGUE",
+            chapterLabel: "CHAPITRE",
+            remainingLabel: "RESTANT",
+            cooldownText: "TEMPS D'ATTENTE:",
+            chapterStart: "CHAPITRE",
+            waveStart: "VAGUE",
+            bossWave: "BOSS ARRIVE!",
+            marketCharName: "HP:",
+            marketArmor: "Armure:",
+            marketOwned: "UTILISÉ",
+            marketUse: "UTILISER",
+            marketBuy: "ACHETER (",
+            guestWarning: "INVITÉ - Votre progression n'est pas enregistrée. Inscrivez-vous pour conserver votre progression!",
+            welcomeBack: "Bienvenue",
+            continueGame: "CONTINUER",
+            completed: "TERMINÉ",
+            lockedChapter: "Ce chapitre est verrouillé. Terminez les chapitres précédents!",
+            guestChapterLimit: "En tant qu'invité, vous ne pouvez jouer que le chapitre 1! Inscrivez-vous pour enregistrer votre progression!",
+            notEnoughGold: "Or insuffisant!",
+            fillInfo: "Remplissez les informations!",
+            wrongPassword: "Mot de passe incorrect!",
+            chapterPrefix: "CHAPITRE",
+            waveCount: "Vague",
+            difficultyNovice: "Novice",
+            difficultyRookie: "Débutant",
+            difficultyEasy: "Facile",
+            difficultyNormal: "Normal",
+            difficultyHard: "Difficile",
+            difficultyExpert: "Expert",
+            difficultyMaster: "Maître",
+            difficultyLegendary: "Légendaire",
+            difficultyGodlike: "DIVIN"
+        },
+        de: {
+            authTitle: "ANMELDUNG / REGISTRIERUNG",
+            usernamePlaceholder: "Benutzername",
+            passwordPlaceholder: "Passwort",
+            loginBtn: "ANMELDUNG",
+            guestBtn: "GAST",
+            guideBtn: "WIE MAN SPIELT?",
+            guideTitle: "SPIELANLEITUNG",
+            guide1: "<strong>🕹️ Grundlegende Steuerung:</strong><br> Verwenden Sie WASD-Tasten für Bewegung, zielen Sie mit der Maus und schießen Sie mit der linken Maustaste.",
+            guide2: "<strong>🌊 Wellensystem:</strong><br> Jede neue Welle bringt schwierigere Feinde. Wellen, die ein Vielfaches von 5 sind (5, 10, 15...), sind <strong>BOSS</strong>-Wellen!",
+            guide3: "<strong>⚡ Spezialfähigkeit:</strong><br> Klicken Sie mit der rechten Maustaste, um alle 15 Sekunden einen \"Flächenschaden\" (Aura) zu erzeugen und umliegende Feinde zu schmelzen.",
+            guide4: "<strong>💰 Markt & Entwicklung:</strong><br> Sammeln Sie Gold, indem Sie Feinde töten. Kaufen Sie Charaktere mit höheren HP- und Rüstungswerten auf dem Markt.",
+            guide5: "<strong>📈 Level aufsteigen:</strong><br> Wenn die XP-Leiste voll ist, steigen Sie auf. In dieser Phase wählen Sie aus 5 zufälligen Verbesserungen (Schaden, Geschwindigkeit, Krit, usw.), um Ihren Charakter zu spezialisieren.",
+            understoodBtn: "VERSTANDEN, STARTEN!",
+            chapterSelect: "KAPITEL WAHL",
+            quickStart: "SCHNELLSTART",
+            marketTitle: "CHARAKTER-MARKT",
+            closeBtn: "SCHLIEßEN",
+            deathTitle: "DU BIST GESTORBEN!",
+            restartBtn: "NEUSTART",
+            chapterCompleteTitle: "KAPITEL ABGESCHLOSSEN!",
+            nextChapterBtn: "NÄCHSTES KAPITEL",
+            gameCompleteTitle: "SPIEL BEENDET!",
+            gameCompleteMsg: "Glückwunsch! Sie haben alle Kapitel erfolgreich abgeschlossen!<br><br>",
+            waitForUpdate: "Warten Sie auf ein Update, um erneut zu spielen!",
+            backToMenuBtn: "ZURÜCK ZUM MENÜ",
+            chapterSelectTitle: "KAPITEL WAHL",
+            backBtn: "ZURÜCK",
+            upgradeTitle: "VERBESSERUNG WÄHLEN",
+            goldLabel: "GOLD",
+            statsLabel: "STATS",
+            killsLabel: "TÖTUNGEN",
+            waveLabel: "WELLE",
+            chapterLabel: "KAPITEL",
+            remainingLabel: "VERBLEIBEND",
+            cooldownText: "WARTEZEIT:",
+            chapterStart: "KAPITEL",
+            waveStart: "WELLE",
+            bossWave: "BOSS KOMMT!",
+            marketCharName: "HP:",
+            marketArmor: "Rüstung:",
+            marketOwned: "VERWENDET",
+            marketUse: "VERWENDEN",
+            marketBuy: "KAUFEN (",
+            guestWarning: "GAST - Ihr Fortschritt wird nicht gespeichert. Registrieren Sie sich, um Ihren Fortschritt zu behalten!",
+            welcomeBack: "Willkommen",
+            continueGame: "FORTSETZEN",
+            completed: "ABGESCHLOSSEN",
+            lockedChapter: "Dieses Kapitel ist noch gesperrt. Schließen Sie die vorherigen Kapitel ab!",
+            guestChapterLimit: "Als Gast können Sie nur Kapitel 1 spielen! Registrieren Sie sich, um Ihren Fortschritt zu speichern!",
+            notEnoughGold: "Nicht genug Gold!",
+            fillInfo: "Füllen Sie die Informationen aus!",
+            wrongPassword: "Falsches Passwort!",
+            chapterPrefix: "KAPITEL",
+            waveCount: "Welle",
+            difficultyNovice: "Anfänger",
+            difficultyRookie: "Neuling",
+            difficultyEasy: "Leicht",
+            difficultyNormal: "Normal",
+            difficultyHard: "Schwer",
+            difficultyExpert: "Experte",
+            difficultyMaster: "Meister",
+            difficultyLegendary: "Legendär",
+            difficultyGodlike: "GÖTTLICH"
+        },
+        en: {
+            authTitle: "LOGIN / REGISTER",
+            usernamePlaceholder: "Username",
+            passwordPlaceholder: "Password",
+            loginBtn: "LOGIN",
+            guestBtn: "GUEST",
+            guideBtn: "HOW TO PLAY?",
+            guideTitle: "GAME GUIDE",
+            guide1: "<strong>🕹️ Basic Controls:</strong><br> Use WASD keys to move, aim with your mouse and shoot with left click.",
+            guide2: "<strong>🌊 Wave System:</strong><br> Each new wave brings tougher enemies. Waves that are multiples of 5 (5, 10, 15...) are <strong>BOSS</strong> waves!",
+            guide3: "<strong>⚡ Special Ability:</strong><br> Right click to create an \"Area Damage\" (Aura) every 15 seconds and melt surrounding enemies.",
+            guide4: "<strong>💰 Market & Progression:</strong><br> Earn gold by killing enemies. Buy characters with higher HP and Armor from the market.",
+            guide5: "<strong>📈 Level Up:</strong><br> When the XP bar is full, you level up. At this stage, choose from 5 random upgrades (Damage, Speed, Crit, etc.) to specialize your character.",
+            understoodBtn: "UNDERSTOOD, START!",
+            chapterSelect: "SELECT CHAPTER",
+            quickStart: "QUICK START",
+            marketTitle: "CHARACTER MARKET",
+            closeBtn: "CLOSE",
+            deathTitle: "YOU DIED!",
+            restartBtn: "RESTART",
+            chapterCompleteTitle: "CHAPTER COMPLETED!",
+            nextChapterBtn: "NEXT CHAPTER",
+            gameCompleteTitle: "GAME OVER!",
+            gameCompleteMsg: "Congratulations! You have successfully completed all chapters!<br><br>",
+            waitForUpdate: "Wait for an update to play again!",
+            backToMenuBtn: "BACK TO MENU",
+            chapterSelectTitle: "SELECT CHAPTER",
+            backBtn: "BACK",
+            upgradeTitle: "SELECT UPGRADE",
+            goldLabel: "GOLD",
+            statsLabel: "STATS",
+            killsLabel: "KILLS",
+            waveLabel: "WAVE",
+            chapterLabel: "CHAPTER",
+            remainingLabel: "REMAINING",
+            cooldownText: "COOLDOWN:",
+            chapterStart: "CHAPTER",
+            waveStart: "WAVE",
+            bossWave: "BOSS INCOMING!",
+            marketCharName: "HP:",
+            marketArmor: "Armor:",
+            marketOwned: "IN USE",
+            marketUse: "USE",
+            marketBuy: "BUY (",
+            guestWarning: "GUEST - Your progress is not saved. Register to keep your progress!",
+            welcomeBack: "Welcome back",
+            continueGame: "CONTINUE",
+            completed: "COMPLETED",
+            lockedChapter: "This chapter is still locked. Complete previous chapters first!",
+            guestChapterLimit: "As a guest, you can only play Chapter 1! Register to save your progress!",
+            notEnoughGold: "Not enough gold!",
+            fillInfo: "Fill in the information!",
+            wrongPassword: "Wrong password!",
+            chapterPrefix: "CHAPTER",
+            waveCount: "Wave",
+            difficultyNovice: "Novice",
+            difficultyRookie: "Rookie",
+            difficultyEasy: "Easy",
+            difficultyNormal: "Normal",
+            difficultyHard: "Hard",
+            difficultyExpert: "Expert",
+            difficultyMaster: "Master",
+            difficultyLegendary: "Legendary",
+            difficultyGodlike: "GODLIKE"
+        },
+        ru: {
+            authTitle: "ВХОД / РЕГИСТРАЦИЯ",
+            usernamePlaceholder: "Имя пользователя",
+            passwordPlaceholder: "Пароль",
+            loginBtn: "ВОЙТИ",
+            guestBtn: "ГОСТЬ",
+            guideBtn: "КАК ИГРАТЬ?",
+            guideTitle: "РУКОВОДСТВО ПО ИГРЕ",
+            guide1: "<strong>🕹️ Основные элементы управления:</strong><br> Используйте клавиши WASD для перемещения, целитесь мышью и стреляйте левой кнопкой.",
+            guide2: "<strong>🌊 Система волн:</strong><br> Каждая новая волна приносит более сложных врагов. Волны, кратные 5 (5, 10, 15...), являются <strong>BOSS</strong> волнами!",
+            guide3: "<strong>⚡ Способность:</strong><br> Нажмите правую кнопку мыши, чтобы создать \"Урон по площади\" (Ауру) каждые 15 секунд и расплавить окружающих врагов.",
+            guide4: "<strong>💰 Рынок и развитие:</strong><br> Зарабатывайте золото, убивая врагов. Покупайте персонажей с более высоким HP и броней на рынке.",
+            guide5: "<strong>📈 Повышение уровня:</strong><br> Когда XP-бар заполняется, вы повышаете уровень. На этом этапе выберите из 5 случайных улучшений (Урон, Скорость, Крит и т.д.), чтобы специализировать своего персонажа.",
+            understoodBtn: "ПОНЯЛ, НАЧАТЬ!",
+            chapterSelect: "ВЫБОР ГЛАВЫ",
+            quickStart: "БЫСТРЫЙ СТАРТ",
+            marketTitle: "РЫНОК ПЕРСОНАЖЕЙ",
+            closeBtn: "ЗАКРЫТЬ",
+            deathTitle: "ВЫ УМЕРЛИ!",
+            restartBtn: "ПЕРЕЗАПУСК",
+            chapterCompleteTitle: "ГЛАВА ЗАВЕРШЕНА!",
+            nextChapterBtn: "СЛЕДУЮЩАЯ ГЛАВА",
+            gameCompleteTitle: "ИГРА ЗАВЕРШЕНА!",
+            gameCompleteMsg: "Поздравляем! Вы успешно прошли все главы!<br><br>",
+            waitForUpdate: "Ждите обновления, чтобы играть снова!",
+            backToMenuBtn: "ВЕРНУТЬСЯ В МЕНЮ",
+            chapterSelectTitle: "ВЫБОР ГЛАВЫ",
+            backBtn: "НАЗАД",
+            upgradeTitle: "ВЫБОР УЛУЧШЕНИЯ",
+            goldLabel: "ЗОЛОТО",
+            statsLabel: "СТАТЫ",
+            killsLabel: "УБИЙСТВА",
+            waveLabel: "ВОЛНА",
+            chapterLabel: "ГЛАВА",
+            remainingLabel: "ОСТАЛОСЬ",
+            cooldownText: "ПЕРЕЗАРЯДКА:",
+            chapterStart: "ГЛАВА",
+            waveStart: "ВОЛНА",
+            bossWave: "БОСС ИДЁТ!",
+            marketCharName: "HP:",
+            marketArmor: "Броня:",
+            marketOwned: "ИСПОЛЬЗУЕТСЯ",
+            marketUse: "ИСПОЛЬЗОВАТЬ",
+            marketBuy: "КУПИТЬ (",
+            guestWarning: "ГОСТЬ - Ваш прогресс не сохраняется. Зарегистрируйтесь, чтобы сохранить прогресс!",
+            welcomeBack: "С возвращением",
+            continueGame: "ПРОДОЛЖИТЬ",
+            completed: "ЗАВЕРШЕНО",
+            lockedChapter: "Эта глава все еще заблокирована. Сначала пройдите предыдущие главы!",
+            guestChapterLimit: "Как гость, вы можете играть только Главу 1! Зарегистрируйтесь, чтобы сохранить прогресс!",
+            notEnoughGold: "Недостаточно золота!",
+            fillInfo: "Заполните информацию!",
+            wrongPassword: "Неверный пароль!",
+            chapterPrefix: "ГЛАВА",
+            waveCount: "Волна",
+            difficultyNovice: "Новичок",
+            difficultyRookie: "Любитель",
+            difficultyEasy: "Легко",
+            difficultyNormal: "Нормально",
+            difficultyHard: "Сложно",
+            difficultyExpert: "Эксперт",
+            difficultyMaster: "Мастер",
+            difficultyLegendary: "Легендарно",
+            difficultyGodlike: "БОЖЕСТВЕННО"
+        }
+    };
+
+    let currentLang = 'tr';
+
+    function changeLanguage(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.flag-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.flag-btn[data-lang="${lang}"]`).classList.add('active');
+        updateUIText();
+    }
+
+    function t(key) {
+        return translations[currentLang][key] || key;
+    }
+
+    function updateUIText() {
+        // Auth screen
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[currentLang][key]) {
+                el.innerHTML = translations[currentLang][key];
+            }
+        });
+
+        // Placeholders
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (translations[currentLang][key]) {
+                el.placeholder = translations[currentLang][key];
+            }
+        });
+
+        // Update game-specific UI
+        updateGameUIText();
+    }
+
+    function updateGameUIText() {
+        const goldLabel = document.getElementById('gold-display');
+        if (goldLabel) goldLabel.innerHTML = `${t('goldLabel')}: <span id="gold-count">${gameState.gold}</span>`;
+
+        const enemyCounter = document.getElementById('enemy-counter');
+        if (enemyCounter) {
+            enemyCounter.innerHTML = `${t('chapterLabel')}: <span id="chapter-display">${gameState.chapter || 1}</span> | ${t('waveLabel')}: <span id="wave-display">${gameState.wave || 0}</span><br>${t('remainingLabel')}: <span id="enemy-count">0</span>`;
+        }
+
+        const statsPanel = document.getElementById('stats-panel');
+        if (statsPanel) statsPanel.innerHTML = `<h5 style="margin:0">${t('statsLabel')}</h5><div id="stat-list" style="font-size: 10px;">${player.upgrades ? player.upgrades.map(u => `<div>• ${u}</div>`).join('') : '• Henüz yok...'}</div>`;
+
+        const xpLog = document.getElementById('xp-log');
+        if (xpLog) xpLog.innerHTML = `<h5 style="margin:0">${t('killsLabel')}</h5><div id="log-list" style="font-size: 10px;"></div>`;
+    }
 
     // Sprite Drawing Functions
     function drawPlayerSprite(ctx, x, y, size, color, angle) {
@@ -417,15 +910,12 @@
 
     // Zorluk seviyesini döndür
     function getDifficulty(chapter) {
-        if (chapter <= 2) return { name: 'Novice', class: 'diff-novice' };
-        if (chapter <= 4) return { name: 'Rookie', class: 'diff-rookie' };
-        if (chapter <= 6) return { name: 'Easy', class: 'diff-easy' };
-        if (chapter <= 8) return { name: 'Normal', class: 'diff-normal' };
-        if (chapter <= 10) return { name: 'Hard', class: 'diff-hard' };
-        if (chapter <= 12) return { name: 'Expert', class: 'diff-expert' };
-        if (chapter <= 14) return { name: 'Master', class: 'diff-master' };
-        if (chapter <= 16) return { name: 'Legendary', class: 'diff-legendary' };
-        return { name: 'GODLIKE', class: 'diff-godlike' };
+        const diffKeys = ['Novice', 'Rookie', 'Easy', 'Normal', 'Hard', 'Expert', 'Master', 'Legendary', 'GODLIKE'];
+        const diffClasses = ['diff-novice', 'diff-rookie', 'diff-easy', 'diff-normal', 'diff-hard', 'diff-expert', 'diff-master', 'diff-legendary', 'diff-godlike'];
+        let idx = Math.floor((chapter - 1) / 2);
+        if (idx >= diffKeys.length) idx = diffKeys.length - 1;
+        const diffKey = diffKeys[idx];
+        return { name: t('difficulty' + diffKey.charAt(0).toUpperCase() + diffKey.slice(1)), class: diffClasses[idx] };
     }
 
     // Bölüm menüsünü göster
@@ -443,9 +933,9 @@
         // Kullanıcı durumunu göster
         const statusEl = document.getElementById('chapter-menu-status');
         if (isGuest) {
-            statusEl.innerHTML = '👤 MİSAFİR - İlerlemen kaydedilmez. Kayıt olerek ilerlemeni koruyabilirsin!';
+            statusEl.innerHTML = t('guestWarning');
         } else {
-            statusEl.innerHTML = `🎮 Hoş geldin <span style="color:var(--neon-gold)">${currentUser}</span> - En son ${gameState.chapter}. bölümde kaldın!`;
+            statusEl.innerHTML = `${t('welcomeBack')} <span style="color:var(--neon-gold)">${currentUser}</span> - ${t('continueGame')} ${gameState.chapter}. ${t('chapterPrefix')}!`;
         }
 
         // Misafir için sadece 1. bölüm açık, kayıtlı kullanıcı için en son kaldığı bölüme kadar açık
@@ -463,12 +953,12 @@
             card.onclick = () => selectChapter(i, isUnlocked);
 
             let statusHtml = '';
-            if (isCurrent) statusHtml = '<div class="chapter-status status-current">DEVAM</div>';
-            else if (isCompleted) statusHtml = '<div class="chapter-status status-completed">TAMAMLANDI</div>';
+            if (isCurrent) statusHtml = `<div class="chapter-status status-current">${t('continueGame')}</div>`;
+            else if (isCompleted) statusHtml = `<div class="chapter-status status-completed">${t('completed')}</div>`;
 
             card.innerHTML = `
-                <div class="chapter-number">BÖLÜM ${i}</div>
-                <div class="chapter-waves">🌊 ${waves} Dalga</div>
+                <div class="chapter-number">${t('chapterPrefix')} ${i}</div>
+                <div class="chapter-waves">🌊 ${waves} ${t('waveCount')}</div>
                 <div class="chapter-difficulty ${difficulty.class}">${difficulty.name}</div>
                 ${statusHtml}
             `;
@@ -481,9 +971,9 @@
     function selectChapter(chapterNum, isUnlocked) {
         if (!isUnlocked) {
             if (isGuest) {
-                alert('Misafir olarak yalnızca 1. Bölümü oynayabilirsin! İlerlemeni kaydetmek için kayıt ol!');
+                alert(t('guestChapterLimit'));
             } else {
-                alert('Bu bölüm henüz kilitli. Önceki bölümleri tamamla!');
+                alert(t('lockedChapter'));
             }
             return;
         }
@@ -521,17 +1011,25 @@
     function handleAuth(type) {
         const u = document.getElementById('username').value;
         const p = document.getElementById('password').value;
-        if (type === 'guest') { isGuest = true; currentUser = "Misafir"; showStart(); return; }
-        if (!u || !p) return alert("Bilgileri doldur!");
+        if (type === 'guest') {
+            isGuest = true;
+            currentUser = "Misafir";
+            showStart();
+            return;
+        }
+        if (!u || !p) return alert(t('fillInfo'));
         let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
         if (users[u]) {
-            if (users[u].password !== p) return alert("Şifre yanlış!");
+            if (users[u].password !== p) return alert(t('wrongPassword'));
             gameState = users[u].state;
         } else {
             users[u] = { password: p, state: gameState };
             localStorage.setItem('gf_users', JSON.stringify(users));
         }
-        currentUser = u; isGuest = false; saveUser(); showStart();
+        currentUser = u;
+        isGuest = false;
+        saveUser();
+        showStart();
     }
 
     function saveUser() {
@@ -543,8 +1041,9 @@
 
     function showStart() {
         document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('banner-container').style.display = 'none';
         document.getElementById('start-screen').style.display = 'flex';
-        document.getElementById('welcome-msg').innerText = `Hoş geldin, ${currentUser}!`;
+        document.getElementById('welcome-msg').innerText = `${t('welcomeBack')}, ${currentUser}!`;
         updateGoldUI();
     }
 
@@ -564,9 +1063,9 @@
             div.className = `char-card ${isSelected ? 'selected' : ''}`;
             div.innerHTML = `
                 <h4>${c.name}</h4>
-                <p>HP: ${c.hp} | Armor: +${c.armor}</p>
+                <p>${t('marketCharName')} ${c.hp} | ${t('marketArmor')} +${c.armor}</p>
                 <button class="buy-btn" onclick="${isOwned ? `selectChar('${c.id}')` : `buyChar('${c.id}', ${c.price})`}">
-                    ${isSelected ? 'KULLANILIYOR' : (isOwned ? 'KULLAN' : 'SATIN AL (' + c.price + ')')}
+                    ${isSelected ? t('marketOwned') : (isOwned ? t('marketUse') : t('marketBuy') + c.price + ')')}
                 </button>
             `;
             grid.appendChild(div);
@@ -575,13 +1074,18 @@
 
     function buyChar(id, price) {
         if (gameState.gold >= price) {
-            gameState.gold -= price; gameState.ownedChars.push(id);
-            updateGoldUI(); renderMarket(); saveUser();
-        } else alert("Altın yetersiz!");
+            gameState.gold -= price;
+            gameState.ownedChars.push(id);
+            updateGoldUI();
+            renderMarket();
+            saveUser();
+        } else alert(t('notEnoughGold'));
     }
 
     function selectChar(id) { gameState.selectedChar = id; renderMarket(); saveUser(); }
-    function updateGoldUI() { document.getElementById('gold-count').innerText = gameState.gold; }
+    function updateGoldUI() {
+        document.getElementById('gold-count').innerText = gameState.gold;
+    }
     function updateEnemyCountUI() {
         document.getElementById('enemy-count').innerText = enemies.length;
         document.getElementById('chapter-display').innerText = gameState.chapter;
@@ -621,7 +1125,7 @@
     function showChapterStart() {
         const ann = document.getElementById('announcement');
         ann.style.display = 'block';
-        ann.innerText = `${gameState.chapter}. BÖLÜM`;
+        ann.innerText = `${t('chapterStart')} ${gameState.chapter}`;
         setTimeout(() => { ann.style.display = 'none'; nextWave(); }, 2000);
     }
 
@@ -640,12 +1144,12 @@
 
     window.onkeydown = e => keys[e.code] = true;
     window.onkeyup = e => keys[e.code] = false;
-    canvas.onmousedown = (e) => { 
+    canvas.onmousedown = (e) => {
         if(e.button === 0) mousePressed = true;
         if(e.button === 2) performAreaDamage();
     };
     window.onmouseup = () => mousePressed = false;
-    canvas.oncontextmenu = (e) => e.preventDefault(); 
+    canvas.oncontextmenu = (e) => e.preventDefault();
     let mx = 0, my = 0;
     canvas.onmousemove = e => { const r = canvas.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; };
 
@@ -666,7 +1170,7 @@
 
         // Her 5 dalgada bir boss (bölüm içinde)
         let isBoss = gameState.wave % 5 === 0;
-        ann.innerText = isBoss ? "BOSS GELİYOR!" : `DALGA ${gameState.wave} / ${wavesInThisChapter}`;
+        ann.innerText = isBoss ? t('bossWave') : `${t('waveStart')} ${gameState.wave} / ${wavesInThisChapter}`;
         setTimeout(() => { ann.style.display = 'none'; gameState.isRunning = true; spawnEnemies(isBoss); }, 2000);
     }
 
@@ -678,7 +1182,7 @@
         } else {
             // Bölüm tamamlandı, sonraki bölüme geç
             const msg = document.getElementById('chapter-complete-msg');
-            msg.innerHTML = `${gameState.chapter}. Bölümü Başarıyla Tamamladın!<br>Sonraki Bölüm: ${gameState.chapter + 1}. Bölüm (${WAVES_PER_CHAPTER[gameState.chapter]} Dalga)`;
+            msg.innerHTML = `${gameState.chapter}. ${t('chapterPrefix')} ${t('completed')}<br>${t('nextChapterBtn')}: ${gameState.chapter + 1}. ${t('chapterPrefix')} (${WAVES_PER_CHAPTER[gameState.chapter]} ${t('waveCount')})`;
             document.getElementById('chapter-complete-screen').style.display = 'flex';
         }
     }
@@ -723,9 +1227,9 @@
         const log = document.createElement('div');
         log.innerHTML = `<span style="color:var(--neon-purple)">+${xpReward} XP</span> | <span style="color:var(--neon-gold)">+${goldPlus} G</span><br>${type}`;
         document.getElementById('log-list').prepend(log);
-        document.getElementById('xp-bar-fill').style.width = Math.min(100, (gameState.xp/gameState.xpRequired)*100) + "%"; 
-        if(gameState.xp >= gameState.xpRequired) { 
-            gameState.xp = 0; gameState.level++; gameState.xpRequired += 50; showUpgrades(); 
+        document.getElementById('xp-bar-fill').style.width = Math.min(100, (gameState.xp/gameState.xpRequired)*100) + "%";
+        if(gameState.xp >= gameState.xpRequired) {
+            gameState.xp = 0; gameState.level++; gameState.xpRequired += 50; showUpgrades();
         }
     }
 
@@ -737,7 +1241,7 @@
         box.innerHTML = '';
         const opts = [
     {t: "+6 Hasar", f: () => player.dmg += 6},
-    {t: "+0.5 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 50)}, 
+    {t: "+0.5 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 50)},
     {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)},
     {t: "+2 Kritik", f: () => player.crit += 0.1},
     {t: "+1 Seken", f: () => player.bounce += 1}
@@ -838,6 +1342,482 @@
         animationId = requestAnimationFrame(loop);
     }
     function drawBar(x, y, w, h, p, f, b="#333") { ctx.fillStyle = b; ctx.fillRect(x, y, w, h); ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h); }
+</script>
+
+<script>
+/**
+ * Iframe 元素高亮注入脚本
+ * 需要在目标网站中引入此脚本来支持跨域 iframe 高亮功能
+ *
+ * 使用方法：
+ * 1. 将此脚本添加到目标网站的 HTML 中
+ * 2. 或通过浏览器扩展、用户脚本等方式注入
+ */
+
+(function () {
+  "use strict";
+
+  // 检查是否在 iframe 中
+  if (window.self === window.top) {
+    return; // 不在 iframe 中，不执行
+  }
+
+  // 检查是否已经初始化过
+  if (window.__iframeHighlightInitialized) {
+    return;
+  }
+  window.__iframeHighlightInitialized = true;
+  console.log("Iframe 高亮脚本已加载");
+
+  // 创建高亮覆盖层
+  var overlay = document.createElement("div");
+  overlay.id = "iframe-highlight-overlay";
+  overlay.style.cssText = "\n    position: fixed;\n    top: 0;\n    left: 0;\n    width: 100vw;\n    height: 100vh;\n    pointer-events: none;\n    z-index: 999999;\n    overflow: hidden;\n  ";
+
+  // 创建悬停高亮框（虚线边框）
+  var highlightBox = document.createElement("div");
+  highlightBox.id = "iframe-highlight-box";
+  highlightBox.style.cssText = "\n    position: absolute;\n    border: 2px dashed #007AFF;\n    background: rgba(0, 122, 255, 0.08);\n    pointer-events: none;\n    display: none;\n    transition: all 0.1s ease;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);\n    border-radius: 2px;\n  ";
+
+  // 创建选中节点的常驻高亮框（实线边框）
+  var selectedBox = document.createElement("div");
+  selectedBox.id = "iframe-selected-box";
+  selectedBox.style.cssText = "\n    position: absolute;\n    border: 2px solid #007AFF;\n    pointer-events: none;\n    display: none;\n    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 107, 53, 0.4);\n    border-radius: 2px;\n    z-index: 1000000;\n  ";
+
+  // 创建悬停标签显示
+  var tagLabel = document.createElement("div");
+  tagLabel.id = "iframe-tag-label";
+  tagLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 2px 6px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 2px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000001;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);\n    font-weight: 500;\n  ";
+
+  // 创建选中节点标签
+  var selectedLabel = document.createElement("div");
+  selectedLabel.id = "iframe-selected-label";
+  selectedLabel.style.cssText = "\n    position: absolute;\n    background: #007AFF;\n    color: white;\n    padding: 3px 8px;\n    font-size: 11px;\n    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n    border-radius: 3px;\n    pointer-events: none;\n    display: none;\n    white-space: nowrap;\n    z-index: 1000002;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);\n    font-weight: 600;\n  ";
+  overlay.appendChild(highlightBox);
+  overlay.appendChild(selectedBox);
+  overlay.appendChild(tagLabel);
+  overlay.appendChild(selectedLabel);
+  document.body.appendChild(overlay);
+
+  // 存储当前选中的元素
+  var selectedElement = null;
+  var highlightEnabled = false;
+
+  // 更新选中元素的高亮显示
+  function updateSelectedHighlight(element) {
+    console.log("updateSelectedHighlight called with:", element);
+    if (!element) {
+      selectedBox.style.display = "none";
+      selectedLabel.style.display = "none";
+      selectedElement = null;
+      console.log("Cleared selected highlight");
+      return;
+    }
+    selectedElement = element;
+    var rect = element.getBoundingClientRect();
+    console.log("Selected element rect:", rect);
+
+    // 更新选中高亮框位置
+    selectedBox.style.display = "block";
+    selectedBox.style.left = "".concat(rect.left - 2, "px");
+    selectedBox.style.top = "".concat(rect.top - 2, "px");
+    selectedBox.style.width = "".concat(rect.width + 4, "px");
+    selectedBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新选中标签位置和内容
+    selectedLabel.style.display = "block";
+    selectedLabel.textContent = "\u2713 <".concat(element.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 28;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 5) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    var labelWidth = selectedLabel.offsetWidth || 100; // 预估宽度
+    if (labelLeft + labelWidth > window.innerWidth - 10) {
+      labelLeft = window.innerWidth - labelWidth - 10;
+    }
+    selectedLabel.style.left = "".concat(Math.max(5, labelLeft), "px");
+    selectedLabel.style.top = "".concat(labelTop, "px");
+    console.log("Selected highlight positioned at:", {
+      left: selectedBox.style.left,
+      top: selectedBox.style.top,
+      width: selectedBox.style.width,
+      height: selectedBox.style.height
+    });
+  }
+  function getElementSelector(element) {
+    if (!(element instanceof Element)) throw new Error('Argument must be a DOM element');
+    var segments = [];
+    var current = element;
+    while (current !== document.documentElement) {
+      var selector = '';
+      // 优先检查唯一ID
+      if (current.id && document.querySelectorAll("#".concat(current.id)).length === 1) {
+        segments.unshift("#".concat(current.id));
+        break; // ID唯一，无需继续向上
+      }
+
+      // 生成类名选择器（取第一个有效类名）
+      var classes = Array.from(current.classList).filter(function (c) {
+        return !c.startsWith('js-');
+      });
+      var className = classes.length > 0 ? ".".concat(classes[0]) : '';
+
+      // 生成位置索引（nth-child）
+      var tag = current.tagName.toLowerCase();
+      if (!className) {
+        var siblings = Array.from(current.parentNode.children);
+        var index = siblings.findIndex(function (el) {
+          return el === current;
+        }) + 1;
+        selector = "".concat(tag, ":nth-child(").concat(index, ")");
+      } else {
+        selector = className;
+      }
+      segments.unshift(selector);
+      current = current.parentElement;
+    }
+
+    // 处理根元素
+    if (current === document.documentElement) {
+      segments.unshift('html');
+    }
+    return segments.join(' > ');
+  }
+
+  // 获取元素文本内容
+  function getElementText(element) {
+    var _element$textContent;
+    if (element.tagName === "INPUT") {
+      return element.value || element.placeholder || "";
+    }
+    if (element.tagName === "TEXTAREA") {
+      return element.value || element.placeholder || "";
+    }
+    var text = ((_element$textContent = element.textContent) === null || _element$textContent === void 0 ? void 0 : _element$textContent.trim()) || "";
+    return text.length > 50 ? text.substring(0, 50) + "..." : text;
+  }
+
+  // 获取元素属性信息
+  function getElementAttributes(element) {
+    var attrs = {};
+    for (var i = 0; i < element.attributes.length; i++) {
+      var attr = element.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
+    return attrs;
+  }
+
+  // 鼠标悬停事件处理
+  function handleMouseOver(e) {
+    if (!highlightEnabled) return;
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免高亮 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 如果是已选中的元素，不显示悬停高亮
+    if (target === selectedElement) {
+      highlightBox.style.display = "none";
+      tagLabel.style.display = "none";
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+
+    // 更新悬停高亮框位置
+    highlightBox.style.display = "block";
+    highlightBox.style.left = "".concat(rect.left - 2, "px");
+    highlightBox.style.top = "".concat(rect.top - 2, "px");
+    highlightBox.style.width = "".concat(rect.width + 4, "px");
+    highlightBox.style.height = "".concat(rect.height + 4, "px");
+
+    // 更新标签位置和内容
+    tagLabel.style.display = "block";
+    tagLabel.textContent = "<".concat(target.tagName.toLowerCase(), ">");
+
+    // 计算标签位置，确保不超出视窗
+    var labelTop = rect.top - 22;
+    var labelLeft = rect.left;
+
+    // 如果标签会超出顶部，显示在元素下方
+    if (labelTop < 0) {
+      labelTop = rect.bottom + 5;
+    }
+
+    // 如果标签会超出右侧，向左调整
+    if (labelLeft + tagLabel.offsetWidth > window.innerWidth) {
+      labelLeft = window.innerWidth - tagLabel.offsetWidth - 5;
+    }
+    tagLabel.style.left = "".concat(Math.max(0, labelLeft), "px");
+    tagLabel.style.top = "".concat(labelTop, "px");
+
+    // 发送消息到父窗口
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 鼠标离开事件处理
+  function handleMouseOut(e) {
+    if (!highlightEnabled) return;
+    var relatedTarget = e.relatedTarget;
+
+    // 如果鼠标移动到高亮相关元素上，不隐藏高亮
+    if (relatedTarget && (relatedTarget === highlightBox || relatedTarget === tagLabel || relatedTarget === overlay || relatedTarget === selectedBox || relatedTarget === selectedLabel)) {
+      return;
+    }
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-hover",
+        data: null,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 点击事件处理
+  function handleClick(e) {
+    var target = e.target;
+    if (!target || target === overlay || target === highlightBox || target === tagLabel || target === selectedBox || target === selectedLabel) {
+      return;
+    }
+
+    // 避免处理 html 和 body 元素
+    if (target === document.documentElement || target === document.body) {
+      return;
+    }
+
+    // 检查是否是交互元素，这些元素需要保留默认行为
+    var isInteractiveElement = ['input', 'textarea', 'select', 'button', 'a'].includes(target.tagName.toLowerCase());
+
+    // 如果高亮功能启用，对于非交互元素阻止默认行为和事件传播
+    if (highlightEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    var rect = target.getBoundingClientRect();
+    var selector = getElementSelector(target);
+    var text = getElementText(target);
+    var attributes = getElementAttributes(target);
+    console.log("Element clicked:", {
+      tagName: target.tagName,
+      selector: selector,
+      rect: rect
+    });
+
+    // 立即更新选中高亮
+    updateSelectedHighlight(target);
+
+    // 隐藏悬停高亮，因为现在是选中状态
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    var elementInfo = {
+      tagName: target.tagName.toLowerCase(),
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        x: rect.x,
+        y: rect.y
+      },
+      selector: selector,
+      text: text,
+      attributes: attributes,
+      url: window.location.href,
+      path: window.location.pathname,
+      timestamp: Date.now()
+    };
+    try {
+      window.parent.postMessage({
+        type: "iframe-element-click",
+        data: elementInfo,
+        source: "iframe-highlight-injector"
+      }, "*");
+    } catch (error) {
+      console.warn("无法发送消息到父窗口:", error);
+    }
+  }
+
+  // 监听来自父窗口的消息
+  function handleParentMessage(event) {
+    console.log("Received message from parent:", event.data);
+    if (event.data.type === "iframe-highlight-toggle") {
+      var enabled = event.data.enabled;
+      console.log("Highlight toggle:", enabled);
+      if (enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "enable-iframe-highlight") {
+      console.log("Enable iframe highlight");
+      enableHighlight();
+    } else if (event.data.type === "disable-iframe-highlight") {
+      console.log("Disable iframe highlight");
+      disableHighlight();
+    } else if (event.data.type === "toggle-iframe-highlight") {
+      var _enabled = event.data.enabled !== undefined ? event.data.enabled : !highlightEnabled;
+      console.log("Toggle iframe highlight to:", _enabled);
+      if (_enabled) {
+        enableHighlight();
+      } else {
+        disableHighlight();
+      }
+    } else if (event.data.type === "update-selected-element") {
+      var selector = event.data.selector;
+      console.log("Update selected element with selector:", selector);
+      if (selector) {
+        try {
+          var element = document.querySelector(selector);
+          console.log("Found element by selector:", element);
+          updateSelectedHighlight(element);
+        } catch (error) {
+          console.warn("Failed to select element:", error);
+          updateSelectedHighlight(null);
+        }
+      } else {
+        updateSelectedHighlight(null);
+      }
+    } else if (event.data.type === "clear-selected-element") {
+      console.log("Clear selected element");
+      updateSelectedHighlight(null);
+    }
+  }
+
+  // 启用高亮功能
+  function enableHighlight() {
+    console.log("Enabling highlight");
+    document.addEventListener("mouseover", handleMouseOver, true);
+    document.addEventListener("mouseout", handleMouseOut, true);
+    document.addEventListener("click", handleClick, true);
+    highlightEnabled = true;
+    overlay.style.display = "block";
+  }
+
+  // 禁用高亮功能
+  function disableHighlight() {
+    console.log("Disabling highlight");
+    highlightEnabled = false;
+    // 保持事件监听器，但通过 highlightEnabled 变量控制行为
+    // 这样可以保留选中状态的显示
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    // 不隐藏 selectedBox 和 selectedLabel，保留选中状态
+  }
+
+  // 完全禁用高亮功能（移除所有监听器）
+  function fullyDisableHighlight() {
+    console.log("Fully disabling highlight");
+    highlightEnabled = false;
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("mouseout", handleMouseOut, true);
+    document.removeEventListener("click", handleClick, true);
+    overlay.style.display = "none";
+    highlightBox.style.display = "none";
+    tagLabel.style.display = "none";
+    selectedBox.style.display = "none";
+    selectedLabel.style.display = "none";
+  }
+
+  // 添加事件监听
+  enableHighlight();
+  window.addEventListener("message", handleParentMessage);
+
+  // 暴露全局函数供外部调用
+  window.__iframeHighlightControl = {
+    enable: enableHighlight,
+    disable: disableHighlight,
+    fullyDisable: fullyDisableHighlight,
+    isEnabled: function isEnabled() {
+      return highlightEnabled;
+    },
+    getSelectedElement: function getSelectedElement() {
+      return selectedElement;
+    },
+    updateSelected: updateSelectedHighlight,
+    // 通过消息发送开关控制
+    sendToggleMessage: function sendToggleMessage(enabled) {
+      window.parent.postMessage({
+        type: 'iframe-highlight-status',
+        enabled: enabled || highlightEnabled,
+        source: 'iframe-highlight-injector'
+      }, '*');
+    }
+  };
+
+  // 通知父窗口脚本已加载
+  try {
+    window.parent.postMessage({
+      type: "iframe-highlight-ready",
+      data: {
+        url: window.location.href,
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      },
+      source: "iframe-highlight-injector"
+    }, "*");
+  } catch (error) {
+    console.warn("无法发送就绪消息到父窗口:", error);
+  }
+
+  // 清理函数
+  window.__iframeHighlightCleanup = function () {
+    fullyDisableHighlight();
+    window.removeEventListener("message", handleParentMessage);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+    delete window.__iframeHighlightInitialized;
+    delete window.__iframeHighlightCleanup;
+  };
+})();
+
 </script>
 </body>
 </html>
