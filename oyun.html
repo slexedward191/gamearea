@@ -1,435 +1,388 @@
-```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GameArea Fight - Mission Briefing</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameArea Fight - Full Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
-<style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-red: #ff003c;
+            --neon-purple: #bc13fe;
+            --neon-gold: #ffcc00;
+        }
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
+        body { margin: 0; background-color: #050505; color: white; font-family: 'Orbitron', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
 
-:root{
---neon-blue:#00f2ff;
---neon-red:#ff003c;
---neon-purple:#bc13fe;
---neon-gold:#ffcc00;
-}
+        #game-container { position: relative; width: 1250px; height: 800px; display: flex; justify-content: center; align-items: center; }
 
-body{
-margin:0;
-background:#050505;
-color:white;
-font-family:'Orbitron',sans-serif;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-overflow:hidden;
-}
+        #arena-wrapper { position: relative; width: 1250px; height: 800px; border: 10px solid; border-image: linear-gradient(90deg, var(--neon-red) 50%, #ffffff 50%) 1; box-shadow: 0 0 40px rgba(255, 0, 0, 0.4); background: #111; overflow: hidden; z-index: 5; }
 
-#game-container{
-position:relative;
-width:1250px;
-height:800px;
-}
+        canvas { display: block; }
 
-/* ARENA */
+        .ui-panel { position: absolute; background: rgba(0, 0, 0, 0.85); border: 2px solid var(--neon-blue); padding: 10px; border-radius: 8px; box-shadow: 0 0 10px var(--neon-blue); z-index: 10; }
 
-#arena-wrapper{
-position:relative;
-width:1250px;
-height:800px;
-border:10px solid;
-border-image:linear-gradient(90deg,var(--neon-red) 50%,#ffffff 50%) 1;
-background:#111;
-overflow:hidden;
-z-index:5;
-}
+        #stats-panel { bottom: -50px; left: -160px; width: 140px; color: var(--neon-blue); }
+        #xp-log { right: -160px; top: 50%; transform: translateY(-50%); width: 140px; max-height: 300px; overflow: hidden; border-color: var(--neon-purple); }
+        #gold-display { top: -50px; left: 0; color: var(--neon-gold); font-weight: bold; border-color: var(--neon-gold); }
+        #enemy-counter { top: -50px; right: 0; color: var(--neon-red); font-weight: bold; border-color: var(--neon-red); display: none; }
 
-canvas{
-display:block;
-}
+        #market-btn { position: absolute; bottom: -50px; right: 0; padding: 10px 25px; background: var(--neon-gold); color: black; font-weight: bold; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px var(--neon-gold); z-index: 20; }
 
-/* UI */
+        .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
 
-.ui-panel{
-position:absolute;
-background:rgba(0,0,0,0.85);
-border:2px solid var(--neon-blue);
-padding:10px;
-border-radius:8px;
-z-index:50;
-}
+        .auth-box { background: #111; padding: 30px; border: 3px solid var(--neon-purple); text-align: center; width: 350px; }
+        .auth-box input { width: 80%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--neon-blue); color: white; font-family: 'Orbitron'; }
+        
+        .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .char-card { background: #222; border: 2px solid var(--neon-blue); padding: 15px; text-align: center; width: 180px; }
+        .char-card.selected { border-color: var(--neon-gold); box-shadow: 0 0 15px var(--neon-gold); }
 
-#stats-panel{
-bottom:10px;
-left:10px;
-width:160px;
-color:var(--neon-blue);
-}
+        .btn-gif { width: 180px; height: 60px; background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif'); background-size: cover; border: 3px solid #fff; color: white; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 10px; }
 
-#xp-log{
-right:10px;
-top:50%;
-transform:translateY(-50%);
-width:140px;
-border-color:var(--neon-purple);
-}
+        #announcement { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 5rem; color: var(--neon-red); font-weight: bold; display: none; z-index: 500; }
 
-#gold-display{
-top:10px;
-left:10px;
-color:var(--neon-gold);
-font-weight:bold;
-border-color:var(--neon-gold);
-}
-
-#enemy-counter{
-top:10px;
-right:10px;
-color:var(--neon-red);
-font-weight:bold;
-display:none;
-}
-
-#market-btn{
-position:absolute;
-bottom:10px;
-right:10px;
-padding:10px 25px;
-background:var(--neon-gold);
-color:black;
-font-weight:bold;
-border-radius:5px;
-cursor:pointer;
-z-index:60;
-}
-
-/* OVERLAYS */
-
-.overlay{
-position:absolute;
-inset:0;
-background:rgba(0,0,0,0.95);
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-z-index:1000;
-}
-
-.level-grid{
-display:grid;
-grid-template-columns:repeat(5,1fr);
-gap:10px;
-margin-top:20px;
-}
-
-.level-card{
-background:#222;
-border:2px solid #444;
-padding:15px;
-text-align:center;
-cursor:pointer;
-opacity:0.4;
-pointer-events:none;
-}
-
-.level-card.unlocked{
-opacity:1;
-border-color:var(--neon-blue);
-pointer-events:auto;
-}
-
-#announcement{
-position:absolute;
-top:40%;
-width:100%;
-text-align:center;
-font-size:5rem;
-color:var(--neon-red);
-display:none;
-z-index:500;
-font-weight:bold;
-}
-
-</style>
+        #xp-bar-container { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 80%; height: 16px; background: #fff; border: 2px solid #000; z-index: 5; }
+        #xp-bar-fill { height: 100%; width: 0%; background: var(--neon-purple); transition: 0.3s; }
+        #cooldown-display { position: absolute; color: rgba(255, 0, 0, 0.7); font-family: 'Orbitron'; font-size: 12px; display: none; z-index: 100; pointer-events: none; }
+    </style>
 </head>
-
 <body>
 
 <div id="game-container">
+    <div id="arena-wrapper">
+        <div id="bg-title" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:65px; opacity:0.12; white-space:nowrap; pointer-events:none; z-index:1">⚔️ GameArea Fight ⚔️</div>
+        <canvas id="gameCanvas" width="1250" height="800"></canvas>
+        <div id="announcement">DALGA 1</div>
+        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+        <div id="cooldown-display">BEKLEME SÜRESİ: <span id="cooldown-timer">15</span>s</div>
+    </div>
 
-<div id="arena-wrapper">
-<canvas id="gameCanvas" width="1250" height="800"></canvas>
-<div id="announcement">DALGA 1</div>
-</div>
+    <div id="gold-display" class="ui-panel">ALTIN: <span id="gold-count">0</span></div>
+    <div id="enemy-counter" class="ui-panel">KALAN: <span id="enemy-count">0</span></div>
+    <div id="stats-panel" class="ui-panel"><h5 style="margin:0">STATS</h5><div id="stat-list" style="font-size: 10px;">• Henüz yok...</div></div>
+    <div id="xp-log" class="ui-panel"><h5 style="margin:0">ÖLDÜRME</h5><div id="log-list" style="font-size: 10px;"></div></div>
+    <div id="market-btn" onclick="toggleMarket()">MARKET</div>
 
-<!-- UI PANELLERİ (ARENA DIŞI) -->
+    <div id="auth-screen" class="overlay">
+        <div class="auth-box">
+            <h2 style="color:var(--neon-blue)">GİRİŞ YAP / KAYDOL</h2>
+            <input type="text" id="username" placeholder="Kullanıcı Adı">
+            <input type="password" id="password" placeholder="Şifre">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;">GİRİŞ</button>
+                    <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;">MİSAFİR</button>
+                </div>
+                <button onclick="showGuide()" style="background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:10px; cursor:pointer; width:100%;">NASIL OYNANIR?</button>
+            </div>
+        </div>
+    </div>
 
-<div id="gold-display" class="ui-panel">
-ALTIN: <span id="gold-count">0</span>
-</div>
+    <div id="guide-screen" class="overlay" style="display:none; z-index: 2000;">
+        <div class="auth-box" style="width: 600px; text-align: left; border-color: var(--neon-gold);">
+            <h2 style="color:var(--neon-gold); text-align:center;">OYUN KILAVUZU</h2>
+            <div style="font-size: 14px; line-height: 1.8; max-height: 400px; overflow-y: auto; padding: 10px; color: #ccc;">
+                <p><strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.</p>
+                <p><strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!</p>
+                <p><strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir "Alan Hasarı" (Aura) yaratıp etrafındaki düşmanları erit.</p>
+                <p><strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.</p>
+                <p><strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.</p>
+            </div>
+            <button onclick="document.getElementById('guide-screen').style.display='none'" style="width:100%; padding:15px; background:var(--neon-red); border:none; color:white; cursor:pointer; margin-top:15px; font-weight:bold;">ANLADIM, BAŞLA!</button>
+        </div>
+    </div>
 
-<div id="enemy-counter" class="ui-panel">
-KALAN: <span id="enemy-count">0</span>
-</div>
+    <div id="start-screen" class="overlay" style="display:none">
+        <h1 style="color: var(--neon-red); font-size: 55px;">GameArea Fight</h1>
+        <p id="welcome-msg" style="color:var(--neon-blue)"></p>
+        <div class="btn-gif" onclick="startGame()">BAŞLAT</div>
+    </div>
 
-<div id="stats-panel" class="ui-panel">
-<h5 style="margin:0 0 5px 0">STATS</h5>
-<div style="font-size:11px">• Henüz eklenti yok</div>
-</div>
+    <div id="market-screen" class="overlay" style="display:none">
+        <h2 style="color:var(--neon-gold)">KARAKTER MARKETİ</h2>
+        <div class="market-grid" id="market-grid"></div>
+        <div class="btn-gif" onclick="toggleMarket()" style="margin-top:20px; background:none; border:2px solid white; height:40px;">KAPAT</div>
+    </div>
 
-<div id="xp-log" class="ui-panel">
-<h5 style="margin:0 0 5px 0">ÖLDÜRME</h5>
-<div id="log-list" style="font-size:10px"></div>
-</div>
+    <div id="death-screen" class="overlay" style="display:none">
+        <h1 style="color: white; font-size: 50px;">ÖLDÜN!</h1>
+        <div class="btn-gif" onclick="resetGame()">RESTART</div>
+    </div>
 
-<div id="market-btn" onclick="toggleMarket()">MARKET</div>
-
-<!-- AUTH -->
-
-<div id="auth-screen" class="overlay">
-
-<h2>GİRİŞ</h2>
-
-<input id="username" placeholder="Kullanıcı Adı">
-<input id="password" type="password" placeholder="Şifre">
-
-<button onclick="handleAuth('login')">GİRİŞ</button>
-<button onclick="handleAuth('guest')">MİSAFİR</button>
-
-</div>
-
-<!-- LEVEL -->
-
-<div id="start-screen" class="overlay" style="display:none">
-
-<h1>BÖLÜM SEÇ</h1>
-
-<p id="welcome-msg"></p>
-
-<div id="level-grid" class="level-grid"></div>
-
-</div>
-
+    <div id="upgrade-screen" class="overlay" style="display:none">
+        <h2>EKLENTİ SEÇ</h2>
+        <div id="upgrade-options" style="display:flex; flex-wrap: wrap; justify-content: center;"></div>
+    </div>
 </div>
 
 <script>
-
-const canvas=document.getElementById('gameCanvas')
-const ctx=canvas.getContext('2d')
-
-let currentUser=null
-let isGuest=false
-
-const ENEMY_COLORS=['#ff003c','#00ff00','#bc13fe','#ffcc00','#ffffff','#00f2ff']
-
-let gameState={
-isRunning:false,
-wave:0,
-gold:0,
-unlockedLevel:1
-}
-
-let enemies=[]
-let keys={}
-let player={}
-
-window.onkeydown=e=>keys[e.code]=true
-window.onkeyup=e=>keys[e.code]=false
-
-function handleAuth(type){
-
-if(type==='guest'){
-isGuest=true
-currentUser="Misafir"
-}else{
-
-const u=username.value
-const p=password.value
-
-if(!u||!p)return alert("Alanları doldur!")
-
-let users=JSON.parse(localStorage.getItem('gf_users')||'{}')
-
-if(users[u]){
-if(users[u].password!==p)return alert("Hatalı şifre!")
-gameState=users[u].state
-}else{
-users[u]={password:p,state:gameState}
-localStorage.setItem('gf_users',JSON.stringify(users))
-}
-
-currentUser=u
-}
-
-showStart()
-
-}
-
-function showStart(){
-
-document.getElementById('auth-screen').style.display='none'
-document.getElementById('start-screen').style.display='flex'
-
-document.getElementById('welcome-msg').innerText="Hoş geldin "+currentUser
-
-renderLevels()
-
-}
-
-function renderLevels(){
-
-const grid=document.getElementById('level-grid')
-
-grid.innerHTML=''
-
-for(let i=1;i<=20;i++){
-
-const div=document.createElement('div')
-
-div.className="level-card "+(i<=gameState.unlockedLevel?"unlocked":"")
-
-div.innerText="Bölüm "+i
-
-if(i<=gameState.unlockedLevel)
-div.onclick=()=>startGame(i)
-
-grid.appendChild(div)
-
-}
-
-}
-
-function startGame(){
-
-player={
-x:625,
-y:400,
-hp:100,
-speed:4,
-color:'#00f2ff'
-}
-
-enemies=[]
-
-document.getElementById('start-screen').style.display='none'
-document.getElementById('enemy-counter').style.display='block'
-
-gameState.wave=0
-gameState.isRunning=true
-
-nextWave()
-
-}
-
-function nextWave(){
-
-if(gameState.wave>=5){
-
-alert("Bölüm tamamlandı!")
-
-location.reload()
-
-return
-}
-
-gameState.wave++
-
-announcement.innerText="DALGA "+gameState.wave
-announcement.style.display="block"
-
-setTimeout(()=>{
-
-announcement.style.display="none"
-spawnEnemies()
-
-},2000)
-
-}
-
-function spawnEnemies(){
-
-const count=gameState.wave*4
-
-for(let i=0;i<count;i++){
-
-enemies.push({
-
-x:Math.random()*1200,
-y:Math.random()<0.5?-50:850,
-hp:100,
-size:25,
-speed:1.5+Math.random(),
-color:ENEMY_COLORS[Math.floor(Math.random()*ENEMY_COLORS.length)]
-
-})
-
-}
-
-document.getElementById('enemy-count').innerText=enemies.length
-
-}
-
-function loop(){
-
-ctx.clearRect(0,0,1250,800)
-
-if(gameState.isRunning){
-
-if(keys['KeyW'])player.y-=player.speed
-if(keys['KeyS'])player.y+=player.speed
-if(keys['KeyA'])player.x-=player.speed
-if(keys['KeyD'])player.x+=player.speed
-
-enemies.forEach((e,i)=>{
-
-const ang=Math.atan2(player.y-e.y,player.x-e.x)
-
-e.x+=Math.cos(ang)*e.speed
-e.y+=Math.sin(ang)*e.speed
-
-ctx.fillStyle=e.color
-ctx.fillRect(e.x-12,e.y-12,25,25)
-
-if(e.hp<=0){
-
-enemies.splice(i,1)
-
-gameState.gold+=5
-document.getElementById('gold-count').innerText=gameState.gold
-
-document.getElementById('enemy-count').innerText=enemies.length
-
-if(enemies.length===0)
-nextWave()
-
-}
-
-})
-
-}
-
-ctx.fillStyle=player.color
-ctx.beginPath()
-ctx.arc(player.x,player.y,20,0,Math.PI*2)
-ctx.fill()
-
-requestAnimationFrame(loop)
-
-}
-
-requestAnimationFrame(loop)
-
-function toggleMarket(){
-alert("Market şu an kapalı!")
-}
-
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let currentUser = null;
+    let isGuest = false;
+    let animationId = null;
+
+    const CHARS = [
+        { id: 'std', name: 'Standart', hp: 100, armor: 0, price: 0, color: '#00f2ff' },
+        { id: 'mus', name: 'Kaslı', hp: 500, armor: 5, price: 500, color: '#ff003c' },
+        { id: 'str', name: 'Güçlü', hp: 650, armor: 10, price: 1000, color: '#bc13fe' },
+        { id: 'fig', name: 'Dövüşçü', hp: 750, armor: 15, price: 2000, color: '#ffcc00' },
+        { id: 'leg', name: 'Efsanevi', hp: 1000, armor: 25, price: 5000, color: '#ffffff' }
+    ];
+
+    let gameState = {
+        isRunning: false, wave: 0, xp: 0, xpRequired: 50, level: 1,
+        gold: 0, ownedChars: ['std'], selectedChar: 'std'
+    };
+
+    function showGuide() { document.getElementById('guide-screen').style.display = 'flex'; }
+
+    function handleAuth(type) {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        if (type === 'guest') { isGuest = true; currentUser = "Misafir"; showStart(); return; }
+        if (!u || !p) return alert("Bilgileri doldur!");
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        if (users[u]) {
+            if (users[u].password !== p) return alert("Şifre yanlış!");
+            gameState = users[u].state;
+        } else {
+            users[u] = { password: p, state: gameState };
+            localStorage.setItem('gf_users', JSON.stringify(users));
+        }
+        currentUser = u; isGuest = false; saveUser(); showStart();
+    }
+
+    function saveUser() {
+        if (isGuest) return;
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        users[currentUser].state = gameState;
+        localStorage.setItem('gf_users', JSON.stringify(users));
+    }
+
+    function showStart() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('welcome-msg').innerText = `Hoş geldin, ${currentUser}!`;
+        updateGoldUI();
+    }
+
+    function toggleMarket() {
+        const screen = document.getElementById('market-screen');
+        if (screen.style.display === 'none') { renderMarket(); screen.style.display = 'flex'; }
+        else screen.style.display = 'none';
+    }
+
+    function renderMarket() {
+        const grid = document.getElementById('market-grid');
+        grid.innerHTML = '';
+        CHARS.forEach(c => {
+            const isOwned = gameState.ownedChars.includes(c.id);
+            const isSelected = gameState.selectedChar === c.id;
+            const div = document.createElement('div');
+            div.className = `char-card ${isSelected ? 'selected' : ''}`;
+            div.innerHTML = `
+                <h4>${c.name}</h4>
+                <p>HP: ${c.hp} | Armor: +${c.armor}</p>
+                <button class="buy-btn" onclick="${isOwned ? `selectChar('${c.id}')` : `buyChar('${c.id}', ${c.price})`}">
+                    ${isSelected ? 'KULLANILIYOR' : (isOwned ? 'KULLAN' : 'SATIN AL (' + c.price + ')')}
+                </button>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    function buyChar(id, price) {
+        if (gameState.gold >= price) {
+            gameState.gold -= price; gameState.ownedChars.push(id);
+            updateGoldUI(); renderMarket(); saveUser();
+        } else alert("Altın yetersiz!");
+    }
+
+    function selectChar(id) { gameState.selectedChar = id; renderMarket(); saveUser(); }
+    function updateGoldUI() { document.getElementById('gold-count').innerText = gameState.gold; }
+    function updateEnemyCountUI() { document.getElementById('enemy-count').innerText = enemies.length; }
+
+    let enemies = [];
+    let bullets = [];
+    let particles = [];
+    let keys = {};
+    let mousePressed = false;
+    let lastShot = 0;
+    let lastAreaDamageTime = 0;
+    const areaDamageCooldown = 15000;
+    let player = {};
+
+    function startGame() {
+        const charData = CHARS.find(c => c.id === gameState.selectedChar);
+        player = {
+            x: 625, y: 400, hp: charData.hp, maxHp: charData.hp, armor: charData.armor,
+            speed: 3.5, dmg: 30, shootSpeed: 300, crit: 0, bounce: 0, upgrades: [], color: charData.color
+        };
+        enemies = []; bullets = []; particles = [];
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'none';
+        document.getElementById('enemy-counter').style.display = 'block';
+        gameState.isRunning = true;
+        gameState.wave = 0; gameState.xp = 0; gameState.xpRequired = 50; gameState.level = 1;
+        nextWave();
+        if(!animationId) loop();
+    }
+
+    function resetGame() {
+        if (isGuest) { gameState.gold = 0; gameState.ownedChars = ['std']; gameState.selectedChar = 'std'; }
+        document.getElementById('death-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'block';
+        document.getElementById('enemy-counter').style.display = 'none';
+        showStart();
+    }
+
+    window.onkeydown = e => keys[e.code] = true;
+    window.onkeyup = e => keys[e.code] = false;
+    canvas.onmousedown = (e) => { 
+        if(e.button === 0) mousePressed = true;
+        if(e.button === 2) performAreaDamage();
+    };
+    window.onmouseup = () => mousePressed = false;
+    canvas.oncontextmenu = (e) => e.preventDefault(); 
+    let mx = 0, my = 0;
+    canvas.onmousemove = e => { const r = canvas.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; };
+
+    function nextWave() {
+        gameState.wave++;
+        gameState.isRunning = false;
+        const ann = document.getElementById('announcement');
+        ann.style.display = 'block';
+        let isBoss = gameState.wave % 5 === 0;
+        ann.innerText = isBoss ? "BOSS GELİYOR!" : `DALGA ${gameState.wave}`;
+        setTimeout(() => { ann.style.display = 'none'; gameState.isRunning = true; spawnEnemies(isBoss); }, 2000);
+    }
+
+    function spawnEnemies(isBoss) {
+        if (isBoss) {
+            const count = Math.min(5, Math.floor(gameState.wave/5));
+            const bossHp = (gameState.wave / 5) * 2000; 
+            for(let i=0; i<count; i++) enemies.push({ x: Math.random()*1200 + 25, y: -50, hp: bossHp, maxHp: bossHp, size: 70, speed: 1.1, boss: true, color: `hsl(${Math.random()*360}, 100%, 50%)` });
+        } else {
+            for(let i=0; i<gameState.wave*3.5; i++) enemies.push({ x: Math.random()*1250, y: Math.random() < 0.5 ? -30 : 830, hp: 250, maxHp: 250, size: 25, speed: 1.8 + Math.random(), boss: false, color: `hsl(${Math.random()*360}, 70%, 50%)` });
+        }
+        updateEnemyCountUI();
+    }
+
+    function addXP(val, type, isBossDeath) {
+        const xpReward = isBossDeath ? 25 : 10;
+        gameState.xp += xpReward;
+        const goldPlus = isBossDeath ? 5 : 1;
+        gameState.gold += goldPlus;
+        updateGoldUI(); saveUser();
+        updateEnemyCountUI();
+        const log = document.createElement('div');
+        log.innerHTML = `<span style="color:var(--neon-purple)">+${xpReward} XP</span> | <span style="color:var(--neon-gold)">+${goldPlus} G</span><br>${type}`;
+        document.getElementById('log-list').prepend(log);
+        document.getElementById('xp-bar-fill').style.width = Math.min(100, (gameState.xp/gameState.xpRequired)*100) + "%"; 
+        if(gameState.xp >= gameState.xpRequired) { 
+            gameState.xp = 0; gameState.level++; gameState.xpRequired += 50; showUpgrades(); 
+        }
+    }
+
+    function showUpgrades() {
+        gameState.isRunning = false;
+        const screen = document.getElementById('upgrade-screen');
+        const box = document.getElementById('upgrade-options');
+        screen.style.display = 'flex';
+        box.innerHTML = '';
+        const opts = [
+    {t: "+6 Hasar", f: () => player.dmg += 6},
+    {t: "+0.5 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 50)}, 
+    {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)},
+    {t: "+2 Kritik", f: () => player.crit += 0.1},
+    {t: "+1 Seken", f: () => player.bounce += 1}
+];
+        opts.forEach(o => {
+            const d = document.createElement('div');
+            d.className = 'char-card'; d.style.cursor = 'pointer';
+            d.innerText = o.t;
+            d.onclick = () => { o.f(); player.upgrades.push(o.t); updateStats(); screen.style.display='none'; gameState.isRunning=true; };
+            box.appendChild(d);
+        });
+    }
+
+    function updateStats() { document.getElementById('stat-list').innerHTML = player.upgrades.map(u => `<div>• ${u}</div>`).join(''); }
+
+    function performAreaDamage() {
+        if (!gameState.isRunning) return;
+        const now = Date.now();
+        if (now - lastAreaDamageTime < areaDamageCooldown) return;
+        lastAreaDamageTime = now;
+        particles.push({ type: 'area', radius: 150, life: 1.0, color: '#00f2ff' });
+    }
+
+    function loop() {
+        if (!gameState.isRunning) { animationId = requestAnimationFrame(loop); return; }
+        ctx.clearRect(0,0,1250,800);
+        if (keys['KeyW'] && player.y > 20) player.y -= player.speed;
+        if (keys['KeyS'] && player.y < 780) player.y += player.speed;
+        if (keys['KeyA'] && player.x > 20) player.x -= player.speed;
+        if (keys['KeyD'] && player.x < 1230) player.x += player.speed;
+        if (mousePressed && Date.now() - lastShot > player.shootSpeed) {
+            const ang = Math.atan2(my - player.y, mx - player.x);
+            bullets.push({ x: player.x, y: player.y, vx: Math.cos(ang)*8, vy: Math.sin(ang)*8, b: player.bounce, d: Math.random() < player.crit ? player.dmg*2 : player.dmg });
+            lastShot = Date.now();
+        }
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if (b.x<0 || b.x>1250 || b.y<0 || b.y>800) { if(b.b > 0){ b.vx*=-1; b.vy*=-1; b.b--; } else bullets.splice(i,1); }
+            ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
+        });
+        particles.forEach((p, i) => {
+            if(p.type === 'area') {
+                ctx.save(); ctx.globalAlpha = p.life * 0.4; ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(player.x, player.y, p.radius, 0, 7); ctx.fill(); ctx.restore();
+                enemies.forEach((e, ei) => {
+                    if (Math.hypot(e.x - player.x, e.y - player.y) < p.radius) {
+                        e.hp -= 0.84; if (e.hp <= 0) { addXP(0, "AURA ÖLDÜRMESİ", e.boss); enemies.splice(ei, 1); updateEnemyCountUI(); }
+                    }
+                });
+                p.life -= (1 / (60 * 7.5)); if (p.life <= 0) particles.splice(i, 1);
+            }
+        });
+        enemies.forEach((e, i) => {
+            const ang = Math.atan2(player.y - e.y, player.x - e.x);
+            e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
+            ctx.fillStyle = e.color; ctx.fillRect(e.x-e.size/2, e.y-e.size/2, e.size, e.size);
+            ctx.fillStyle = "red"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-10, e.size, 5);
+            ctx.fillStyle = "#00ff00"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-10, (e.hp/e.maxHp)*e.size, 5);
+            bullets.forEach((bul, bi) => {
+                if (Math.hypot(bul.x - e.x, bul.y - e.y) < e.size) {
+                    e.hp -= bul.d; bullets.splice(bi, 1);
+                    if (e.hp <= 0) { addXP(0, e.boss ? "BOSS":"ZOMBİ", e.boss); enemies.splice(i,1); updateEnemyCountUI(); }
+                }
+            });
+            if (Math.hypot(player.x-e.x, player.y-e.y) < e.size) {
+                if(player.armor > 0) player.armor -= 0.5; else player.hp -= 0.5;
+                if(player.hp <= 0) { gameState.isRunning = false; document.getElementById('death-screen').style.display = 'flex'; }
+            }
+        });
+        const cdMs = areaDamageCooldown - (Date.now() - lastAreaDamageTime);
+        if (cdMs > 0) {
+            const r = canvas.getBoundingClientRect();
+            const display = document.getElementById('cooldown-display');
+            display.style.display = 'block';
+            display.style.left = (player.x + r.left - 50) + "px";
+            display.style.top = (player.y + r.top - 50) + "px";
+            document.getElementById('cooldown-timer').innerText = Math.ceil(cdMs/1000);
+        } else document.getElementById('cooldown-display').style.display = 'none';
+        ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(player.x, player.y, 20, 0, 7); ctx.fill();
+        drawBar(player.x-30, player.y+25, 60, 6, player.hp/player.maxHp, "red");
+        drawBar(player.x-30, player.y+33, 60, 6, player.armor/100, "#00f2ff", "white");
+        if(enemies.length === 0 && gameState.isRunning) nextWave();
+        animationId = requestAnimationFrame(loop);
+    }
+    function drawBar(x, y, w, h, p, f, b="#333") { ctx.fillStyle = b; ctx.fillRect(x, y, w, h); ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h); }
 </script>
-
 </body>
 </html>
-```
