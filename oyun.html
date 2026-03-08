@@ -1,13 +1,14 @@
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GameArea Fight</title>
+<title>GameArea Fight - Mission Briefing</title>
 
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
 :root{
 --neon-blue:#00f2ff;
@@ -20,7 +21,7 @@ body{
 margin:0;
 background:#050505;
 color:white;
-font-family:Orbitron;
+font-family:'Orbitron',sans-serif;
 display:flex;
 justify-content:center;
 align-items:center;
@@ -28,35 +29,30 @@ height:100vh;
 overflow:hidden;
 }
 
+#game-container{
+position:relative;
+width:1250px;
+height:800px;
+}
+
 /* ARENA */
 
 #arena-wrapper{
+position:relative;
 width:1250px;
 height:800px;
 border:10px solid;
-border-image:linear-gradient(90deg,var(--neon-red) 50%,#fff 50%) 1;
+border-image:linear-gradient(90deg,var(--neon-red) 50%,#ffffff 50%) 1;
 background:#111;
-position:relative;
+overflow:hidden;
+z-index:5;
 }
 
 canvas{
 display:block;
 }
 
-/* UI LAYER */
-
-#ui-layer{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-height:100%;
-pointer-events:none;
-}
-
-#ui-layer *{
-pointer-events:auto;
-}
+/* UI */
 
 .ui-panel{
 position:absolute;
@@ -64,12 +60,29 @@ background:rgba(0,0,0,0.85);
 border:2px solid var(--neon-blue);
 padding:10px;
 border-radius:8px;
+z-index:50;
+}
+
+#stats-panel{
+bottom:10px;
+left:10px;
+width:160px;
+color:var(--neon-blue);
+}
+
+#xp-log{
+right:10px;
+top:50%;
+transform:translateY(-50%);
+width:140px;
+border-color:var(--neon-purple);
 }
 
 #gold-display{
 top:10px;
 left:10px;
 color:var(--neon-gold);
+font-weight:bold;
 border-color:var(--neon-gold);
 }
 
@@ -77,36 +90,24 @@ border-color:var(--neon-gold);
 top:10px;
 right:10px;
 color:var(--neon-red);
+font-weight:bold;
 display:none;
-}
-
-#stats-panel{
-bottom:10px;
-left:10px;
-width:170px;
-}
-
-#xp-log{
-right:10px;
-top:50%;
-transform:translateY(-50%);
-width:150px;
-border-color:var(--neon-purple);
 }
 
 #market-btn{
 position:absolute;
 bottom:10px;
 right:10px;
+padding:10px 25px;
 background:var(--neon-gold);
 color:black;
 font-weight:bold;
-padding:10px 25px;
+border-radius:5px;
 cursor:pointer;
-border-radius:6px;
+z-index:60;
 }
 
-/* OVERLAY */
+/* OVERLAYS */
 
 .overlay{
 position:absolute;
@@ -132,7 +133,7 @@ border:2px solid #444;
 padding:15px;
 text-align:center;
 cursor:pointer;
-opacity:.4;
+opacity:0.4;
 pointer-events:none;
 }
 
@@ -150,6 +151,7 @@ text-align:center;
 font-size:5rem;
 color:var(--neon-red);
 display:none;
+z-index:500;
 font-weight:bold;
 }
 
@@ -158,14 +160,14 @@ font-weight:bold;
 
 <body>
 
-<div id="arena-wrapper">
+<div id="game-container">
 
+<div id="arena-wrapper">
 <canvas id="gameCanvas" width="1250" height="800"></canvas>
 <div id="announcement">DALGA 1</div>
-
 </div>
 
-<div id="ui-layer">
+<!-- UI PANELLERİ (ARENA DIŞI) -->
 
 <div id="gold-display" class="ui-panel">
 ALTIN: <span id="gold-count">0</span>
@@ -176,22 +178,18 @@ KALAN: <span id="enemy-count">0</span>
 </div>
 
 <div id="stats-panel" class="ui-panel">
-<h5>STATS</h5>
-<div>• Henüz eklenti yok</div>
+<h5 style="margin:0 0 5px 0">STATS</h5>
+<div style="font-size:11px">• Henüz eklenti yok</div>
 </div>
 
 <div id="xp-log" class="ui-panel">
-<h5>ÖLDÜRME</h5>
-<div id="log-list"></div>
+<h5 style="margin:0 0 5px 0">ÖLDÜRME</h5>
+<div id="log-list" style="font-size:10px"></div>
 </div>
 
-<div id="market-btn" onclick="toggleMarket()">
-MARKET
-</div>
+<div id="market-btn" onclick="toggleMarket()">MARKET</div>
 
-</div>
-
-<!-- LOGIN -->
+<!-- AUTH -->
 
 <div id="auth-screen" class="overlay">
 
@@ -205,7 +203,7 @@ MARKET
 
 </div>
 
-<!-- LEVEL SELECT -->
+<!-- LEVEL -->
 
 <div id="start-screen" class="overlay" style="display:none">
 
@@ -217,87 +215,67 @@ MARKET
 
 </div>
 
+</div>
+
 <script>
 
-const canvas=document.getElementById("gameCanvas")
-const ctx=canvas.getContext("2d")
+const canvas=document.getElementById('gameCanvas')
+const ctx=canvas.getContext('2d')
 
 let currentUser=null
 let isGuest=false
 
-const ENEMY_COLORS=[
-"#ff003c","#00ff00","#bc13fe","#ffcc00","#ffffff","#00f2ff"
-]
-
-const CHARS=[
-{id:'std',hp:100,armor:0,color:'#00f2ff'}
-]
+const ENEMY_COLORS=['#ff003c','#00ff00','#bc13fe','#ffcc00','#ffffff','#00f2ff']
 
 let gameState={
 isRunning:false,
 wave:0,
 gold:0,
-unlockedLevel:1,
-currentMission:1
+unlockedLevel:1
 }
 
 let enemies=[]
 let keys={}
 let player={}
-let particles=[]
 
 window.onkeydown=e=>keys[e.code]=true
 window.onkeyup=e=>keys[e.code]=false
 
-/* AUTH */
-
 function handleAuth(type){
 
-if(type==="guest"){
-
+if(type==='guest'){
 isGuest=true
 currentUser="Misafir"
-
 }else{
 
 const u=username.value
 const p=password.value
 
-if(!u||!p)return alert("Alanları doldur")
+if(!u||!p)return alert("Alanları doldur!")
 
-let users=JSON.parse(localStorage.getItem("gf_users")||"{}")
+let users=JSON.parse(localStorage.getItem('gf_users')||'{}')
 
 if(users[u]){
-
-if(users[u].password!==p)
-return alert("Hatalı şifre")
-
+if(users[u].password!==p)return alert("Hatalı şifre!")
 gameState=users[u].state
-
 }else{
-
 users[u]={password:p,state:gameState}
-
-localStorage.setItem("gf_users",JSON.stringify(users))
-
+localStorage.setItem('gf_users',JSON.stringify(users))
 }
 
 currentUser=u
-
 }
 
 showStart()
 
 }
 
-/* START MENU */
-
 function showStart(){
 
-auth-screen.style.display="none"
-start-screen.style.display="flex"
+document.getElementById('auth-screen').style.display='none'
+document.getElementById('start-screen').style.display='flex'
 
-welcome-msg.innerText="Hoşgeldin "+currentUser
+document.getElementById('welcome-msg').innerText="Hoş geldin "+currentUser
 
 renderLevels()
 
@@ -305,13 +283,13 @@ renderLevels()
 
 function renderLevels(){
 
-const grid=document.getElementById("level-grid")
+const grid=document.getElementById('level-grid')
 
-grid.innerHTML=""
+grid.innerHTML=''
 
 for(let i=1;i<=20;i++){
 
-const div=document.createElement("div")
+const div=document.createElement('div')
 
 div.className="level-card "+(i<=gameState.unlockedLevel?"unlocked":"")
 
@@ -326,28 +304,20 @@ grid.appendChild(div)
 
 }
 
-/* START GAME */
-
-function startGame(level){
-
-gameState.currentMission=level
-
-const char=CHARS[0]
+function startGame(){
 
 player={
 x:625,
 y:400,
-hp:char.hp,
-maxHp:char.hp,
-armor:char.armor,
+hp:100,
 speed:4,
-color:char.color
+color:'#00f2ff'
 }
 
 enemies=[]
 
-start-screen.style.display="none"
-enemy-counter.style.display="block"
+document.getElementById('start-screen').style.display='none'
+document.getElementById('enemy-counter').style.display='block'
 
 gameState.wave=0
 gameState.isRunning=true
@@ -356,18 +326,15 @@ nextWave()
 
 }
 
-/* WAVE */
-
 function nextWave(){
 
 if(gameState.wave>=5){
 
-alert("Bölüm tamamlandı")
+alert("Bölüm tamamlandı!")
 
 location.reload()
 
 return
-
 }
 
 gameState.wave++
@@ -378,7 +345,6 @@ announcement.style.display="block"
 setTimeout(()=>{
 
 announcement.style.display="none"
-
 spawnEnemies()
 
 },2000)
@@ -394,8 +360,8 @@ for(let i=0;i<count;i++){
 enemies.push({
 
 x:Math.random()*1200,
-y:Math.random()<.5?-50:850,
-hp:100+gameState.wave*20,
+y:Math.random()<0.5?-50:850,
+hp:100,
 size:25,
 speed:1.5+Math.random(),
 color:ENEMY_COLORS[Math.floor(Math.random()*ENEMY_COLORS.length)]
@@ -404,17 +370,9 @@ color:ENEMY_COLORS[Math.floor(Math.random()*ENEMY_COLORS.length)]
 
 }
 
-updateEnemyUI()
+document.getElementById('enemy-count').innerText=enemies.length
 
 }
-
-function updateEnemyUI(){
-
-enemy-count.innerText=enemies.length
-
-}
-
-/* LOOP */
 
 function loop(){
 
@@ -422,10 +380,10 @@ ctx.clearRect(0,0,1250,800)
 
 if(gameState.isRunning){
 
-if(keys["KeyW"])player.y-=player.speed
-if(keys["KeyS"])player.y+=player.speed
-if(keys["KeyA"])player.x-=player.speed
-if(keys["KeyD"])player.x+=player.speed
+if(keys['KeyW'])player.y-=player.speed
+if(keys['KeyS'])player.y+=player.speed
+if(keys['KeyA'])player.x-=player.speed
+if(keys['KeyD'])player.x+=player.speed
 
 enemies.forEach((e,i)=>{
 
@@ -437,24 +395,14 @@ e.y+=Math.sin(ang)*e.speed
 ctx.fillStyle=e.color
 ctx.fillRect(e.x-12,e.y-12,25,25)
 
-if(Math.hypot(player.x-e.x,player.y-e.y)<30){
-
-if(player.armor>0)
-player.armor-=0.2
-else
-player.hp-=0.5
-
-}
-
 if(e.hp<=0){
 
 enemies.splice(i,1)
 
 gameState.gold+=5
+document.getElementById('gold-count').innerText=gameState.gold
 
-gold-count.innerText=gameState.gold
-
-updateEnemyUI()
+document.getElementById('enemy-count').innerText=enemies.length
 
 if(enemies.length===0)
 nextWave()
@@ -465,10 +413,7 @@ nextWave()
 
 }
 
-/* PLAYER */
-
 ctx.fillStyle=player.color
-
 ctx.beginPath()
 ctx.arc(player.x,player.y,20,0,Math.PI*2)
 ctx.fill()
@@ -480,12 +425,11 @@ requestAnimationFrame(loop)
 requestAnimationFrame(loop)
 
 function toggleMarket(){
-
-alert("Market şu an kapalı")
-
+alert("Market şu an kapalı!")
 }
 
 </script>
 
 </body>
 </html>
+```
