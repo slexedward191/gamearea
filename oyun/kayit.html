@@ -731,6 +731,9 @@
                 lang: currentLang
             }));
 
+            // Bölüm seçim menüsünü otomatik aç
+            sessionStorage.setItem('openChapterMenu', 'true');
+
             window.location.href = 'oyun.html';
         }
 
@@ -801,6 +804,9 @@
                 lang: currentLang
             }));
 
+            // Bölüm seçim menüsünü otomatik aç
+            sessionStorage.setItem('openChapterMenu', 'true');
+
             setTimeout(() => {
                 window.location.href = 'oyun.html';
             }, 1500);
@@ -813,6 +819,9 @@
                 isGuest: true,
                 lang: currentLang
             }));
+
+            // Bölüm seçim menüsünü otomatik aç (misafir için de)
+            sessionStorage.setItem('openChapterMenu', 'true');
 
             window.location.href = 'oyun.html';
         }
