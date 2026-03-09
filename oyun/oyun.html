@@ -217,12 +217,12 @@
     <button id="logout-btn" onclick="logout()">Çıkış</button>
 
     <!-- Banner -->
-    <div id="banner-container">
+    <!-- <div id="banner-container">
         <div class="game-banner">
             <h1 class="game-title">GAMEAREA FIGHT</h1>
             <div class="subtitle">Full Edition</div>
         </div>
-    </div>
+    </div> -->
 
     <div id="arena-wrapper">
         <div id="bg-title" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:65px; opacity:0.12; white-space:nowrap; pointer-events:none; z-index:1">⚔️ GameArea Fight ⚔️</div>
@@ -697,7 +697,7 @@
     // Sayfa yüklendiğinde dili uygula
     document.addEventListener('DOMContentLoaded', function() {
         changeLanguage(currentLang);
-        document.getElementById('banner-container').style.display = 'flex';
+        // document.getElementById('banner-container').style.display = 'flex';
         document.getElementById('logout-btn').style.display = 'block';
 
         // Otomatik bölüm seçim menüsünü aç (kayit.html'den geldiğinde)
@@ -998,7 +998,7 @@
 
     function showStart() {
         document.getElementById('auth-screen').style.display = 'none';
-        document.getElementById('banner-container').style.display = 'none';
+        // document.getElementById('banner-container').style.display = 'none';
         document.getElementById('start-screen').style.display = 'flex';
         document.getElementById('welcome-msg').innerText = `${t('welcomeBack')}, ${currentUser}!`;
         updateGoldUI();
