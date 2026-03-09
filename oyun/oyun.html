@@ -1,1 +1,1365 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameArea Fight - Full Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap');
 
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-red: #ff003c;
+            --neon-purple: #bc13fe;
+            --neon-gold: #ffcc00;
+        }
+
+        body { margin: 0; background-color: #050505; color: white; font-family: 'Orbitron', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+
+        #game-container { position: relative; width: 1250px; height: 800px; display: flex; justify-content: center; align-items: center; }
+
+        #arena-wrapper { position: relative; width: 1250px; height: 800px; border: 10px solid; border-image: linear-gradient(90deg, var(--neon-red) 50%, #ffffff 50%) 1; box-shadow: 0 0 40px rgba(255, 0, 0, 0.4); background: #111; overflow: hidden; z-index: 5; }
+
+        canvas { display: block; }
+
+        .ui-panel { position: absolute; background: rgba(0, 0, 0, 0.85); border: 2px solid var(--neon-blue); padding: 10px; border-radius: 8px; box-shadow: 0 0 10px var(--neon-blue); z-index: 10; }
+
+        #stats-panel { bottom: -50px; left: -160px; width: 140px; color: var(--neon-blue); }
+        #xp-log { right: -160px; top: 50%; transform: translateY(-50%); width: 140px; max-height: 300px; overflow: hidden; border-color: var(--neon-purple); }
+        #gold-display { top: -50px; left: 0; color: var(--neon-gold); font-weight: bold; border-color: var(--neon-gold); }
+        #enemy-counter { top: -50px; right: 0; color: var(--neon-red); font-weight: bold; border-color: var(--neon-red); display: none; }
+
+        #market-btn { position: absolute; bottom: -50px; right: 0; padding: 10px 25px; background: var(--neon-gold); color: black; font-weight: bold; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px var(--neon-gold); z-index: 20; }
+
+        .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+
+        .auth-box { background: #111; padding: 30px; border: 3px solid var(--neon-purple); text-align: center; width: 350px; }
+        .auth-box input { width: 80%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid var(--neon-blue); color: white; font-family: 'Orbitron'; }
+
+        .market-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .char-card { background: #222; border: 2px solid var(--neon-blue); padding: 15px; text-align: center; width: 180px; }
+        .char-card.selected { border-color: var(--neon-gold); box-shadow: 0 0 15px var(--neon-gold); }
+
+        .btn-gif { width: 180px; height: 60px; background: url('https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4eXF4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxxSTvT5Sqk/giphy.gif'); background-size: cover; border: 3px solid #fff; color: white; font-family: 'Press Start 2P', cursive; font-size: 10px; cursor: pointer; display: flex; justify-content: center; align-items: center; margin: 10px; }
+
+        #announcement { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 5rem; color: var(--neon-red); font-weight: bold; display: none; z-index: 500; }
+
+        #xp-bar-container { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 80%; height: 16px; background: #fff; border: 2px solid #000; z-index: 5; }
+        #xp-bar-fill { height: 100%; width: 0%; background: var(--neon-purple); transition: 0.3s; }
+        #cooldown-display { position: absolute; color: rgba(255, 0, 0, 0.7); font-family: 'Orbitron'; font-size: 12px; display: none; z-index: 100; pointer-events: none; }
+
+        /* Bölüm Seçim Menüsü Stilleri */
+        .chapter-card {
+            background: linear-gradient(145deg, #1a1a2e, #0f0f1a);
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .chapter-card:hover:not(.locked) {
+            transform: translateY(-5px);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+        .chapter-card.unlocked {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+        .chapter-card.current {
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 25px var(--neon-purple);
+            animation: pulse-purple 2s infinite;
+        }
+        .chapter-card.completed {
+            border-color: var(--neon-gold);
+            box-shadow: 0 0 15px var(--neon-gold);
+        }
+        .chapter-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #444;
+        }
+        .chapter-card.locked::after {
+            content: "🔒";
+            font-size: 24px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes pulse-purple {
+            0%, 100% { box-shadow: 0 0 20px var(--neon-purple); }
+            50% { box-shadow: 0 0 40px var(--neon-purple); }
+        }
+        .chapter-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 8px;
+        }
+        .chapter-waves {
+            font-size: 14px;
+            color: var(--neon-blue);
+            margin-bottom: 5px;
+        }
+        .chapter-difficulty {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .diff-novice { background: #22c55e; color: black; }
+        .diff-rookie { background: #84cc16; color: black; }
+        .diff-easy { background: #eab308; color: black; }
+        .diff-normal { background: #f97316; color: black; }
+        .diff-hard { background: #ef4444; color: white; }
+        .diff-expert { background: #dc2626; color: white; }
+        .diff-master { background: #7c3aed; color: white; }
+        .diff-legendary { background: linear-gradient(90deg, #f59e0b, #ef4444); color: white; }
+        .diff-godlike { background: linear-gradient(90deg, #ec4899, #8b5cf6); color: white; }
+        .chapter-status {
+            font-size: 10px;
+            margin-top: 8px;
+            padding: 3px 6px;
+            border-radius: 5px;
+        }
+        .status-current { background: var(--neon-purple); color: white; }
+        .status-completed { background: var(--neon-gold); color: black; }
+
+        /* Banner ve Bayrak Stilleri */
+        #banner-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-banner {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 15px 40px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        inset 0 0 20px rgba(0, 242, 255, 0.05);
+        }
+
+        .game-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 10px var(--neon-blue),
+                         0 0 20px var(--neon-blue),
+                         0 0 40px var(--neon-purple);
+            letter-spacing: 4px;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, var(--neon-blue), var(--neon-purple), var(--neon-red), #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+        }
+
+        .lang-flags {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .flag-btn {
+            width: 36px;
+            height: 24px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+            object-fit: cover;
+        }
+
+        .flag-btn:hover {
+            transform: scale(1.2);
+            opacity: 1;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .flag-btn.active {
+            opacity: 1;
+            border-color: var(--neon-gold);
+            box-shadow: 0 0 15px var(--neon-gold);
+        }
+
+        /* Auth screen adjustments */
+        #auth-screen {
+            z-index: 1500;
+        }
+
+        #auth-screen .auth-box {
+            margin-top: 180px;
+        }
+
+        /* Logout button */
+        #logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 0, 60, 0.3);
+            border: 2px solid var(--neon-red);
+            color: var(--neon-red);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            z-index: 3000;
+            transition: all 0.3s ease;
+        }
+
+        #logout-btn:hover {
+            background: var(--neon-red);
+            color: white;
+            box-shadow: 0 0 20px var(--neon-red);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Çıkış Butonu -->
+    <button id="logout-btn" onclick="logout()">Çıkış</button>
+
+    <!-- Banner ve Bayraklar -->
+    <div id="banner-container">
+        <div class="game-banner">
+            <h1 class="game-title">GAMEAREA FIGHT</h1>
+            <div class="subtitle">Full Edition</div>
+        </div>
+        <div class="lang-flags">
+            <img src="https://flagcdn.com/w80/tr.png" alt="Türkçe" class="flag-btn" data-lang="tr" onclick="changeLanguage('tr')">
+            <img src="https://flagcdn.com/w80/fr.png" alt="Français" class="flag-btn" data-lang="fr" onclick="changeLanguage('fr')">
+            <img src="https://flagcdn.com/w80/de.png" alt="Deutsch" class="flag-btn" data-lang="de" onclick="changeLanguage('de')">
+            <img src="https://flagcdn.com/w80/gb.png" alt="English" class="flag-btn" data-lang="en" onclick="changeLanguage('en')">
+            <img src="https://flagcdn.com/w80/ru.png" alt="Русский" class="flag-btn" data-lang="ru" onclick="changeLanguage('ru')">
+        </div>
+    </div>
+
+    <div id="arena-wrapper">
+        <div id="bg-title" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:65px; opacity:0.12; white-space:nowrap; pointer-events:none; z-index:1">⚔️ GameArea Fight ⚔️</div>
+        <canvas id="gameCanvas" width="1250" height="800"></canvas>
+        <div id="announcement">DALGA 1</div>
+        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+        <div id="cooldown-display">BEKLEME SÜRESİ: <span id="cooldown-timer">15</span>s</div>
+    </div>
+
+    <div id="gold-display" class="ui-panel">ALTIN: <span id="gold-count">0</span></div>
+    <div id="enemy-counter" class="ui-panel">BÖLÜM: <span id="chapter-display">1</span> | DALGA: <span id="wave-display">0</span><br>KALAN: <span id="enemy-count">0</span></div>
+    <div id="stats-panel" class="ui-panel"><h5 style="margin:0">STATS</h5><div id="stat-list" style="font-size: 10px;">• Henüz yok...</div></div>
+    <div id="xp-log" class="ui-panel"><h5 style="margin:0">ÖLDÜRME</h5><div id="log-list" style="font-size: 10px;"></div></div>
+    <div id="market-btn" onclick="toggleMarket()">MARKET</div>
+
+    <div id="auth-screen" class="overlay">
+        <div class="auth-box">
+            <h2 style="color:var(--neon-blue)" data-i18n="authTitle">GİRİŞ YAP / KAYDOL</h2>
+            <input type="text" id="username" data-i18n-placeholder="usernamePlaceholder" placeholder="Kullanıcı Adı">
+            <input type="password" id="password" data-i18n-placeholder="passwordPlaceholder" placeholder="Şifre">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button onclick="handleAuth('login')" style="background:var(--neon-purple); border:none; color:white; padding:10px; cursor:pointer;" data-i18n="loginBtn">GİRİŞ</button>
+                    <button onclick="handleAuth('guest')" style="background:gray; border:none; color:white; padding:10px; cursor:pointer;" data-i18n="guestBtn">MİSAFİR</button>
+                </div>
+                <button onclick="showGuide()" style="background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); padding:10px; cursor:pointer; width:100%;" data-i18n="guideBtn">NASIL OYNANIR?</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="guide-screen" class="overlay" style="display:none; z-index: 2000;">
+        <div class="auth-box" style="width: 600px; text-align: left; border-color: var(--neon-gold);">
+            <h2 style="color:var(--neon-gold); text-align:center;" data-i18n="guideTitle">OYUN KILAVUZU</h2>
+            <div style="font-size: 14px; line-height: 1.8; max-height: 400px; overflow-y: auto; padding: 10px; color: #ccc;">
+                <p data-i18n="guide1"><strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.</p>
+                <p data-i18n="guide2"><strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!</p>
+                <p data-i18n="guide3"><strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir "Alan Hasarı" (Aura) yaratıp etrafındaki düşmanları erit.</p>
+                <p data-i18n="guide4"><strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.</p>
+                <p data-i18n="guide5"><strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.</p>
+            </div>
+            <button onclick="document.getElementById('guide-screen').style.display='none'" style="width:100%; padding:15px; background:var(--neon-red); border:none; color:white; cursor:pointer; margin-top:15px; font-weight:bold;" data-i18n="understoodBtn">ANLADIM, BAŞLA!</button>
+        </div>
+    </div>
+
+    <div id="start-screen" class="overlay" style="display:none">
+        <h1 style="color: var(--neon-red); font-size: 55px;">GameArea Fight</h1>
+        <p id="welcome-msg" style="color:var(--neon-blue)"></p>
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="btn-gif" onclick="showChapterMenu()" data-i18n="chapterSelect">BÖLÜM SEÇ</div>
+            <div class="btn-gif" onclick="startGame()" style="background:none; border:2px solid white; color:white;" data-i18n="quickStart">HIZLI BAŞLAT</div>
+        </div>
+    </div>
+
+    <div id="market-screen" class="overlay" style="display:none">
+        <h2 style="color:var(--neon-gold)" data-i18n="marketTitle">KARAKTER MARKETİ</h2>
+        <div class="market-grid" id="market-grid"></div>
+        <div class="btn-gif" onclick="toggleMarket()" style="margin-top:20px; background:none; border:2px solid white; height:40px;" data-i18n="closeBtn">KAPAT</div>
+    </div>
+
+    <div id="death-screen" class="overlay" style="display:none">
+        <h1 style="color: white; font-size: 50px;" data-i18n="deathTitle">ÖLDÜN!</h1>
+        <div class="btn-gif" onclick="resetGame()" data-i18n="restartBtn">RESTART</div>
+    </div>
+
+    <div id="chapter-complete-screen" class="overlay" style="display:none">
+        <h1 style="color: var(--neon-gold); font-size: 45px;" data-i18n="chapterCompleteTitle">BÖLÜM TAMAMLANDI!</h1>
+        <p id="chapter-complete-msg" style="color: var(--neon-blue); font-size: 24px;"></p>
+        <div class="btn-gif" onclick="nextChapter()" data-i18n="nextChapterBtn">SONRAKİ BÖLÜM</div>
+    </div>
+
+    <div id="game-complete-screen" class="overlay" style="display:none">
+        <h1 style="color: var(--neon-gold); font-size: 50px;" data-i18n="gameCompleteTitle">OYUN BİTTİ!</h1>
+        <p style="color: var(--neon-blue); font-size: 20px; text-align: center; max-width: 600px; margin: 20px auto;" data-i18n="gameCompleteMsg">
+            Tebrikler! Tüm bölümleri başarıyla tamamladın!<br><br>
+            <span style="color: var(--neon-red); font-size: 24px;" data-i18n="waitForUpdate">Tekrar Oynamak İçin Güncellemeyi Bekle!</span>
+        </p>
+        <div class="btn-gif" onclick="returnToMenu()" data-i18n="backToMenuBtn">MENÜYE DÖN</div>
+    </div>
+
+    <!-- BÖLÜM SEÇİM MENÜSÜ -->
+    <div id="chapter-menu-screen" class="overlay" style="display:none">
+        <h1 style="color: var(--neon-purple); font-size: 40px; text-shadow: 0 0 20px var(--neon-purple); margin-bottom: 10px;" data-i18n="chapterSelectTitle">BÖLÜM SEÇ</h1>
+        <p id="chapter-menu-status" style="color: var(--neon-blue); font-size: 16px; margin-bottom: 20px;"></p>
+        <div id="chapter-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; max-height: 500px; overflow-y: auto; padding: 20px;"></div>
+        <div style="display: flex; gap: 15px; margin-top: 20px;">
+            <div class="btn-gif" onclick="backToStart()" data-i18n="backBtn">GERİ</div>
+            <div class="btn-gif" onclick="toggleMarketFromMenu()" style="background:none; border:2px solid var(--neon-gold); color: var(--neon-gold);">MARKET</div>
+        </div>
+    </div>
+
+    <div id="upgrade-screen" class="overlay" style="display:none">
+        <h2 data-i18n="upgradeTitle">EKLENTİ SEÇ</h2>
+        <div id="upgrade-options" style="display:flex; flex-wrap: wrap; justify-content: center;"></div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Oturum kontrolü
+    const session = JSON.parse(localStorage.getItem('game_session') || 'null');
+    if (!session) {
+        window.location.href = 'kayit.html';
+    }
+
+    let currentLang = session.lang || 'tr';
+
+    // Dil Sistemleri
+    const translations = {
+        tr: {
+            authTitle: "GİRİŞ YAP / KAYDOL",
+            usernamePlaceholder: "Kullanıcı Adı",
+            passwordPlaceholder: "Şifre",
+            loginBtn: "GİRİŞ",
+            guestBtn: "MİSAFİR",
+            guideBtn: "NASIL OYNANIR?",
+            guideTitle: "OYUN KILAVUZU",
+            guide1: "<strong>🕹️ Temel Kontroller:</strong><br> WASD tuşlarını kullanarak hareket edebilir, faren ile nişan alıp sol tuşla ateş edebilirsin.",
+            guide2: "<strong>🌊 Dalga Sistemi:</strong><br> Her yeni dalga daha zorlu düşmanlar getirir. 5, 10, 15... gibi 5'in katı olan dalgalar <strong>BOSS</strong> dalgalarıdır!",
+            guide3: "<strong>⚡ Özel Yetenek:</strong><br> Farenin SAĞ tuşu ile 15 saniyede bir \"Alan Hasarı\" (Aura) yaratıp etrafındaki düşmanları erit.",
+            guide4: "<strong>💰 Market & Gelişim:</strong><br> Düşmanları öldürerek altın biriktir. Marketten daha yüksek HP ve Armor değerine sahip karakterler satın al.",
+            guide5: "<strong>📈 Seviye Atla:</strong><br> XP barı dolduğunda seviye atlarsın. Bu aşamada sana rastgele sunulan 5 farklı eklentiden (Hasar, Hız, Kritik vb.) birini seçerek karakterini uzmanlaştır.",
+            understoodBtn: "ANLADIM, BAŞLA!",
+            chapterSelect: "BÖLÜM SEÇ",
+            quickStart: "HIZLI BAŞLAT",
+            marketTitle: "KARAKTER MARKETİ",
+            closeBtn: "KAPAT",
+            deathTitle: "ÖLDÜN!",
+            restartBtn: "RESTART",
+            chapterCompleteTitle: "BÖLÜM TAMAMLANDI!",
+            nextChapterBtn: "SONRAKİ BÖLÜM",
+            gameCompleteTitle: "OYUN BİTTİ!",
+            gameCompleteMsg: "Tebrikler! Tüm bölümleri başarıyla tamamladın!<br><br>",
+            waitForUpdate: "Tekrar Oynamak İçin Güncellemeyi Bekle!",
+            backToMenuBtn: "MENÜYE DÖN",
+            chapterSelectTitle: "BÖLÜM SEÇ",
+            backBtn: "GERİ",
+            upgradeTitle: "EKLENTİ SEÇ",
+            goldLabel: "ALTIN",
+            statsLabel: "STATS",
+            killsLabel: "ÖLDÜRME",
+            waveLabel: "DALGA",
+            chapterLabel: "BÖLÜM",
+            remainingLabel: "KALAN",
+            cooldownText: "BEKLEME SÜRESİ:",
+            chapterStart: "BÖLÜM",
+            waveStart: "DALGA",
+            bossWave: "BOSS GELİYOR!",
+            marketCharName: "HP:",
+            marketArmor: "Armor:",
+            marketOwned: "KULLANILIYOR",
+            marketUse: "KULLAN",
+            marketBuy: "SATIN AL (",
+            guestWarning: "MİSAFİR - İlerlemen kaydedilmez. Kayıt olarek ilerlemeni koruyabilirsin!",
+            welcomeBack: "Hoş geldin",
+            continueGame: "DEVAM",
+            completed: "TAMAMLANDI",
+            lockedChapter: "Bu bölüm henüz kilitli. Önceki bölümleri tamamla!",
+            guestChapterLimit: "Misafir olarak yalnızca 1. Bölümü oynayabilirsin! İlerlemeni kaydetmek için kayıt ol!",
+            notEnoughGold: "Altın yetersiz!",
+            fillInfo: "Bilgileri doldur!",
+            wrongPassword: "Şifre yanlış!",
+            chapterPrefix: "BÖLÜM",
+            waveCount: "Dalga",
+            difficultyNovice: "Novice",
+            difficultyRookie: "Rookie",
+            difficultyEasy: "Easy",
+            difficultyNormal: "Normal",
+            difficultyHard: "Hard",
+            difficultyExpert: "Expert",
+            difficultyMaster: "Master",
+            difficultyLegendary: "Legendary",
+            difficultyGodlike: "GODLIKE",
+            logout: "Çıkış"
+        },
+        fr: {
+            authTitle: "CONNEXION / INSCRIPTION",
+            usernamePlaceholder: "Nom d'utilisateur",
+            passwordPlaceholder: "Mot de passe",
+            loginBtn: "CONNEXION",
+            guestBtn: "INVITÉ",
+            guideBtn: "COMMENT JOUER?",
+            guideTitle: "GUIDE DU JEU",
+            guide1: "<strong>🕹️ Contrôles de base:</strong><br> Utilisez les touches WASD pour vous déplacer, visez avec la souris et tirez avec le clic gauche.",
+            guide2: "<strong>🌊 Système de vagues:</strong><br> Chaque nouvelle vague apporte des ennemis plus difficiles. Les vagues multiples de 5 (5, 10, 15...) sont des vagues <strong>BOSS</strong>!",
+            guide3: "<strong>⚡ Capacité spéciale:</strong><br> Cliquez avec le bouton droit de la souris pour créer une \"Dégât de zone\" (Aura) toutes les 15 secondes et faire fondre les ennemis autour.",
+            guide4: "<strong>💰 Marché & Progression:</strong><br> Gagnez de l'or en tuant des ennemis. Achetez des personnages avec plus de HP et d'Armure sur le marché.",
+            guide5: "<strong>📈 Monter en niveau:</strong><br> Quand la barre XP est pleine, vous montez de niveau. À ce stade, vous choisisissez parmi 5 avantages aléatoires (Dommage, Vitesse, Critique, etc.) pour spécialiser votre personnage.",
+            understoodBtn: "COMPRIS, COMMENCER!",
+            chapterSelect: "CHOIX DU CHAPITRE",
+            quickStart: "DÉMARRAGE RAPIDE",
+            marketTitle: "MARCHÉ DES PERSONNAGES",
+            closeBtn: "FERMER",
+            deathTitle: "TU ES MORT!",
+            restartBtn: "REDÉMARRER",
+            chapterCompleteTitle: "CHAPITRE TERMINÉ!",
+            nextChapterBtn: "CHAPITRE SUIVANT",
+            gameCompleteTitle: "FIN DU JEU!",
+            gameCompleteMsg: "Félicitations! Vous avez terminé tous les chapitres!<br><br>",
+            waitForUpdate: "Attendez la mise à jour pour rejouer!",
+            backToMenuBtn: "RETOUR AU MENU",
+            chapterSelectTitle: "CHOIX DU CHAPITRE",
+            backBtn: "RETOUR",
+            upgradeTitle: "CHOIX AMÉLIORATION",
+            goldLabel: "OR",
+            statsLabel: "STATS",
+            killsLabel: "TUER",
+            waveLabel: "VAGUE",
+            chapterLabel: "CHAPITRE",
+            remainingLabel: "RESTANT",
+            cooldownText: "TEMPS D'ATTENTE:",
+            chapterStart: "CHAPITRE",
+            waveStart: "VAGUE",
+            bossWave: "BOSS ARRIVE!",
+            marketCharName: "HP:",
+            marketArmor: "Armure:",
+            marketOwned: "UTILISÉ",
+            marketUse: "UTILISER",
+            marketBuy: "ACHETER (",
+            guestWarning: "INVITÉ - Votre progression n'est pas enregistrée. Inscrivez-vous pour conserver votre progression!",
+            welcomeBack: "Bienvenue",
+            continueGame: "CONTINUER",
+            completed: "TERMINÉ",
+            lockedChapter: "Ce chapitre est verrouillé. Terminez les chapitres précédents!",
+            guestChapterLimit: "En tant qu'invité, vous ne pouvez jouer que le chapitre 1! Inscrivez-vous pour enregistrer votre progression!",
+            notEnoughGold: "Or insuffisant!",
+            fillInfo: "Remplissez les informations!",
+            wrongPassword: "Mot de passe incorrect!",
+            chapterPrefix: "CHAPITRE",
+            waveCount: "Vague",
+            difficultyNovice: "Novice",
+            difficultyRookie: "Débutant",
+            difficultyEasy: "Facile",
+            difficultyNormal: "Normal",
+            difficultyHard: "Difficile",
+            difficultyExpert: "Expert",
+            difficultyMaster: "Maître",
+            difficultyLegendary: "Légendaire",
+            difficultyGodlike: "DIVIN",
+            logout: "Quitter"
+        },
+        de: {
+            authTitle: "ANMELDUNG / REGISTRIERUNG",
+            usernamePlaceholder: "Benutzername",
+            passwordPlaceholder: "Passwort",
+            loginBtn: "ANMELDUNG",
+            guestBtn: "GAST",
+            guideBtn: "WIE MAN SPIELT?",
+            guideTitle: "SPIELANLEITUNG",
+            guide1: "<strong>🕹️ Grundlegende Steuerung:</strong><br> Verwenden Sie WASD-Tasten für Bewegung, zielen Sie mit der Maus und schießen Sie mit der linken Maustaste.",
+            guide2: "<strong>🌊 Wellensystem:</strong><br> Jede neue Welle bringt schwierigere Feinde. Wellen, die ein Vielfaches von 5 sind (5, 10, 15...), sind <strong>BOSS</strong>-Wellen!",
+            guide3: "<strong>⚡ Spezialfähigkeit:</strong><br> Klicken Sie mit der rechten Maustaste, um alle 15 Sekunden einen \"Flächenschaden\" (Aura) zu erzeugen und umliegende Feinde zu schmelzen.",
+            guide4: "<strong>💰 Markt & Entwicklung:</strong><br> Sammeln Sie Gold, indem Sie Feinde töten. Kaufen Sie Charaktere mit höheren HP- und Rüstungswerten auf dem Markt.",
+            guide5: "<strong>📈 Level aufsteigen:</strong><br> Wenn die XP-Leiste voll ist, steigen Sie auf. In dieser Phase wählen Sie aus 5 zufälligen Verbesserungen (Schaden, Geschwindigkeit, Krit, usw.), um Ihren Charakter zu spezialisieren.",
+            understoodBtn: "VERSTANDEN, STARTEN!",
+            chapterSelect: "KAPITEL WAHL",
+            quickStart: "SCHNELLSTART",
+            marketTitle: "CHARAKTER-MARKT",
+            closeBtn: "SCHLIEßEN",
+            deathTitle: "DU BIST GESTORBEN!",
+            restartBtn: "NEUSTART",
+            chapterCompleteTitle: "KAPITEL ABGESCHLOSSEN!",
+            nextChapterBtn: "NÄCHSTES KAPITEL",
+            gameCompleteTitle: "SPIEL BEENDET!",
+            gameCompleteMsg: "Glückwunsch! Sie haben alle Kapitel erfolgreich abgeschlossen!<br><br>",
+            waitForUpdate: "Warten Sie auf ein Update, um erneut zu spielen!",
+            backToMenuBtn: "ZURÜCK ZUM MENÜ",
+            chapterSelectTitle: "KAPITEL WAHL",
+            backBtn: "ZURÜCK",
+            upgradeTitle: "VERBESSERUNG WÄHLEN",
+            goldLabel: "GOLD",
+            statsLabel: "STATS",
+            killsLabel: "TÖTUNGEN",
+            waveLabel: "WELLE",
+            chapterLabel: "KAPITEL",
+            remainingLabel: "VERBLEIBEND",
+            cooldownText: "WARTEZEIT:",
+            chapterStart: "KAPITEL",
+            waveStart: "WELLE",
+            bossWave: "BOSS KOMMT!",
+            marketCharName: "HP:",
+            marketArmor: "Rüstung:",
+            marketOwned: "VERWENDET",
+            marketUse: "VERWENDEN",
+            marketBuy: "KAUFEN (",
+            guestWarning: "GAST - Ihr Fortschritt wird nicht gespeichert. Registrieren Sie sich, um Ihren Fortschritt zu behalten!",
+            welcomeBack: "Willkommen",
+            continueGame: "FORTSETZEN",
+            completed: "ABGESCHLOSSEN",
+            lockedChapter: "Dieses Kapitel ist noch gesperrt. Schließen Sie die vorherigen Kapitel ab!",
+            guestChapterLimit: "Als Gast können Sie nur Kapitel 1 spielen! Registrieren Sie sich, um Ihren Fortschritt zu speichern!",
+            notEnoughGold: "Nicht genug Gold!",
+            fillInfo: "Füllen Sie die Informationen aus!",
+            wrongPassword: "Falsches Passwort!",
+            chapterPrefix: "KAPITEL",
+            waveCount: "Welle",
+            difficultyNovice: "Anfänger",
+            difficultyRookie: "Neuling",
+            difficultyEasy: "Leicht",
+            difficultyNormal: "Normal",
+            difficultyHard: "Schwer",
+            difficultyExpert: "Experte",
+            difficultyMaster: "Meister",
+            difficultyLegendary: "Legendär",
+            difficultyGodlike: "GÖTTLICH",
+            logout: "Ausloggen"
+        },
+        en: {
+            authTitle: "LOGIN / REGISTER",
+            usernamePlaceholder: "Username",
+            passwordPlaceholder: "Password",
+            loginBtn: "LOGIN",
+            guestBtn: "GUEST",
+            guideBtn: "HOW TO PLAY?",
+            guideTitle: "GAME GUIDE",
+            guide1: "<strong>🕹️ Basic Controls:</strong><br> Use WASD keys to move, aim with your mouse and shoot with left click.",
+            guide2: "<strong>🌊 Wave System:</strong><br> Each new wave brings tougher enemies. Waves that are multiples of 5 (5, 10, 15...) are <strong>BOSS</strong> waves!",
+            guide3: "<strong>⚡ Special Ability:</strong><br> Right click to create an \"Area Damage\" (Aura) every 15 seconds and melt surrounding enemies.",
+            guide4: "<strong>💰 Market & Progression:</strong><br> Earn gold by killing enemies. Buy characters with higher HP and Armor from the market.",
+            guide5: "<strong>📈 Level Up:</strong><br> When the XP bar is full, you level up. At this stage, choose from 5 random upgrades (Damage, Speed, Crit, etc.) to specialize your character.",
+            understoodBtn: "UNDERSTOOD, START!",
+            chapterSelect: "SELECT CHAPTER",
+            quickStart: "QUICK START",
+            marketTitle: "CHARACTER MARKET",
+            closeBtn: "CLOSE",
+            deathTitle: "YOU DIED!",
+            restartBtn: "RESTART",
+            chapterCompleteTitle: "CHAPTER COMPLETED!",
+            nextChapterBtn: "NEXT CHAPTER",
+            gameCompleteTitle: "GAME OVER!",
+            gameCompleteMsg: "Congratulations! You have successfully completed all chapters!<br><br>",
+            waitForUpdate: "Wait for an update to play again!",
+            backToMenuBtn: "BACK TO MENU",
+            chapterSelectTitle: "SELECT CHAPTER",
+            backBtn: "BACK",
+            upgradeTitle: "SELECT UPGRADE",
+            goldLabel: "GOLD",
+            statsLabel: "STATS",
+            killsLabel: "KILLS",
+            waveLabel: "WAVE",
+            chapterLabel: "CHAPTER",
+            remainingLabel: "REMAINING",
+            cooldownText: "COOLDOWN:",
+            chapterStart: "CHAPTER",
+            waveStart: "WAVE",
+            bossWave: "BOSS INCOMING!",
+            marketCharName: "HP:",
+            marketArmor: "Armor:",
+            marketOwned: "IN USE",
+            marketUse: "USE",
+            marketBuy: "BUY (",
+            guestWarning: "GUEST - Your progress is not saved. Register to keep your progress!",
+            welcomeBack: "Welcome back",
+            continueGame: "CONTINUE",
+            completed: "COMPLETED",
+            lockedChapter: "This chapter is still locked. Complete previous chapters first!",
+            guestChapterLimit: "As a guest, you can only play Chapter 1! Register to save your progress!",
+            notEnoughGold: "Not enough gold!",
+            fillInfo: "Fill in the information!",
+            wrongPassword: "Wrong password!",
+            chapterPrefix: "CHAPTER",
+            waveCount: "Wave",
+            difficultyNovice: "Novice",
+            difficultyRookie: "Rookie",
+            difficultyEasy: "Easy",
+            difficultyNormal: "Normal",
+            difficultyHard: "Hard",
+            difficultyExpert: "Expert",
+            difficultyMaster: "Master",
+            difficultyLegendary: "Legendary",
+            difficultyGodlike: "GODLIKE",
+            logout: "Logout"
+        },
+        ru: {
+            authTitle: "ВХОД / РЕГИСТРАЦИЯ",
+            usernamePlaceholder: "Имя пользователя",
+            passwordPlaceholder: "Пароль",
+            loginBtn: "ВОЙТИ",
+            guestBtn: "ГОСТЬ",
+            guideBtn: "КАК ИГРАТЬ?",
+            guideTitle: "РУКОВОДСТВО ПО ИГРЕ",
+            guide1: "<strong>🕹️ Основные элементы управления:</strong><br> Используйте клавиши WASD для перемещения, целитесь мышью и стреляйте левой кнопкой.",
+            guide2: "<strong>🌊 Система волн:</strong><br> Каждая новая волна приносит более сложных врагов. Волны, кратные 5 (5, 10, 15...), являются <strong>BOSS</strong> волнами!",
+            guide3: "<strong>⚡ Способность:</strong><br> Нажмите правую кнопку мыши, чтобы создать \"Урон по площади\" (Ауру) каждые 15 секунд и расплавить окружающих врагов.",
+            guide4: "<strong>💰 Рынок и развитие:</strong><br> Зарабатывайте золото, убивая врагов. Покупайте персонажей с более высоким HP и броней на рынке.",
+            guide5: "<strong>📈 Повышение уровня:</strong><br> Когда XP-бар заполняется, вы повышаете уровень. На этом этапе выберите из 5 случайных улучшений (Урон, Скорость, Крит и т.д.), чтобы специализировать своего персонажа.",
+            understoodBtn: "ПОНЯЛ, НАЧАТЬ!",
+            chapterSelect: "ВЫБОР ГЛАВЫ",
+            quickStart: "БЫСТРЫЙ СТАРТ",
+            marketTitle: "РЫНОК ПЕРСОНАЖЕЙ",
+            closeBtn: "ЗАКРЫТЬ",
+            deathTitle: "ВЫ УМЕРЛИ!",
+            restartBtn: "ПЕРЕЗАПУСК",
+            chapterCompleteTitle: "ГЛАВА ЗАВЕРШЕНА!",
+            nextChapterBtn: "СЛЕДУЮЩАЯ ГЛАВА",
+            gameCompleteTitle: "ИГРА ЗАВЕРШЕНА!",
+            gameCompleteMsg: "Поздравляем! Вы успешно прошли все главы!<br><br>",
+            waitForUpdate: "Ждите обновления, чтобы играть снова!",
+            backToMenuBtn: "ВЕРНУТЬСЯ В МЕНЮ",
+            chapterSelectTitle: "ВЫБОР ГЛАВЫ",
+            backBtn: "НАЗАД",
+            upgradeTitle: "ВЫБОР УЛУЧШЕНИЯ",
+            goldLabel: "ЗОЛОТО",
+            statsLabel: "СТАТЫ",
+            killsLabel: "УБИЙСТВА",
+            waveLabel: "ВОЛНА",
+            chapterLabel: "ГЛАВА",
+            remainingLabel: "ОСТАЛОСЬ",
+            cooldownText: "ПЕРЕЗАРЯДКА:",
+            chapterStart: "ГЛАВА",
+            waveStart: "ВОЛНА",
+            bossWave: "БОСС ИДЁТ!",
+            marketCharName: "HP:",
+            marketArmor: "Броня:",
+            marketOwned: "ИСПОЛЬЗУЕТСЯ",
+            marketUse: "ИСПОЛЬЗОВАТЬ",
+            marketBuy: "КУПИТЬ (",
+            guestWarning: "ГОСТЬ - Ваш прогресс не сохраняется. Зарегистрируйтесь, чтобы сохранить прогресс!",
+            welcomeBack: "С возвращением",
+            continueGame: "ПРОДОЛЖИТЬ",
+            completed: "ЗАВЕРШЕНО",
+            lockedChapter: "Эта глава все еще заблокирована. Сначала пройдите предыдущие главы!",
+            guestChapterLimit: "Как гость, вы можете играть только Главу 1! Зарегистрируйтесь, чтобы сохранить прогресс!",
+            notEnoughGold: "Недостаточно золота!",
+            fillInfo: "Заполните информацию!",
+            wrongPassword: "Неверный пароль!",
+            chapterPrefix: "ГЛАВА",
+            waveCount: "Волна",
+            difficultyNovice: "Новичок",
+            difficultyRookie: "Любитель",
+            difficultyEasy: "Легко",
+            difficultyNormal: "Нормально",
+            difficultyHard: "Сложно",
+            difficultyExpert: "Эксперт",
+            difficultyMaster: "Мастер",
+            difficultyLegendary: "Легендарно",
+            difficultyGodlike: "БОЖЕСТВЕННО",
+            logout: "Выйти"
+        }
+    };
+
+    function changeLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('game_lang', lang);
+
+        document.querySelectorAll('.flag-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.flag-btn[data-lang="${lang}"]`).classList.add('active');
+        updateUIText();
+    }
+
+    function t(key) {
+        return translations[currentLang][key] || key;
+    }
+
+    function updateUIText() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[currentLang][key]) {
+                el.innerHTML = translations[currentLang][key];
+            }
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (translations[currentLang][key]) {
+                el.placeholder = translations[currentLang][key];
+            }
+        });
+
+        updateGameUIText();
+
+        // Logout butonunu güncelle
+        document.getElementById('logout-btn').textContent = t('logout');
+    }
+
+    function updateGameUIText() {
+        const goldLabel = document.getElementById('gold-display');
+        if (goldLabel) goldLabel.innerHTML = `${t('goldLabel')}: <span id="gold-count">${gameState.gold}</span>`;
+
+        const enemyCounter = document.getElementById('enemy-counter');
+        if (enemyCounter) {
+            enemyCounter.innerHTML = `${t('chapterLabel')}: <span id="chapter-display">${gameState.chapter || 1}</span> | ${t('waveLabel')}: <span id="wave-display">${gameState.wave || 0}</span><br>${t('remainingLabel')}: <span id="enemy-count">0</span>`;
+        }
+
+        const statsPanel = document.getElementById('stats-panel');
+        if (statsPanel) statsPanel.innerHTML = `<h5 style="margin:0">${t('statsLabel')}</h5><div id="stat-list" style="font-size: 10px;">${player.upgrades ? player.upgrades.map(u => `<div>• ${u}</div>`).join('') : '• Henüz yok...'}</div>`;
+
+        const xpLog = document.getElementById('xp-log');
+        if (xpLog) xpLog.innerHTML = `<h5 style="margin:0">${t('killsLabel')}</h5><div id="log-list" style="font-size: 10px;"></div>`;
+    }
+
+    // Çıkış fonksiyonu
+    function logout() {
+        localStorage.removeItem('game_session');
+        window.location.href = 'kayit.html';
+    }
+
+    // Oturum bilgisini güncelle
+    if (session) {
+        currentLang = session.lang || 'tr';
+    }
+
+    // Sayfa yüklendiğinde dili uygula
+    document.addEventListener('DOMContentLoaded', function() {
+        changeLanguage(currentLang);
+        document.getElementById('banner-container').style.display = 'flex';
+        document.getElementById('logout-btn').style.display = 'block';
+    });
+
+    // Sprite Drawing Functions
+    function drawPlayerSprite(ctx, x, y, size, color, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+
+        ctx.fillStyle = '#312E81';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, size * 1.2, size * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1F2937';
+        ctx.beginPath();
+        ctx.rect(size * 0.3, -size * 0.15, size * 1.5, size * 0.3);
+        ctx.fill();
+
+        ctx.fillStyle = '#374151';
+        ctx.fillRect(size * 0.6, -size * 0.08, size * 1.0, size * 0.16);
+
+        ctx.fillStyle = '#4F46E5';
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.1, size * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1F2937';
+        ctx.beginPath();
+        ctx.ellipse(size * 0.2, -size * 0.1, size * 0.4, size * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawEnemySprite(ctx, x, y, size, color) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.fillStyle = '#65A30D';
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.3, -size * 0.4, size * 0.5, size * 0.2, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.3, size * 0.4, size * 0.5, size * 0.2, 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = color || '#65A30D';
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#78350F';
+        ctx.beginPath();
+        ctx.arc(0, size * 0.2, size * 0.6, 0, Math.PI, false);
+        ctx.fill();
+
+        ctx.fillStyle = '#DC2626';
+        ctx.beginPath();
+        ctx.arc(-size * 0.25, -size * 0.2, size * 0.12, 0, Math.PI * 2);
+        ctx.arc(size * 0.25, -size * 0.2, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.arc(-size * 0.25, -size * 0.2, size * 0.06, 0, Math.PI * 2);
+        ctx.arc(size * 0.25, -size * 0.2, size * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawBossSprite(ctx, x, y, size, color) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        const pulse = Math.sin(Date.now() / 200) * 0.3 + 0.7;
+
+        ctx.fillStyle = '#111827';
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            ctx.save();
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(size * 0.8, 0);
+            ctx.lineTo(size * 1.4, 0);
+            ctx.lineTo(size * 0.9, size * 0.2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        ctx.fillStyle = '#7F1D1D';
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.9, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1F2937';
+        ctx.beginPath();
+        ctx.arc(-size * 0.3, -size * 0.3, size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(size * 0.3, -size * 0.3, size * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, size * 0.35, size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(245, 158, 11, ${pulse})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${pulse * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#FEF2F2';
+        ctx.beginPath();
+        ctx.arc(-size * 0.25, -size * 0.4, size * 0.15, 0, Math.PI * 2);
+        ctx.arc(size * 0.25, -size * 0.4, size * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#DC2626';
+        ctx.beginPath();
+        ctx.arc(-size * 0.25, -size * 0.4, size * 0.08, 0, Math.PI * 2);
+        ctx.arc(size * 0.25, -size * 0.4, size * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    let currentUser = session ? session.username : null;
+    let isGuest = session ? session.isGuest : false;
+    let animationId = null;
+
+    const CHARS = [
+        { id: 'std', name: 'Standart', hp: 100, armor: 0, price: 0, color: '#00f2ff' },
+        { id: 'mus', name: 'Kaslı', hp: 500, armor: 5, price: 500, color: '#ff003c' },
+        { id: 'str', name: 'Güçlü', hp: 650, armor: 10, price: 1000, color: '#bc13fe' },
+        { id: 'fig', name: 'Dövüşçü', hp: 750, armor: 15, price: 2000, color: '#ffcc00' },
+        { id: 'leg', name: 'Efsanevi', hp: 1000, armor: 25, price: 5000, color: '#ffffff' }
+    ];
+
+    let gameState = {
+        isRunning: false, wave: 0, xp: 0, xpRequired: 50, level: 1,
+        gold: 0, ownedChars: ['std'], selectedChar: 'std', chapter: 1
+    };
+
+    if (!isGuest && currentUser) {
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        if (users[currentUser]) {
+            gameState = users[currentUser].state;
+        }
+    }
+
+    const WAVES_PER_CHAPTER = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+    const TOTAL_CHAPTERS = 20;
+
+    function getChapterWaveCount(chapter) {
+        return WAVES_PER_CHAPTER[chapter - 1] || 100;
+    }
+
+    function getTotalWavesUpToChapter(chapter) {
+        let total = 0;
+        for (let i = 0; i < chapter - 1; i++) {
+            total += WAVES_PER_CHAPTER[i];
+        }
+        return total;
+    }
+
+    function getDifficulty(chapter) {
+        const diffKeys = ['Novice', 'Rookie', 'Easy', 'Normal', 'Hard', 'Expert', 'Master', 'Legendary', 'GODLIKE'];
+        const diffClasses = ['diff-novice', 'diff-rookie', 'diff-easy', 'diff-normal', 'diff-hard', 'diff-expert', 'diff-master', 'diff-legendary', 'diff-godlike'];
+        let idx = Math.floor((chapter - 1) / 2);
+        if (idx >= diffKeys.length) idx = diffKeys.length - 1;
+        const diffKey = diffKeys[idx];
+        return { name: t('difficulty' + diffKey.charAt(0).toUpperCase() + diffKey.slice(1)), class: diffClasses[idx] };
+    }
+
+    function showChapterMenu() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('chapter-menu-screen').style.display = 'flex';
+        renderChapterGrid();
+    }
+
+    function renderChapterGrid() {
+        const grid = document.getElementById('chapter-grid');
+        grid.innerHTML = '';
+
+        const statusEl = document.getElementById('chapter-menu-status');
+        if (isGuest) {
+            statusEl.innerHTML = t('guestWarning');
+        } else {
+            statusEl.innerHTML = `${t('welcomeBack')} <span style="color:var(--neon-gold)">${currentUser}</span> - ${t('continueGame')} ${gameState.chapter}. ${t('chapterPrefix')}!`;
+        }
+
+        const maxUnlocked = isGuest ? 1 : gameState.chapter;
+
+        for (let i = 1; i <= TOTAL_CHAPTERS; i++) {
+            const waves = WAVES_PER_CHAPTER[i - 1];
+            const difficulty = getDifficulty(i);
+            const isUnlocked = i <= maxUnlocked;
+            const isCurrent = i === maxUnlocked && !isGuest;
+            const isCompleted = !isGuest && i < maxUnlocked;
+
+            const card = document.createElement('div');
+            card.className = `chapter-card ${isUnlocked ? 'unlocked' : 'locked'} ${isCurrent ? 'current' : ''} ${isCompleted ? 'completed' : ''}`;
+            card.onclick = () => selectChapter(i, isUnlocked);
+
+            let statusHtml = '';
+            if (isCurrent) statusHtml = `<div class="chapter-status status-current">${t('continueGame')}</div>`;
+            else if (isCompleted) statusHtml = `<div class="chapter-status status-completed">${t('completed')}</div>`;
+
+            card.innerHTML = `
+                <div class="chapter-number">${t('chapterPrefix')} ${i}</div>
+                <div class="chapter-waves">🌊 ${waves} ${t('waveCount')}</div>
+                <div class="chapter-difficulty ${difficulty.class}">${difficulty.name}</div>
+                ${statusHtml}
+            `;
+
+            grid.appendChild(card);
+        }
+    }
+
+    function selectChapter(chapterNum, isUnlocked) {
+        if (!isUnlocked) {
+            if (isGuest) {
+                alert(t('guestChapterLimit'));
+            } else {
+                alert(t('lockedChapter'));
+            }
+            return;
+        }
+
+        gameState.chapter = chapterNum;
+        gameState.wave = 0;
+        gameState.xp = 0;
+        gameState.xpRequired = 50;
+        gameState.level = 1;
+
+        saveUser();
+        document.getElementById('chapter-menu-screen').style.display = 'none';
+        startGame();
+    }
+
+    function goToChapterMenu() {
+        showChapterMenu();
+    }
+
+    function toggleMarketFromMenu() {
+        toggleMarket();
+    }
+
+    function backToStart() {
+        document.getElementById('chapter-menu-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+    }
+
+    function showGuide() { document.getElementById('guide-screen').style.display = 'flex'; }
+
+    function handleAuth(type) {
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        if (type === 'guest') { isGuest = true; currentUser = "Misafir"; showStart(); return; }
+        if (!u || !p) return alert(t('fillInfo'));
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        if (users[u]) {
+            if (users[u].password !== p) return alert(t('wrongPassword'));
+            gameState = users[u].state;
+        } else {
+            users[u] = { password: p, state: gameState };
+            localStorage.setItem('gf_users', JSON.stringify(users));
+        }
+        currentUser = u; isGuest = false; saveUser(); showStart();
+    }
+
+    function saveUser() {
+        if (isGuest) return;
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        users[currentUser].state = gameState;
+        localStorage.setItem('gf_users', JSON.stringify(users));
+    }
+
+    function showStart() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('banner-container').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('welcome-msg').innerText = `${t('welcomeBack')}, ${currentUser}!`;
+        updateGoldUI();
+    }
+
+    function toggleMarket() {
+        const screen = document.getElementById('market-screen');
+        if (screen.style.display === 'none') { renderMarket(); screen.style.display = 'flex'; }
+        else screen.style.display = 'none';
+    }
+
+    function renderMarket() {
+        const grid = document.getElementById('market-grid');
+        grid.innerHTML = '';
+        CHARS.forEach(c => {
+            const isOwned = gameState.ownedChars.includes(c.id);
+            const isSelected = gameState.selectedChar === c.id;
+            const div = document.createElement('div');
+            div.className = `char-card ${isSelected ? 'selected' : ''}`;
+            div.innerHTML = `
+                <h4>${c.name}</h4>
+                <p>${t('marketCharName')} ${c.hp} | ${t('marketArmor')} +${c.armor}</p>
+                <button class="buy-btn" onclick="${isOwned ? `selectChar('${c.id}')` : `buyChar('${c.id}', ${c.price})`}">
+                    ${isSelected ? t('marketOwned') : (isOwned ? t('marketUse') : t('marketBuy') + c.price + ')')}
+                </button>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    function buyChar(id, price) {
+        if (gameState.gold >= price) {
+            gameState.gold -= price;
+            gameState.ownedChars.push(id);
+            updateGoldUI();
+            renderMarket();
+            saveUser();
+        } else alert(t('notEnoughGold'));
+    }
+
+    function selectChar(id) { gameState.selectedChar = id; renderMarket(); saveUser(); }
+    function updateGoldUI() {
+        document.getElementById('gold-count').innerText = gameState.gold;
+    }
+    function updateEnemyCountUI() {
+        document.getElementById('enemy-count').innerText = enemies.length;
+        document.getElementById('chapter-display').innerText = gameState.chapter;
+        document.getElementById('wave-display').innerText = gameState.wave;
+    }
+
+    let enemies = [];
+    let bullets = [];
+    let particles = [];
+    let keys = {};
+    let mousePressed = false;
+    let lastShot = 0;
+    let lastAreaDamageTime = 0;
+    const areaDamageCooldown = 15000;
+    let player = {};
+
+    function startGame() {
+        const charData = CHARS.find(c => c.id === gameState.selectedChar);
+        player = {
+            x: 625, y: 400, hp: charData.hp, maxHp: charData.hp, armor: charData.armor,
+            speed: 3.5, dmg: 30, shootSpeed: 300, crit: 0, bounce: 0, upgrades: [], color: charData.color,
+            angle: 0
+        };
+        enemies = []; bullets = []; particles = [];
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('chapter-menu-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'none';
+        document.getElementById('enemy-counter').style.display = 'block';
+        gameState.isRunning = true;
+        if (gameState.chapter === undefined || gameState.chapter < 1) gameState.chapter = 1;
+        gameState.wave = 0; gameState.xp = 0; gameState.xpRequired = 50; gameState.level = 1;
+        showChapterStart();
+        if(!animationId) loop();
+    }
+
+    function showChapterStart() {
+        const ann = document.getElementById('announcement');
+        ann.style.display = 'block';
+        ann.innerText = `${t('chapterStart')} ${gameState.chapter}`;
+        setTimeout(() => { ann.style.display = 'none'; nextWave(); }, 2000);
+    }
+
+    function resetGame() {
+        if (isGuest) {
+            gameState.gold = 0;
+            gameState.ownedChars = ['std'];
+            gameState.selectedChar = 'std';
+            gameState.chapter = 1;
+        }
+        document.getElementById('death-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'block';
+        document.getElementById('enemy-counter').style.display = 'none';
+        showChapterMenu();
+    }
+
+    window.onkeydown = e => keys[e.code] = true;
+    window.onkeyup = e => keys[e.code] = false;
+    canvas.onmousedown = (e) => {
+        if(e.button === 0) mousePressed = true;
+        if(e.button === 2) performAreaDamage();
+    };
+    window.onmouseup = () => mousePressed = false;
+    canvas.oncontextmenu = (e) => e.preventDefault();
+    let mx = 0, my = 0;
+    canvas.onmousemove = e => { const r = canvas.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; };
+
+    function nextWave() {
+        gameState.wave++;
+
+        const wavesInThisChapter = getChapterWaveCount(gameState.chapter);
+        if (gameState.wave > wavesInThisChapter) {
+            gameState.wave--;
+            completeChapter();
+            return;
+        }
+
+        gameState.isRunning = false;
+        const ann = document.getElementById('announcement');
+        ann.style.display = 'block';
+
+        let isBoss = gameState.wave % 5 === 0;
+        ann.innerText = isBoss ? t('bossWave') : `${t('waveStart')} ${gameState.wave} / ${wavesInThisChapter}`;
+        setTimeout(() => { ann.style.display = 'none'; gameState.isRunning = true; spawnEnemies(isBoss); }, 2000);
+    }
+
+    function completeChapter() {
+        gameState.isRunning = false;
+        if (gameState.chapter >= TOTAL_CHAPTERS) {
+            document.getElementById('game-complete-screen').style.display = 'flex';
+        } else {
+            const msg = document.getElementById('chapter-complete-msg');
+            msg.innerHTML = `${gameState.chapter}. ${t('chapterPrefix')} ${t('completed')}<br>${t('nextChapterBtn')}: ${gameState.chapter + 1}. ${t('chapterPrefix')} (${WAVES_PER_CHAPTER[gameState.chapter]} ${t('waveCount')})`;
+            document.getElementById('chapter-complete-screen').style.display = 'flex';
+        }
+    }
+
+    function nextChapter() {
+        gameState.chapter++;
+        gameState.wave = 0;
+        document.getElementById('chapter-complete-screen').style.display = 'none';
+        showChapterStart();
+    }
+
+    function returnToMenu() {
+        document.getElementById('game-complete-screen').style.display = 'none';
+        document.getElementById('market-btn').style.display = 'block';
+        document.getElementById('enemy-counter').style.display = 'none';
+        showChapterMenu();
+    }
+
+    function spawnEnemies(isBoss) {
+        const chapterMultiplier = 1 + (gameState.chapter - 1) * 0.3;
+
+        if (isBoss) {
+            const count = Math.min(5, Math.floor(gameState.wave/5));
+            const bossHp = (gameState.wave / 5) * 2000 * chapterMultiplier;
+            for(let i=0; i<count; i++) enemies.push({ x: Math.random()*1200 + 25, y: -50, hp: bossHp, maxHp: bossHp, size: 70, speed: 1.1 + (gameState.chapter * 0.05), boss: true, color: `hsl(${Math.random()*360}, 100%, 50%)` });
+        } else {
+            const enemyCount = Math.floor(gameState.wave * 3.5 * chapterMultiplier);
+            const enemyHp = Math.floor(250 * chapterMultiplier);
+            for(let i=0; i<enemyCount; i++) enemies.push({ x: Math.random()*1250, y: Math.random() < 0.5 ? -30 : 830, hp: enemyHp, maxHp: enemyHp, size: 25, speed: 1.8 + Math.random() + (gameState.chapter * 0.1), boss: false, color: `hsl(${Math.random()*360}, 70%, 50%)` });
+        }
+        updateEnemyCountUI();
+    }
+
+    function addXP(val, type, isBossDeath) {
+        const xpReward = isBossDeath ? 25 : 10;
+        gameState.xp += xpReward;
+        const goldPlus = isBossDeath ? 5 : 1;
+        gameState.gold += goldPlus;
+        updateGoldUI(); saveUser();
+        updateEnemyCountUI();
+        const log = document.createElement('div');
+        log.innerHTML = `<span style="color:var(--neon-purple)">+${xpReward} XP</span> | <span style="color:var(--neon-gold)">+${goldPlus} G</span><br>${type}`;
+        document.getElementById('log-list').prepend(log);
+        document.getElementById('xp-bar-fill').style.width = Math.min(100, (gameState.xp/gameState.xpRequired)*100) + "%";
+        if(gameState.xp >= gameState.xpRequired) {
+            gameState.xp = 0; gameState.level++; gameState.xpRequired += 50; showUpgrades();
+        }
+    }
+
+    function showUpgrades() {
+        gameState.isRunning = false;
+        const screen = document.getElementById('upgrade-screen');
+        const box = document.getElementById('upgrade-options');
+        screen.style.display = 'flex';
+        box.innerHTML = '';
+        const opts = [
+    {t: "+6 Hasar", f: () => player.dmg += 6},
+    {t: "+0.5 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 50)},
+    {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)},
+    {t: "+2 Kritik", f: () => player.crit += 0.1},
+    {t: "+1 Seken", f: () => player.bounce += 1}
+];
+        opts.forEach(o => {
+            const d = document.createElement('div');
+            d.className = 'char-card'; d.style.cursor = 'pointer';
+            d.innerText = o.t;
+            d.onclick = () => { o.f(); player.upgrades.push(o.t); updateStats(); screen.style.display='none'; gameState.isRunning=true; };
+            box.appendChild(d);
+        });
+    }
+
+    function updateStats() { document.getElementById('stat-list').innerHTML = player.upgrades.map(u => `<div>• ${u}</div>`).join(''); }
+
+    function performAreaDamage() {
+        if (!gameState.isRunning) return;
+        const now = Date.now();
+        if (now - lastAreaDamageTime < areaDamageCooldown) return;
+        lastAreaDamageTime = now;
+        particles.push({ type: 'area', radius: 150, life: 1.0, color: '#00f2ff' });
+    }
+
+    function loop() {
+        if (!gameState.isRunning) { animationId = requestAnimationFrame(loop); return; }
+        ctx.clearRect(0,0,1250,800);
+        if (keys['KeyW'] && player.y > 20) player.y -= player.speed;
+        if (keys['KeyS'] && player.y < 780) player.y += player.speed;
+        if (keys['KeyA'] && player.x > 20) player.x -= player.speed;
+        if (keys['KeyD'] && player.x < 1230) player.x += player.speed;
+        if (mousePressed && Date.now() - lastShot > player.shootSpeed) {
+            const ang = Math.atan2(my - player.y, mx - player.x);
+            bullets.push({ x: player.x, y: player.y, vx: Math.cos(ang)*8, vy: Math.sin(ang)*8, b: player.bounce, d: Math.random() < player.crit ? player.dmg*2 : player.dmg });
+            lastShot = Date.now();
+        }
+        bullets.forEach((b, i) => {
+            b.x += b.vx; b.y += b.vy;
+            if (b.x<0 || b.x>1250 || b.y<0 || b.y>800) { if(b.b > 0){ b.vx*=-1; b.vy*=-1; b.b--; } else bullets.splice(i,1); }
+            ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
+        });
+        particles.forEach((p, i) => {
+            if(p.type === 'area') {
+                ctx.save(); ctx.globalAlpha = p.life * 0.4; ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(player.x, player.y, p.radius, 0, 7); ctx.fill(); ctx.restore();
+                enemies.forEach((e, ei) => {
+                    if (Math.hypot(e.x - player.x, e.y - player.y) < p.radius) {
+                        e.hp -= 0.84; if (e.hp <= 0) { addXP(0, "AURA ÖLDÜRMESİ", e.boss); enemies.splice(ei, 1); updateEnemyCountUI(); }
+                    }
+                });
+                p.life -= (1 / (60 * 7.5)); if (p.life <= 0) particles.splice(i, 1);
+            }
+        });
+        enemies.forEach((e, i) => {
+            const ang = Math.atan2(player.y - e.y, player.x - e.x);
+            e.x += Math.cos(ang) * e.speed; e.y += Math.sin(ang) * e.speed;
+
+            if (e.boss) {
+                drawBossSprite(ctx, e.x, e.y, e.size, e.color);
+            } else {
+                drawEnemySprite(ctx, e.x, e.y, e.size, e.color);
+            }
+
+            ctx.fillStyle = "red"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-12, e.size, 5);
+            ctx.fillStyle = "#00ff00"; ctx.fillRect(e.x-e.size/2, e.y-e.size/2-12, (e.hp/e.maxHp)*e.size, 5);
+
+            bullets.forEach((bul, bi) => {
+                if (Math.hypot(bul.x - e.x, bul.y - e.y) < e.size) {
+                    e.hp -= bul.d; bullets.splice(bi, 1);
+                    if (e.hp <= 0) { addXP(0, e.boss ? "BOSS":"ZOMBİ", e.boss); enemies.splice(i,1); updateEnemyCountUI(); }
+                }
+            });
+            if (Math.hypot(player.x-e.x, player.y-e.y) < e.size) {
+                if(player.armor > 0) player.armor -= 0.5; else player.hp -= 0.5;
+                if(player.hp <= 0) { gameState.isRunning = false; document.getElementById('death-screen').style.display = 'flex'; }
+            }
+        });
+        const cdMs = areaDamageCooldown - (Date.now() - lastAreaDamageTime);
+        if (cdMs > 0) {
+            const r = canvas.getBoundingClientRect();
+            const display = document.getElementById('cooldown-display');
+            display.style.display = 'block';
+            display.style.left = (player.x + r.left - 50) + "px";
+            display.style.top = (player.y + r.top - 50) + "px";
+            document.getElementById('cooldown-timer').innerText = Math.ceil(cdMs/1000);
+        } else document.getElementById('cooldown-display').style.display = 'none';
+
+        player.angle = Math.atan2(my - player.y, mx - player.x);
+
+        drawPlayerSprite(ctx, player.x, player.y, 20, player.color, player.angle);
+
+        drawBar(player.x-30, player.y+30, 60, 6, player.hp/player.maxHp, "red");
+        drawBar(player.x-30, player.y+38, 60, 6, player.armor/100, "#00f2ff", "white");
+        if(enemies.length === 0 && gameState.isRunning) nextWave();
+        animationId = requestAnimationFrame(loop);
+    }
+    function drawBar(x, y, w, h, p, f, b="#333") { ctx.fillStyle = b; ctx.fillRect(x, y, w, h); ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h); }
+</script>
+</body>
+</html>
