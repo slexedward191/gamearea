@@ -302,6 +302,21 @@
 
     let currentLang = session.lang || 'tr';
 
+    // Sayfa yüklendiğinde bölüm durumunu kontrol et ve yükle
+    function initializeGameState() {
+        if (!isGuest && currentUser) {
+            let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+            if (users[currentUser] && users[currentUser].state) {
+                // Mevcut bölüm bilgisini al
+                const savedChapter = users[currentUser].state.chapter;
+                if (savedChapter !== undefined && savedChapter >= 1) {
+                    gameState.chapter = savedChapter;
+                    console.log('Bölüm yüklendi:', gameState.chapter);
+                }
+            }
+        }
+    }
+
     // Dil Sistemleri
     const translations = {
         tr: {
@@ -1152,11 +1167,14 @@
         currentLang = session.lang || 'tr';
     }
 
-    // Sayfa yüklendiğinde dili uygula
+    // Sayfa yüklendiğinde dili uygula ve bölüm durumunu yükle
     document.addEventListener('DOMContentLoaded', function() {
         changeLanguage(currentLang);
         // document.getElementById('banner-container').style.display = 'flex';
         document.getElementById('logout-btn').style.display = 'block';
+
+        // Sayfa yüklendiğinde bölüm durumunu localStorage'dan yükle
+        initializeGameState();
 
         // Otomatik bölüm seçim menüsünü aç (kayit.html'den geldiğinde)
         const openChapterMenu = sessionStorage.getItem('openChapterMenu');
@@ -1351,6 +1369,9 @@
     }
 
     function showChapterMenu() {
+        // Bölüm menüsünü göstermeden önce en son kaydedilmiş bölüm durumunu yükle
+        initializeGameState();
+
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('chapter-menu-screen').style.display = 'flex';
         renderChapterGrid();
@@ -1418,6 +1439,10 @@
         gameState.xp = 0;
         gameState.xpRequired = 50;
         gameState.level = 1;
+
+        // Bölüm seçildiğinde arena ve mevsim temasını güncelle
+        const arena = getArenaForChapter(gameState.chapter);
+        applyArenaTheme(arena);
 
         saveUser();
         document.getElementById('chapter-menu-screen').style.display = 'none';
@@ -1526,6 +1551,9 @@
     let player = {};
 
     function startGame() {
+        // Oyun başlamadan önce bölüm durumunu yükle
+        initializeGameState();
+
         const charData = CHARS.find(c => c.id === gameState.selectedChar);
         player = {
             x: 625, y: 400, hp: charData.hp, maxHp: charData.hp, armor: charData.armor,
@@ -1541,7 +1569,7 @@
         if (gameState.chapter === undefined || gameState.chapter < 1) gameState.chapter = 1;
         gameState.wave = 0; gameState.xp = 0; gameState.xpRequired = 50; gameState.level = 1;
 
-        // Arena temasını uygula
+        // Arena temasını uygula (mevsim dahil)
         const arena = getArenaForChapter(gameState.chapter);
         applyArenaTheme(arena);
 
@@ -1613,6 +1641,14 @@
     function nextChapter() {
         gameState.chapter++;
         gameState.wave = 0;
+
+        // Bölüm değiştiğinde arena ve mevsim temasını güncelle
+        const arena = getArenaForChapter(gameState.chapter);
+        applyArenaTheme(arena);
+
+        // Kullanıcı ilerlemesini kaydet
+        saveUser();
+
         document.getElementById('chapter-complete-screen').style.display = 'none';
         showChapterStart();
     }
