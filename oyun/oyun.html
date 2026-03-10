@@ -208,6 +208,338 @@
             color: white;
             box-shadow: 0 0 20px var(--neon-red);
         }
+
+        /* ========== ENVANTER BUTONU ========== */
+        #inventory-btn {
+            position: absolute;
+            bottom: -50px;
+            right: 140px;
+            padding: 10px 25px;
+            background: var(--neon-purple);
+            color: white;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 15px var(--neon-purple);
+            z-index: 20;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            border: none;
+        }
+        #inventory-btn:hover { box-shadow: 0 0 25px var(--neon-purple); }
+
+        /* ========== ENVANTER OVERLAY ========== */
+        #inventory-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.97);
+            display: none;
+            z-index: 2500;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+        }
+        #inventory-screen.active { display: flex; }
+        .inv-layout {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            gap: 12px;
+            padding: 14px;
+            box-sizing: border-box;
+        }
+        /* Left: equipment slots */
+        .inv-equip-panel {
+            width: 220px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .inv-equip-title {
+            font-size: 11px;
+            color: var(--neon-gold);
+            text-align: center;
+            letter-spacing: 2px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--neon-gold);
+            margin-bottom: 4px;
+        }
+        .slot-group-label {
+            font-size: 9px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 1px;
+            margin: 4px 0 2px 0;
+        }
+        .equip-slot {
+            width: 100%;
+            height: 52px;
+            background: rgba(255,255,255,0.04);
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 8px;
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            position: relative;
+        }
+        .equip-slot.drag-over {
+            border-color: var(--neon-blue);
+            background: rgba(0,242,255,0.08);
+        }
+        .equip-slot.occupied {
+            border-color: var(--neon-gold);
+            border-style: solid;
+            background: rgba(255,204,0,0.06);
+        }
+        .equip-slot-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+            width: 32px;
+            text-align: center;
+        }
+        .equip-slot-info { flex: 1; overflow: hidden; }
+        .equip-slot-name { font-size: 9px; color: var(--neon-blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .equip-slot-stat { font-size: 8px; color: var(--neon-gold); }
+        .equip-slot-label { font-size: 8px; color: rgba(255,255,255,0.3); }
+        .equip-unequip-btn {
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            background: rgba(255,0,60,0.5);
+            border: none;
+            color: white;
+            font-size: 8px;
+            cursor: pointer;
+            border-radius: 3px;
+            padding: 2px 4px;
+            display: none;
+        }
+        .equip-slot.occupied:hover .equip-unequip-btn { display: block; }
+
+        /* Middle: character doll */
+        .inv-char-panel {
+            width: 180px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .inv-char-title {
+            font-size: 11px;
+            color: var(--neon-purple);
+            letter-spacing: 2px;
+        }
+        #inv-char-canvas {
+            border: 2px solid var(--neon-purple);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+        }
+        .inv-total-armor {
+            font-size: 12px;
+            color: var(--neon-gold);
+            text-align: center;
+        }
+
+        /* Right: bag grid */
+        .inv-bag-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .inv-bag-title {
+            font-size: 11px;
+            color: var(--neon-blue);
+            letter-spacing: 2px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--neon-blue);
+        }
+        .inv-bag-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            overflow-y: auto;
+            padding: 4px;
+            max-height: 620px;
+        }
+        .inv-item-cell {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 7px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            position: relative;
+            padding: 4px;
+            transition: border-color 0.2s, transform 0.1s;
+            user-select: none;
+        }
+        .inv-item-cell:hover { border-color: var(--neon-blue); transform: scale(1.04); }
+        .inv-item-cell:active { cursor: grabbing; }
+        .inv-item-cell svg { width: 48px; height: 48px; }
+        .inv-item-cell-name { font-size: 7px; color: rgba(255,255,255,0.7); text-align: center; margin-top: 2px; line-height: 1.2; }
+        .inv-item-cell-stat { font-size: 7px; color: var(--neon-gold); }
+        .inv-item-cell.dragging { opacity: 0.4; }
+
+        /* Tooltip */
+        #inv-tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.95);
+            border: 1px solid var(--neon-gold);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 10px;
+            color: white;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            max-width: 180px;
+        }
+
+        /* Delete zone */
+        #inv-delete-zone {
+            width: 100%;
+            height: 50px;
+            background: rgba(255,0,60,0.08);
+            border: 2px dashed rgba(255,0,60,0.4);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 11px;
+            color: rgba(255,0,60,0.6);
+            transition: background 0.2s, border-color 0.2s;
+            cursor: default;
+            flex-shrink: 0;
+        }
+        #inv-delete-zone.drag-over {
+            background: rgba(255,0,60,0.25);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        /* Close button */
+        #inv-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: rgba(255,0,60,0.3);
+            border: 2px solid var(--neon-red);
+            color: var(--neon-red);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            padding: 8px 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            z-index: 10;
+        }
+        #inv-close-btn:hover { background: var(--neon-red); color: white; }
+
+        /* ========== CHEST REWARD OVERLAY ========== */
+        #chest-reward-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        #chest-reward-screen.active { display: flex; }
+        .chest-reward-title {
+            font-size: 28px;
+            color: var(--neon-gold);
+            text-shadow: 0 0 20px var(--neon-gold);
+            margin-bottom: 10px;
+            letter-spacing: 4px;
+        }
+        .chest-name-label {
+            font-size: 14px;
+            color: var(--neon-purple);
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+        #chest-anim-container {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin-bottom: 24px;
+        }
+        #chest-canvas-anim {
+            width: 160px;
+            height: 160px;
+        }
+        .chest-items-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 600px;
+            margin-bottom: 24px;
+        }
+        .chest-item-card {
+            background: rgba(255,255,255,0.06);
+            border: 2px solid var(--neon-gold);
+            border-radius: 10px;
+            padding: 10px 14px;
+            text-align: center;
+            min-width: 110px;
+            animation: itemPop 0.4s ease backwards;
+        }
+        @keyframes itemPop {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .chest-item-card svg { width: 56px; height: 56px; }
+        .chest-item-card-name { font-size: 10px; color: var(--neon-blue); margin-top: 4px; }
+        .chest-item-card-stat { font-size: 9px; color: var(--neon-gold); }
+        #chest-collect-btn {
+            padding: 14px 40px;
+            background: var(--neon-gold);
+            color: black;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--neon-gold);
+        }
+        #chest-collect-btn:hover { box-shadow: 0 0 35px var(--neon-gold); }
+
+        /* Equipped items display on player */
+        #equipped-hud {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3px;
+            z-index: 6;
+            pointer-events: none;
+        }
+        .equipped-hud-slot {
+            width: 22px;
+            height: 22px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -237,6 +569,89 @@
     <div id="stats-panel" class="ui-panel"><h5 style="margin:0">STATS</h5><div id="stat-list" style="font-size: 10px;">• Henüz yok...</div></div>
     <div id="xp-log" class="ui-panel"><h5 style="margin:0">ÖLDÜRME</h5><div id="log-list" style="font-size: 10px;"></div></div>
     <div id="market-btn" onclick="toggleMarket()">MARKET</div>
+    <button id="inventory-btn" onclick="toggleInventory()">🎒 ENVANTER</button>
+
+    <!-- Equipped HUD (oyun içi küçük gösterim) -->
+    <div id="equipped-hud"></div>
+
+    <!-- Tooltip -->
+    <div id="inv-tooltip"></div>
+
+    <!-- ENVANTER EKRANI -->
+    <div id="inventory-screen">
+        <button id="inv-close-btn" onclick="toggleInventory()">✕ KAPAT</button>
+        <div class="inv-layout">
+            <div class="inv-equip-panel">
+                <div class="inv-equip-title">⚔️ EKİPMAN</div>
+                <div class="slot-group-label">ZIRH</div>
+                <div class="equip-slot" id="slot-head" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'head')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">🪖</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-head-name">Boş</div><div class="equip-slot-stat" id="slot-head-stat"></div><div class="equip-slot-label">KAFA</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('head')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-body" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'body')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">🛡️</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-body-name">Boş</div><div class="equip-slot-stat" id="slot-body-stat"></div><div class="equip-slot-label">GÖVDE</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('body')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-legs" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'legs')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">👖</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-legs-name">Boş</div><div class="equip-slot-stat" id="slot-legs-stat"></div><div class="equip-slot-label">PANTOLON</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('legs')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-boots" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'boots')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">👢</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-boots-name">Boş</div><div class="equip-slot-stat" id="slot-boots-stat"></div><div class="equip-slot-label">AYAKKABI</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('boots')">✕</button>
+                </div>
+                <div class="slot-group-label" style="margin-top:8px;">TAKILAR</div>
+                <div class="equip-slot" id="slot-crown" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'crown')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">👑</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-crown-name">Boş</div><div class="equip-slot-stat" id="slot-crown-stat"></div><div class="equip-slot-label">TAÇ</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('crown')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-necklace" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'necklace')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">📿</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-necklace-name">Boş</div><div class="equip-slot-stat" id="slot-necklace-stat"></div><div class="equip-slot-label">KOLYE</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('necklace')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-ring" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'ring')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">💍</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-ring-name">Boş</div><div class="equip-slot-stat" id="slot-ring-stat"></div><div class="equip-slot-label">YÜZÜK</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('ring')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-earring" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'earring')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">💎</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-earring-name">Boş</div><div class="equip-slot-stat" id="slot-earring-stat"></div><div class="equip-slot-label">KÜPE</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('earring')">✕</button>
+                </div>
+                <div class="equip-slot" id="slot-bracelet" ondragover="onSlotDragOver(event)" ondrop="onSlotDrop(event,'bracelet')" ondragleave="onSlotDragLeave(event)">
+                    <div class="equip-slot-icon">⛓️</div>
+                    <div class="equip-slot-info"><div class="equip-slot-name" id="slot-bracelet-name">Boş</div><div class="equip-slot-stat" id="slot-bracelet-stat"></div><div class="equip-slot-label">KELEPÇE</div></div>
+                    <button class="equip-unequip-btn" onclick="unequipSlot('bracelet')">✕</button>
+                </div>
+            </div>
+            <div class="inv-char-panel">
+                <div class="inv-char-title">KARAKTERİN</div>
+                <canvas id="inv-char-canvas" width="160" height="240"></canvas>
+                <div class="inv-total-armor">🛡️ Toplam Zırh: <span id="inv-total-armor-val">0</span></div>
+            </div>
+            <div class="inv-bag-panel">
+                <div class="inv-bag-title">🎒 ÇANTA (<span id="inv-bag-count">0</span> eşya)</div>
+                <div class="inv-bag-grid" id="inv-bag-grid"></div>
+                <div id="inv-delete-zone" ondragover="onDeleteDragOver(event)" ondragleave="onDeleteDragLeave(event)" ondrop="onDeleteDrop(event)">🗑️ BURAYA SÜRÜKLE → SİL</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHEST REWARD EKRANI -->
+    <div id="chest-reward-screen">
+        <div class="chest-reward-title">🎉 BÖLÜM ÖDÜLÜ!</div>
+        <div class="chest-name-label" id="chest-reward-name">Wood Chest</div>
+        <div id="chest-anim-container"><canvas id="chest-canvas-anim" width="160" height="160"></canvas></div>
+        <div class="chest-items-row" id="chest-items-row"></div>
+        <button id="chest-collect-btn" onclick="collectChestReward()">✨ TOPLA</button>
+    </div>
 
     <div id="start-screen" class="overlay" style="display:none">
         <h1 style="color: var(--neon-red); font-size: 55px;">GameArea Fight</h1>
@@ -1564,6 +1979,7 @@
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('chapter-menu-screen').style.display = 'none';
         document.getElementById('market-btn').style.display = 'none';
+        document.getElementById('inventory-btn').style.display = 'block';
         document.getElementById('enemy-counter').style.display = 'block';
         gameState.isRunning = true;
         if (gameState.chapter === undefined || gameState.chapter < 1) gameState.chapter = 1;
@@ -1593,11 +2009,15 @@
         }
         document.getElementById('death-screen').style.display = 'none';
         document.getElementById('market-btn').style.display = 'block';
+        document.getElementById('inventory-btn').style.display = 'block';
         document.getElementById('enemy-counter').style.display = 'none';
         showChapterMenu();
     }
 
-    window.onkeydown = e => keys[e.code] = true;
+    window.onkeydown = e => {
+        keys[e.code] = true;
+        if (e.code === 'KeyI') toggleInventory();
+    };
     window.onkeyup = e => keys[e.code] = false;
     canvas.onmousedown = (e) => {
         if(e.button === 0) mousePressed = true;
@@ -1627,7 +2047,7 @@
         setTimeout(() => { ann.style.display = 'none'; gameState.isRunning = true; spawnEnemies(isBoss); }, 2000);
     }
 
-    function completeChapter() {
+    function _origCompleteChapterInline() {
         gameState.isRunning = false;
         if (gameState.chapter >= TOTAL_CHAPTERS) {
             document.getElementById('game-complete-screen').style.display = 'flex';
@@ -1656,6 +2076,7 @@
     function returnToMenu() {
         document.getElementById('game-complete-screen').style.display = 'none';
         document.getElementById('market-btn').style.display = 'block';
+        document.getElementById('inventory-btn').style.display = 'block';
         document.getElementById('enemy-counter').style.display = 'none';
         showChapterMenu();
     }
@@ -1700,7 +2121,7 @@
         const opts = [
     {t: "+6 Hasar", f: () => player.dmg += 6},
     {t: "+0.5 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 50)},
-    {t: "+1 Armor", f: () => player.armor = Math.min(100, player.armor + 20)},
+    {t: "+25 Max HP", f: () => { player.maxHp += 25; player.hp = Math.min(player.hp + 25, player.maxHp); }},
     {t: "+2 Kritik", f: () => player.crit += 0.1},
     {t: "+1 Seken", f: () => player.bounce += 1}
 ];
@@ -1801,11 +2222,833 @@
         drawPlayerSprite(ctx, player.x, player.y, 20, player.color, player.angle);
 
         drawBar(player.x-30, player.y+30, 60, 6, player.hp/player.maxHp, "red");
-        drawBar(player.x-30, player.y+38, 60, 6, player.armor/100, "#00f2ff", "white");
+        // Show equipped armor as a colored star/gem indicator near player
+        const equipArmorTotal = Object.values(inventory.equipped).reduce((sum, item) => item ? sum + item.armor : sum, 0);
+        if (equipArmorTotal > 0) {
+            ctx.save();
+            ctx.font = 'bold 9px Orbitron, sans-serif';
+            ctx.fillStyle = '#00f2ff';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚔️' + equipArmorTotal, player.x, player.y + 48);
+            ctx.restore();
+        }
         if(enemies.length === 0 && gameState.isRunning) nextWave();
         animationId = requestAnimationFrame(loop);
     }
     function drawBar(x, y, w, h, p, f, b="#333") { ctx.fillStyle = b; ctx.fillRect(x, y, w, h); ctx.fillStyle = f; ctx.fillRect(x, y, w*p, h); }
+
+    // =============================================
+    // ========== SOUND SYSTEM =====================
+    // =============================================
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, type, duration, vol=0.3) {
+        try {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type = type; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            g.gain.setValueAtTime(vol, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            o.start(); o.stop(audioCtx.currentTime + duration);
+        } catch(e) {}
+    }
+
+    function playSound(name) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        switch(name) {
+            case 'inventory_open':
+                playTone(440, 'sine', 0.15, 0.2);
+                setTimeout(() => playTone(660, 'sine', 0.15, 0.2), 80);
+                break;
+            case 'inventory_close':
+                playTone(660, 'sine', 0.12, 0.15);
+                setTimeout(() => playTone(440, 'sine', 0.12, 0.15), 70);
+                break;
+            case 'equip':
+                playTone(523, 'square', 0.08, 0.25);
+                setTimeout(() => playTone(784, 'square', 0.08, 0.2), 60);
+                setTimeout(() => playTone(1047, 'sine', 0.12, 0.25), 120);
+                break;
+            case 'unequip':
+                playTone(600, 'sawtooth', 0.08, 0.1);
+                setTimeout(() => playTone(400, 'sawtooth', 0.06, 0.15), 80);
+                break;
+            case 'delete_item':
+                playTone(200, 'sawtooth', 0.2, 0.15);
+                break;
+            case 'chest_open':
+                // Chest açılma sesi
+                [220,330,440,550,660,880].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.25,0.3), i*60));
+                setTimeout(() => { playTone(1100,'sine',0.4,0.5); playTone(1320,'sine',0.3,0.5); }, 400);
+                break;
+            case 'item_drop':
+                playTone(440,'sine',0.1,0.2);
+                setTimeout(() => playTone(554,'sine',0.1,0.2), 80);
+                break;
+            case 'season_spring':
+                [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.3,0.2), i*100));
+                break;
+            case 'season_summer':
+                [660,784,880].forEach((f,i) => setTimeout(() => playTone(f,'triangle',0.3,0.25), i*120));
+                break;
+            case 'season_autumn':
+                [440,392,349].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.3,0.2), i*130));
+                break;
+            case 'season_winter':
+                [880,1047,1319].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.2,0.3), i*150));
+                break;
+            case 'chapter_complete':
+                [523,659,784,1047,1319].forEach((f,i) => setTimeout(() => playTone(f,'sine',0.4,0.3), i*100));
+                break;
+        }
+    }
+
+    // Play season sound when season changes
+    let lastSeasonId = null;
+    function checkSeasonSound() {
+        if (currentSeason && currentSeason.id !== lastSeasonId) {
+            lastSeasonId = currentSeason.id;
+            playSound('season_' + currentSeason.id);
+        }
+    }
+
+    // =============================================
+    // ========== ITEM DATABASE ====================
+    // =============================================
+
+    // Item type -> equip slot mapping
+    const ITEM_SLOT_MAP = {
+        head: 'head', body: 'body', legs: 'legs', boots: 'boots',
+        crown: 'crown', necklace: 'necklace', ring: 'ring', earring: 'earring', bracelet: 'bracelet'
+    };
+
+    // SVG icons for each item type
+    function getItemSVG(item) {
+        const type = item.type;
+        const tier = item.tier || 1;
+        const colors = ['#a0a0a0','#c0c0c0','#cd7f32','#c0a020','#8866ff','#ff4444','#44aaff','#44ffaa','#ff44ff'];
+        const c = colors[Math.min(tier-1, colors.length-1)];
+        const svgMap = {
+            head: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="24" cy="26" rx="16" ry="13" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <rect x="10" y="30" width="28" height="6" rx="3" fill="${c}" stroke="#000" stroke-width="1"/>
+                <ellipse cx="24" cy="18" rx="10" ry="8" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <rect x="16" y="14" width="16" height="6" rx="2" fill="#333" opacity="0.7"/>
+                <circle cx="18" cy="22" r="2" fill="#88ddff" opacity="0.8"/>
+                <circle cx="30" cy="22" r="2" fill="#88ddff" opacity="0.8"/>
+                <line x1="8" y1="32" x2="8" y2="38" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+                <line x1="40" y1="32" x2="40" y2="38" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+            </svg>`,
+            body: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="8,14 40,14 44,44 4,44" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <polygon points="8,14 4,8 14,6 16,14" fill="${c}" stroke="#000" stroke-width="1"/>
+                <polygon points="40,14 44,8 34,6 32,14" fill="${c}" stroke="#000" stroke-width="1"/>
+                <rect x="16" y="6" width="16" height="8" rx="2" fill="${c}" stroke="#000" stroke-width="1"/>
+                <line x1="24" y1="14" x2="24" y2="40" stroke="#000" stroke-width="1.5" opacity="0.4"/>
+                <circle cx="24" cy="22" r="3" fill="#ffdd00" opacity="0.8"/>
+                <circle cx="24" cy="32" r="2.5" fill="#ffdd00" opacity="0.7"/>
+            </svg>`,
+            legs: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="4" width="32" height="16" rx="3" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <rect x="8" y="18" width="14" height="26" rx="3" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <rect x="26" y="18" width="14" height="26" rx="3" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <line x1="24" y1="4" x2="24" y2="44" stroke="#000" stroke-width="1.5" opacity="0.35"/>
+                <rect x="10" y="8" width="8" height="3" rx="1" fill="#000" opacity="0.2"/>
+                <rect x="30" y="8" width="8" height="3" rx="1" fill="#000" opacity="0.2"/>
+            </svg>`,
+            boots: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 8 Q10 24 10 36 Q10 44 20 44 L38 44 Q42 44 42 40 Q42 37 36 37 L26 37 Q24 37 24 36 L24 8 Z" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <rect x="10" y="37" width="32" height="7" rx="2" fill="#333" stroke="#000" stroke-width="1"/>
+                <ellipse cx="20" cy="20" rx="4" ry="7" fill="#000" opacity="0.15"/>
+            </svg>`,
+            crown: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="4,36 4,20 14,28 24,8 34,28 44,20 44,36" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <rect x="4" y="33" width="40" height="8" rx="2" fill="${c}" stroke="#000" stroke-width="1"/>
+                <circle cx="24" cy="8" r="4" fill="#ff4444" stroke="#000" stroke-width="1"/>
+                <circle cx="4" cy="20" r="3" fill="#4444ff" stroke="#000" stroke-width="1"/>
+                <circle cx="44" cy="20" r="3" fill="#44ff44" stroke="#000" stroke-width="1"/>
+            </svg>`,
+            necklace: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 12 Q24 36 40 12" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="24" cy="36" r="7" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <circle cx="24" cy="36" r="3.5" fill="#ffdd00" opacity="0.9"/>
+                <circle cx="8" cy="12" r="2.5" fill="${c}" stroke="#000" stroke-width="1"/>
+                <circle cx="40" cy="12" r="2.5" fill="${c}" stroke="#000" stroke-width="1"/>
+            </svg>`,
+            ring: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="28" r="14" fill="none" stroke="${c}" stroke-width="6"/>
+                <ellipse cx="24" cy="12" rx="8" ry="5" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <ellipse cx="24" cy="12" rx="4" ry="2.5" fill="#88ffff" opacity="0.9"/>
+            </svg>`,
+            earring: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="12" r="5" fill="none" stroke="${c}" stroke-width="3"/>
+                <circle cx="32" cy="12" r="5" fill="none" stroke="${c}" stroke-width="3"/>
+                <path d="M14 17 Q10 28 14 36" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+                <path d="M34 17 Q38 28 34 36" fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="14" cy="36" r="4" fill="${c}" stroke="#000" stroke-width="1"/>
+                <circle cx="34" cy="36" r="4" fill="${c}" stroke="#000" stroke-width="1"/>
+            </svg>`,
+            bracelet: `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="24" cy="24" rx="18" ry="10" fill="none" stroke="${c}" stroke-width="6"/>
+                <circle cx="24" cy="14" r="5" fill="${c}" stroke="#000" stroke-width="1.5"/>
+                <circle cx="24" cy="14" r="2.5" fill="#ff8844" opacity="0.9"/>
+                <circle cx="42" cy="24" r="3" fill="${c}" stroke="#000" stroke-width="1"/>
+                <circle cx="6" cy="24" r="3" fill="${c}" stroke="#000" stroke-width="1"/>
+            </svg>`
+        };
+        return svgMap[type] || svgMap['body'];
+    }
+
+    // Chest SVG drawings
+    function getChestSVG(chestName) {
+        const chestColors = {
+            'Wood Chest': ['#8B4513','#A0522D','#DEB887'],
+            'Iron Chest': ['#708090','#A9A9A9','#D3D3D3'],
+            'Gold Chest': ['#B8860B','#DAA520','#FFD700'],
+            'Dark Chest': ['#1C1C1C','#2F2F2F','#6600AA'],
+            'Rune Chest': ['#1a3a6a','#2255bb','#88aaff'],
+            'Mythic Chest': ['#4a0080','#8800cc','#cc44ff'],
+            'Dragon Chest': ['#8b0000','#cc2200','#ff4400'],
+            'Void Chest': ['#050510','#110022','#6600ff'],
+            'Royal Chest': ['#7a5c00','#b38a00','#ffe066'],
+            'Chaos Chest': ['#2a0a0a','#770000','#ff0000'],
+            'Storm Chest': ['#003355','#0066aa','#00ccff'],
+            'Frost Chest': ['#003344','#006688','#aaeeff'],
+            'Lava Chest': ['#330000','#882200','#ff6600'],
+            'Ancient Chest': ['#3d2b1f','#6b4c2a','#c8a96e'],
+            'Shadow Chest': ['#0d0d1a','#1a1a33','#553377'],
+            'Cursed Chest': ['#0d1f00','#224400','#55ff00'],
+            'Silver Chest': ['#444','#888','#ddd'],
+            'Ocean Chest': ['#003366','#005588','#0099cc'],
+            'Ghost Chest': ['#222233','#444466','#aabbff'],
+            'Cosmic Chest': ['#000022','#110044','#8822ff']
+        };
+        const c = chestColors[chestName] || ['#654321','#8B4513','#DEB887'];
+        return { base: c[0], mid: c[1], light: c[2] };
+    }
+
+    // =============================================
+    // ========== INVENTORY STATE ==================
+    // =============================================
+
+    let inventory = {
+        bag: [], // array of item objects
+        equipped: { head:null, body:null, legs:null, boots:null, crown:null, necklace:null, ring:null, earring:null, bracelet:null }
+    };
+
+    let draggingItem = null;
+    let draggingIndex = null;
+
+    // Item definitions per chapter range
+    const CHEST_NAMES = [
+        'Wood Chest','Iron Chest','Gold Chest','Dark Chest','Rune Chest',
+        'Mythic Chest','Dragon Chest','Void Chest','Royal Chest','Chaos Chest',
+        'Storm Chest','Frost Chest','Lava Chest','Ancient Chest','Shadow Chest',
+        'Cursed Chest','Silver Chest','Ocean Chest','Ghost Chest','Cosmic Chest'
+    ];
+
+    function buildItemPool(chapter) {
+        const pool = [];
+        function addItems(type, items) {
+            items.forEach(it => { if (Math.random() * 100 <= it.chance) pool.push({ ...it, type }); });
+        }
+
+        const getRange = (ch) => ch <= 5 ? 'low' : ch <= 10 ? 'mid' : 'high';
+        const r = getRange(chapter);
+
+        const headItems = {
+            low: [
+                {name:'Iron Helmet', armor:1, chance:100, tier:1},
+                {name:'Steel Mask', armor:2, chance:100, tier:1},
+                {name:'Bronze Cap', armor:3, chance:100, tier:1},
+                {name:'Knight Helm', armor:4, chance:80, tier:2},
+                {name:'Dark Hood', armor:5, chance:70, tier:2},
+                {name:'Dragon Mask', armor:6, chance:60, tier:3},
+                {name:'Rune Circlet', armor:7, chance:50, tier:3}
+            ],
+            mid: [
+                {name:'Void Crown', armor:12, chance:30, tier:4},
+                {name:'Royal Guard', armor:14, chance:30, tier:4},
+                {name:'Shadow Mask', armor:16, chance:20, tier:5},
+                {name:'Storm Hood', armor:18, chance:20, tier:5},
+                {name:'Frost Helm', armor:20, chance:10, tier:6},
+                {name:'Lava Mask', armor:22, chance:10, tier:6},
+                {name:'Ancient Cap', armor:24, chance:8, tier:7}
+            ],
+            high: [
+                {name:'Chaos Helm', armor:30, chance:7, tier:7},
+                {name:'Silver Crown', armor:45, chance:6, tier:8},
+                {name:'Ghost Mask', armor:60, chance:5, tier:8},
+                {name:'Bone Helmet', armor:70, chance:4, tier:9},
+                {name:'Mystic Hood', armor:85, chance:3, tier:9},
+                {name:'Cosmic Helm', armor:100, chance:1, tier:9}
+            ]
+        };
+        const bodyItems = {
+            low: [
+                {name:'Iron Plate', armor:1, chance:100, tier:1}, {name:'Steel Armor', armor:2, chance:100, tier:1},
+                {name:'Bronze Vest', armor:3, chance:100, tier:1}, {name:'Knight Plate', armor:4, chance:80, tier:2},
+                {name:'Dark Cloak', armor:5, chance:70, tier:2}, {name:'Dragon Scale', armor:6, chance:60, tier:3},
+                {name:'Rune Tunic', armor:7, chance:50, tier:3}
+            ],
+            mid: [
+                {name:'Void Armor', armor:12, chance:30, tier:4}, {name:'Royal Plate', armor:14, chance:30, tier:4},
+                {name:'Shadow Vest', armor:16, chance:20, tier:5}, {name:'Storm Garb', armor:18, chance:20, tier:5},
+                {name:'Frost Plate', armor:20, chance:10, tier:6}, {name:'Lava Shell', armor:22, chance:10, tier:6},
+                {name:'Ancient Robe', armor:24, chance:8, tier:7}
+            ],
+            high: [
+                {name:'Chaos Armor', armor:30, chance:7, tier:7}, {name:'Silver Plate', armor:45, chance:6, tier:8},
+                {name:'Ghost Tunic', armor:60, chance:5, tier:8}, {name:'Bone Chest', armor:70, chance:4, tier:9},
+                {name:'Mystic Robe', armor:85, chance:3, tier:9}, {name:'Cosmic Plate', armor:100, chance:1, tier:9}
+            ]
+        };
+        const legsItems = {
+            low: [
+                {name:'Iron Legs', armor:1, chance:100, tier:1},{name:'Steel Pants', armor:2, chance:100, tier:1},
+                {name:'Bronze Greaves', armor:3, chance:100, tier:1},{name:'Knight Legs', armor:4, chance:80, tier:2},
+                {name:'Dark Trousers', armor:5, chance:70, tier:2},{name:'Dragon Greaves', armor:6, chance:60, tier:3},
+                {name:'Rune Pants', armor:7, chance:50, tier:3}
+            ],
+            mid: [
+                {name:'Void Legs', armor:12, chance:30, tier:4},{name:'Royal Greaves', armor:14, chance:30, tier:4},
+                {name:'Shadow Legs', armor:16, chance:20, tier:5},{name:'Storm Pants', armor:18, chance:20, tier:5},
+                {name:'Frost Greaves', armor:20, chance:10, tier:6},{name:'Lava Legs', armor:22, chance:10, tier:6},
+                {name:'Ancient Kilt', armor:24, chance:8, tier:7}
+            ],
+            high: [
+                {name:'Chaos Legs', armor:30, chance:7, tier:7},{name:'Silver Greaves', armor:45, chance:6, tier:8},
+                {name:'Ghost Pants', armor:60, chance:5, tier:8},{name:'Bone Legs', armor:70, chance:4, tier:9},
+                {name:'Mystic Pants', armor:85, chance:3, tier:9},{name:'Cosmic Legs', armor:100, chance:1, tier:9}
+            ]
+        };
+        const bootsItems = {
+            low: [
+                {name:'Iron Boots', armor:1, chance:100, tier:1},{name:'Steel Boots', armor:2, chance:100, tier:1},
+                {name:'Bronze Boots', armor:3, chance:100, tier:1},{name:'Knight Boots', armor:4, chance:80, tier:2},
+                {name:'Dark Boots', armor:5, chance:70, tier:2},{name:'Dragon Boots', armor:6, chance:60, tier:3},
+                {name:'Rune Boots', armor:7, chance:50, tier:3}
+            ],
+            mid: [
+                {name:'Void Boots', armor:12, chance:30, tier:4},{name:'Royal Boots', armor:14, chance:30, tier:4},
+                {name:'Shadow Boots', armor:16, chance:20, tier:5},{name:'Storm Boots', armor:18, chance:20, tier:5},
+                {name:'Frost Boots', armor:20, chance:10, tier:6},{name:'Lava Boots', armor:22, chance:10, tier:6},
+                {name:'Ancient Boots', armor:24, chance:8, tier:7}
+            ],
+            high: [
+                {name:'Chaos Boots', armor:30, chance:7, tier:7},{name:'Silver Boots', armor:45, chance:6, tier:8},
+                {name:'Ghost Boots', armor:60, chance:5, tier:8},{name:'Bone Boots', armor:70, chance:4, tier:9},
+                {name:'Mystic Boots', armor:85, chance:3, tier:9},{name:'Cosmic Boots', armor:100, chance:1, tier:9}
+            ]
+        };
+
+        addItems('head', headItems[r]);
+        addItems('body', bodyItems[r]);
+        addItems('legs', legsItems[r]);
+        addItems('boots', bootsItems[r]);
+        return pool;
+    }
+
+    function rollChestItems(chapter) {
+        const pool = buildItemPool(chapter);
+        if (pool.length === 0) {
+            // Fallback - always give at least something
+            return [{ name:'Iron Helmet', armor:1, chance:100, tier:1, type:'head' }];
+        }
+        // Pick up to 4 unique items
+        const shuffled = pool.sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, Math.min(4, shuffled.length));
+    }
+
+    let pendingChestItems = [];
+    let chestAnimFrame = null;
+    let chestAnimState = { open: false, progress: 0, particles: [] };
+
+    function showChestReward(chapter) {
+        const chestName = CHEST_NAMES[Math.min(chapter - 1, CHEST_NAMES.length - 1)];
+        const items = rollChestItems(chapter);
+        pendingChestItems = items;
+
+        document.getElementById('chest-reward-name').textContent = chestName;
+        document.getElementById('chest-items-row').innerHTML = '';
+
+        const screen = document.getElementById('chest-reward-screen');
+        screen.style.display = 'flex';
+
+        chestAnimState = { open: false, progress: 0, particles: [] };
+        playSound('chest_open');
+        animateChest(chestName, () => {
+            // After chest opens, show items one by one
+            items.forEach((item, i) => {
+                setTimeout(() => {
+                    playSound('item_drop');
+                    const card = document.createElement('div');
+                    card.className = 'chest-item-card';
+                    card.style.animationDelay = i * 0.1 + 's';
+                    card.innerHTML = getItemSVG(item) + `<div class="chest-item-card-name">${item.name}</div><div class="chest-item-card-stat">+${item.armor} Zırh</div>`;
+                    document.getElementById('chest-items-row').appendChild(card);
+                }, i * 300);
+            });
+        });
+    }
+
+    function animateChest(chestName, onOpenDone) {
+        const c = document.getElementById('chest-canvas-anim');
+        const ctx2 = c.getContext('2d');
+        const colors = getChestSVG(chestName);
+        let t = 0;
+        let opened = false;
+        let openAngle = 0;
+
+        function frame() {
+            ctx2.clearRect(0, 0, 160, 160);
+            t++;
+            if (t < 60) {
+                // Shake
+                const shake = Math.sin(t * 0.8) * (t < 40 ? 4 : 2);
+                ctx2.save(); ctx2.translate(80 + shake, 80); drawChestShape(ctx2, colors, 0); ctx2.restore();
+            } else {
+                // Open
+                if (openAngle < Math.PI * 0.7) openAngle += 0.05;
+                if (!opened && openAngle >= Math.PI * 0.65) {
+                    opened = true;
+                    // particles
+                    for (let i = 0; i < 20; i++) {
+                        chestAnimState.particles.push({ x: 80, y: 60, vx: (Math.random()-0.5)*6, vy: -(Math.random()*5+2), life: 1, color: `hsl(${Math.random()*60+30},100%,60%)` });
+                    }
+                    if (onOpenDone) { onOpenDone(); onOpenDone = null; }
+                }
+                ctx2.save(); ctx2.translate(80, 80); drawChestShape(ctx2, colors, openAngle); ctx2.restore();
+                // Particles
+                chestAnimState.particles.forEach((p, i) => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.025;
+                    if (p.life > 0) {
+                        ctx2.globalAlpha = p.life;
+                        ctx2.fillStyle = p.color;
+                        ctx2.beginPath();
+                        ctx2.arc(p.x, p.y, 4, 0, Math.PI*2);
+                        ctx2.fill();
+                        ctx2.globalAlpha = 1;
+                    }
+                });
+            }
+            if (t < 200) chestAnimFrame = requestAnimationFrame(frame);
+        }
+        if (chestAnimFrame) cancelAnimationFrame(chestAnimFrame);
+        frame();
+    }
+
+    function drawChestShape(ctx2, colors, openAngle) {
+        // Body
+        ctx2.fillStyle = colors.base;
+        ctx2.strokeStyle = '#000';
+        ctx2.lineWidth = 2;
+        ctx2.beginPath();
+        ctx2.roundRect(-40, 0, 80, 50, 4);
+        ctx2.fill(); ctx2.stroke();
+
+        // Band
+        ctx2.fillStyle = colors.mid;
+        ctx2.fillRect(-40, 18, 80, 14);
+        ctx2.strokeRect(-40, 18, 80, 14);
+
+        // Lock
+        ctx2.fillStyle = colors.light;
+        ctx2.beginPath();
+        ctx2.arc(0, 25, 7, 0, Math.PI*2);
+        ctx2.fill(); ctx2.stroke();
+        ctx2.fillStyle = '#000';
+        ctx2.beginPath();
+        ctx2.arc(0, 25, 3, 0, Math.PI*2);
+        ctx2.fill();
+
+        // Lid
+        ctx2.save();
+        ctx2.translate(0, 0);
+        ctx2.rotate(-openAngle);
+        ctx2.fillStyle = colors.mid;
+        ctx2.beginPath();
+        ctx2.roundRect(-40, -30, 80, 32, [4, 4, 0, 0]);
+        ctx2.fill(); ctx2.stroke();
+
+        // Lid highlight
+        ctx2.fillStyle = colors.light;
+        ctx2.globalAlpha = 0.3;
+        ctx2.fillRect(-35, -27, 70, 10);
+        ctx2.globalAlpha = 1;
+        ctx2.restore();
+
+        // Glow if opening
+        if (openAngle > 0.3) {
+            const grd = ctx2.createRadialGradient(0, 0, 0, 0, 0, 30 + openAngle * 30);
+            grd.addColorStop(0, colors.light + 'aa');
+            grd.addColorStop(1, 'transparent');
+            ctx2.globalAlpha = Math.min(1, openAngle);
+            ctx2.fillStyle = grd;
+            ctx2.beginPath(); ctx2.arc(0, 0, 50, 0, Math.PI*2); ctx2.fill();
+            ctx2.globalAlpha = 1;
+        }
+    }
+
+    function collectChestReward() {
+        pendingChestItems.forEach(item => inventory.bag.push(item));
+        document.getElementById('chest-reward-screen').style.display = 'none';
+        if (chestAnimFrame) cancelAnimationFrame(chestAnimFrame);
+        // Show chapter complete screen
+        const origComplete = gameState._pendingChapterComplete;
+        if (origComplete) {
+            gameState._pendingChapterComplete = false;
+            _showChapterCompleteScreen();
+        }
+        renderInventoryBag();
+        saveInventory();
+    }
+
+    // =============================================
+    // ========== INVENTORY UI =====================
+    // =============================================
+
+    function toggleInventory() {
+        const screen = document.getElementById('inventory-screen');
+        const wasHidden = screen.style.display === 'none' || !screen.style.display;
+        if (wasHidden) {
+            screen.style.display = 'flex';
+            playSound('inventory_open');
+            // Pause game
+            if (gameState.isRunning) {
+                gameState._pausedByInv = true;
+                gameState.isRunning = false;
+            }
+            renderInventoryBag();
+            renderEquipSlots();
+            drawInvCharCanvas();
+        } else {
+            screen.style.display = 'none';
+            playSound('inventory_close');
+            if (gameState._pausedByInv) {
+                gameState._pausedByInv = false;
+                gameState.isRunning = true;
+            }
+        }
+    }
+
+    function renderInventoryBag() {
+        const grid = document.getElementById('inv-bag-grid');
+        grid.innerHTML = '';
+        document.getElementById('inv-bag-count').textContent = inventory.bag.length;
+
+        inventory.bag.forEach((item, idx) => {
+            const cell = document.createElement('div');
+            cell.className = 'inv-item-cell';
+            cell.draggable = true;
+            cell.innerHTML = getItemSVG(item) + `<div class="inv-item-cell-name">${item.name}</div><div class="inv-item-cell-stat">+${item.armor}</div>`;
+            cell.addEventListener('dragstart', (e) => {
+                draggingItem = item;
+                draggingIndex = idx;
+                cell.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', idx);
+            });
+            cell.addEventListener('dragend', () => cell.classList.remove('dragging'));
+            cell.addEventListener('mouseenter', (e) => showTooltip(e, item));
+            cell.addEventListener('mouseleave', hideTooltip);
+            cell.addEventListener('dblclick', () => equipItem(idx));
+            grid.appendChild(cell);
+        });
+    }
+
+    function renderEquipSlots() {
+        const slots = ['head','body','legs','boots','crown','necklace','ring','earring','bracelet'];
+        slots.forEach(slot => {
+            const el = document.getElementById('slot-' + slot);
+            const nameEl = document.getElementById('slot-' + slot + '-name');
+            const statEl = document.getElementById('slot-' + slot + '-stat');
+            const item = inventory.equipped[slot];
+            if (item) {
+                el.classList.add('occupied');
+                nameEl.textContent = item.name;
+                statEl.textContent = '+' + item.armor + ' Zırh';
+                // Replace icon with svg
+                const iconEl = el.querySelector('.equip-slot-icon');
+                iconEl.innerHTML = '';
+                const svgDiv = document.createElement('div');
+                svgDiv.style.cssText = 'width:32px;height:32px;';
+                svgDiv.innerHTML = getItemSVG(item);
+                svgDiv.querySelector('svg').style.cssText = 'width:32px;height:32px;';
+                iconEl.appendChild(svgDiv);
+            } else {
+                el.classList.remove('occupied');
+                nameEl.textContent = 'Boş';
+                statEl.textContent = '';
+                const iconEl = el.querySelector('.equip-slot-icon');
+                const icons = {head:'🪖',body:'🛡️',legs:'👖',boots:'👢',crown:'👑',necklace:'📿',ring:'💍',earring:'💎',bracelet:'⛓️'};
+                iconEl.textContent = icons[slot];
+            }
+        });
+        updateTotalArmor();
+        drawInvCharCanvas();
+        updateEquippedHUD();
+    }
+
+    function equipItem(bagIndex) {
+        const item = inventory.bag[bagIndex];
+        if (!item) return;
+        const slot = item.type;
+        if (!ITEM_SLOT_MAP[slot]) return;
+
+        // If something equipped in slot, put it back in bag
+        if (inventory.equipped[slot]) {
+            inventory.bag.push(inventory.equipped[slot]);
+        }
+
+        inventory.equipped[slot] = item;
+        inventory.bag.splice(bagIndex, 1);
+        playSound('equip');
+        renderInventoryBag();
+        renderEquipSlots();
+        saveInventory();
+    }
+
+    function unequipSlot(slot) {
+        if (!inventory.equipped[slot]) return;
+        inventory.bag.push(inventory.equipped[slot]);
+        inventory.equipped[slot] = null;
+        playSound('unequip');
+        renderInventoryBag();
+        renderEquipSlots();
+        saveInventory();
+    }
+
+    function onSlotDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+    function onSlotDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+    function onSlotDrop(e, slot) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        if (draggingItem && draggingItem.type === slot) {
+            equipItem(draggingIndex);
+        }
+        draggingItem = null; draggingIndex = null;
+    }
+
+    function onDeleteDragOver(e) {
+        e.preventDefault();
+        document.getElementById('inv-delete-zone').classList.add('drag-over');
+    }
+    function onDeleteDragLeave(e) {
+        document.getElementById('inv-delete-zone').classList.remove('drag-over');
+    }
+    function onDeleteDrop(e) {
+        e.preventDefault();
+        document.getElementById('inv-delete-zone').classList.remove('drag-over');
+        if (draggingItem !== null && draggingIndex !== null) {
+            inventory.bag.splice(draggingIndex, 1);
+            playSound('delete_item');
+            renderInventoryBag();
+            saveInventory();
+        }
+        draggingItem = null; draggingIndex = null;
+    }
+
+    function updateTotalArmor() {
+        let total = 0;
+        Object.values(inventory.equipped).forEach(item => { if (item) total += item.armor; });
+        document.getElementById('inv-total-armor-val').textContent = total;
+        // Update player armor bonus
+        if (player && player.armor !== undefined) {
+            player.equipArmor = total;
+        }
+    }
+
+    function showTooltip(e, item) {
+        const tip = document.getElementById('inv-tooltip');
+        tip.style.display = 'block';
+        tip.innerHTML = `<b style="color:var(--neon-gold)">${item.name}</b><br>Slot: ${item.type.toUpperCase()}<br>+${item.armor} Zırh<br><span style="color:#aaa;font-size:9px">Çift tıkla: Giy | Sürükle: Slot'a at</span>`;
+        tip.style.left = (e.clientX + 12) + 'px';
+        tip.style.top = (e.clientY - 10) + 'px';
+    }
+    function hideTooltip() {
+        document.getElementById('inv-tooltip').style.display = 'none';
+    }
+
+    function drawInvCharCanvas() {
+        const c = document.getElementById('inv-char-canvas');
+        const ctx2 = c.getContext('2d');
+        ctx2.clearRect(0, 0, 160, 240);
+
+        // Background
+        ctx2.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx2.fillRect(0, 0, 160, 240);
+
+        // Draw character body parts with equipped items
+        const eq = inventory.equipped;
+
+        // Shadow
+        ctx2.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx2.beginPath(); ctx2.ellipse(80, 225, 30, 8, 0, 0, Math.PI*2); ctx2.fill();
+
+        // Boots
+        ctx2.fillStyle = eq.boots ? '#8B6914' : '#444';
+        ctx2.beginPath(); ctx2.roundRect(55, 195, 22, 20, 4); ctx2.fill();
+        ctx2.beginPath(); ctx2.roundRect(83, 195, 22, 20, 4); ctx2.fill();
+
+        // Legs
+        ctx2.fillStyle = eq.legs ? '#556B2F' : '#555';
+        ctx2.beginPath(); ctx2.roundRect(56, 155, 20, 44, 3); ctx2.fill();
+        ctx2.beginPath(); ctx2.roundRect(84, 155, 20, 44, 3); ctx2.fill();
+
+        // Body
+        ctx2.fillStyle = eq.body ? '#2c5fab' : '#3a3a5c';
+        ctx2.beginPath(); ctx2.roundRect(50, 100, 60, 58, 5); ctx2.fill();
+
+        // Arms
+        ctx2.fillStyle = eq.body ? '#2c5fab' : '#3a3a5c';
+        ctx2.beginPath(); ctx2.roundRect(30, 100, 20, 40, 4); ctx2.fill();
+        ctx2.beginPath(); ctx2.roundRect(110, 100, 20, 40, 4); ctx2.fill();
+
+        // Head
+        ctx2.fillStyle = '#f0c070';
+        ctx2.beginPath(); ctx2.arc(80, 75, 24, 0, Math.PI*2); ctx2.fill();
+
+        // Eyes
+        ctx2.fillStyle = '#222';
+        ctx2.beginPath(); ctx2.arc(72, 72, 3.5, 0, Math.PI*2); ctx2.fill();
+        ctx2.beginPath(); ctx2.arc(88, 72, 3.5, 0, Math.PI*2); ctx2.fill();
+        ctx2.fillStyle = '#fff';
+        ctx2.beginPath(); ctx2.arc(73, 71, 1.5, 0, Math.PI*2); ctx2.fill();
+        ctx2.beginPath(); ctx2.arc(89, 71, 1.5, 0, Math.PI*2); ctx2.fill();
+
+        // Mouth
+        ctx2.strokeStyle = '#a0784a';
+        ctx2.lineWidth = 2;
+        ctx2.beginPath(); ctx2.arc(80, 84, 7, 0.2, Math.PI - 0.2); ctx2.stroke();
+
+        // Helmet overlay
+        if (eq.head) {
+            ctx2.globalAlpha = 0.75;
+            ctx2.drawImage(createItemIcon(eq.head, 48), 56, 47, 48, 48);
+            ctx2.globalAlpha = 1;
+        }
+        // Body overlay
+        if (eq.body) {
+            ctx2.globalAlpha = 0.65;
+            ctx2.drawImage(createItemIcon(eq.body, 60), 50, 100, 60, 58);
+            ctx2.globalAlpha = 1;
+        }
+        // Legs overlay
+        if (eq.legs) {
+            ctx2.globalAlpha = 0.65;
+            ctx2.drawImage(createItemIcon(eq.legs, 48), 52, 155, 56, 44);
+            ctx2.globalAlpha = 1;
+        }
+        // Boots overlay
+        if (eq.boots) {
+            ctx2.globalAlpha = 0.7;
+            ctx2.drawImage(createItemIcon(eq.boots, 44), 52, 192, 56, 24);
+            ctx2.globalAlpha = 1;
+        }
+
+        // Jewelry indicators
+        const jewelrySlots = [
+            {slot:'crown', x:56, y:32, emoji:'👑'},
+            {slot:'necklace', x:72, y:93, emoji:'📿'},
+            {slot:'ring', x:36, y:136, emoji:'💍'},
+            {slot:'earring', x:54, y:55, emoji:'💎'},
+            {slot:'bracelet', x:28, y:128, emoji:'⛓️'}
+        ];
+        jewelrySlots.forEach(js => {
+            if (eq[js.slot]) {
+                ctx2.font = '14px serif';
+                ctx2.fillText(js.emoji, js.x, js.y);
+            }
+        });
+    }
+
+    function createItemIcon(item, size) {
+        const offC = document.createElement('canvas');
+        offC.width = size; offC.height = size;
+        const offCtx = offC.getContext('2d');
+        const svgStr = getItemSVG(item);
+        const img = new Image();
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        img.src = url;
+        offCtx.drawImage(img, 0, 0, size, size);
+        return offC;
+    }
+
+    function updateEquippedHUD() {
+        const hud = document.getElementById('equipped-hud');
+        hud.innerHTML = '';
+        const slots = ['head','body','legs','boots','crown','ring','necklace'];
+        const icons = {head:'🪖',body:'🛡️',legs:'👖',boots:'👢',crown:'👑',ring:'💍',necklace:'📿'};
+        slots.forEach(slot => {
+            const div = document.createElement('div');
+            div.className = 'equipped-hud-slot';
+            div.title = slot;
+            if (inventory.equipped[slot]) {
+                div.style.borderColor = 'var(--neon-gold)';
+                div.style.background = 'rgba(255,204,0,0.15)';
+                div.innerHTML = icons[slot];
+            } else {
+                div.innerHTML = `<span style="opacity:0.25">${icons[slot]}</span>`;
+            }
+            hud.appendChild(div);
+        });
+    }
+
+    function saveInventory() {
+        if (isGuest) return;
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        if (users[currentUser]) {
+            users[currentUser].inventory = inventory;
+            localStorage.setItem('gf_users', JSON.stringify(users));
+        }
+    }
+
+    function loadInventory() {
+        if (isGuest) return;
+        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+        if (users[currentUser] && users[currentUser].inventory) {
+            const saved = users[currentUser].inventory;
+            inventory.bag = saved.bag || [];
+            inventory.equipped = Object.assign({ head:null, body:null, legs:null, boots:null, crown:null, necklace:null, ring:null, earring:null, bracelet:null }, saved.equipped || {});
+        }
+        updateEquippedHUD();
+    }
+
+    // Load inventory on page load
+    window.addEventListener('load', () => {
+        loadInventory();
+        updateEquippedHUD();
+    });
+
+    // =============================================
+    // ========= completeChapter override ==========
+    // =============================================
+    function completeChapter() {
+        gameState.isRunning = false;
+        playSound('chapter_complete');
+        checkSeasonSound();
+        gameState._pendingChapterComplete = true;
+        showChestReward(gameState.chapter);
+    }
+
+    function _showChapterCompleteScreen() {
+        if (gameState.chapter >= TOTAL_CHAPTERS) {
+            document.getElementById('game-complete-screen').style.display = 'flex';
+        } else {
+            const msg = document.getElementById('chapter-complete-msg');
+            msg.innerHTML = `${gameState.chapter}. ${t('chapterPrefix')} ${t('completed')}<br>${t('nextChapterBtn')}: ${gameState.chapter + 1}. ${t('chapterPrefix')} (${WAVES_PER_CHAPTER[gameState.chapter]} ${t('waveCount')})`;
+            document.getElementById('chapter-complete-screen').style.display = 'flex';
+        }
+    }
+
 </script>
 </body>
 </html>
