@@ -844,6 +844,66 @@
         <h2 data-i18n="upgradeTitle">EKLENTİ SEÇ</h2>
         <div id="upgrade-options" style="display:flex; flex-wrap: wrap; justify-content: center;"></div>
     </div>
+
+    <!-- FRESH START BONUS SCREEN -->
+    <div id="bonus-screen" style="display:none; position:fixed; inset:0; z-index:9999;
+        background:radial-gradient(ellipse at center, rgba(10,0,30,0.97) 0%, rgba(0,0,0,0.99) 100%);
+        flex-direction:column; align-items:center; justify-content:center;">
+        <!-- Particle canvas -->
+        <canvas id="bonus-particles" width="1250" height="800"
+            style="position:absolute;inset:0;pointer-events:none;"></canvas>
+        <div style="position:relative; z-index:2; text-align:center; max-width:660px; padding:0 20px;">
+            <!-- Animated title -->
+            <div id="bonus-title-text" style="
+                font-family:'Orbitron',sans-serif; font-size:15px; font-weight:900; line-height:1.8;
+                margin-bottom:32px; padding:18px 24px;
+                background:linear-gradient(135deg,rgba(188,19,254,0.15),rgba(0,242,255,0.1));
+                border:1px solid rgba(188,19,254,0.5); border-radius:12px;
+                box-shadow:0 0 30px rgba(188,19,254,0.3), inset 0 0 20px rgba(0,242,255,0.05);">
+                <span id="bonus-title-shimmer" style="
+                    background:linear-gradient(90deg,#ffcc00,#ff44cc,#00f2ff,#44ffaa,#ffcc00);
+                    background-size:400% auto; -webkit-background-clip:text;
+                    -webkit-text-fill-color:transparent; animation:bonusShimmer 2s linear infinite;">
+                    🎁 Bu Eklenti Yeniden Başladığın İçin Ek Bonus Verildi<br>Bir Daha Bu Kadar Yüksek Seçim Alamayacaksın!
+                </span>
+            </div>
+            <!-- Cards -->
+            <div style="display:flex; gap:28px; justify-content:center; flex-wrap:wrap; margin-bottom:28px;">
+                <div onclick="claimBonus('dmg')" style="
+                    cursor:pointer; padding:28px 36px; border-radius:18px; min-width:160px;
+                    background:linear-gradient(135deg,rgba(255,100,0,0.22),rgba(255,200,0,0.08));
+                    border:2px solid #ff6600; box-shadow:0 0 28px rgba(255,120,0,0.45);
+                    font-family:'Orbitron',sans-serif; transition:transform .2s, box-shadow .2s;
+                    animation:bonusCardPulse1 2.2s ease-in-out infinite;"
+                    onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 0 50px rgba(255,150,0,0.7)'"
+                    onmouseout="this.style.transform='';this.style.boxShadow='0 0 28px rgba(255,120,0,0.45)'">
+                    <div style="font-size:44px;margin-bottom:10px;">⚔️</div>
+                    <div style="color:#ffaa00;font-size:24px;font-weight:900;text-shadow:0 0 12px #ff6600;">+20 Saldırı</div>
+                    <div style="color:rgba(255,255,255,0.55);font-size:11px;margin-top:8px;">Anında Güç Artışı</div>
+                </div>
+                <div onclick="claimBonus('spd')" style="
+                    cursor:pointer; padding:28px 36px; border-radius:18px; min-width:160px;
+                    background:linear-gradient(135deg,rgba(0,200,255,0.22),rgba(0,100,255,0.08));
+                    border:2px solid #00ccff; box-shadow:0 0 28px rgba(0,200,255,0.45);
+                    font-family:'Orbitron',sans-serif; transition:transform .2s, box-shadow .2s;
+                    animation:bonusCardPulse2 2.2s ease-in-out infinite;"
+                    onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 0 50px rgba(0,200,255,0.7)'"
+                    onmouseout="this.style.transform='';this.style.boxShadow='0 0 28px rgba(0,200,255,0.45)'">
+                    <div style="font-size:44px;margin-bottom:10px;">⚡</div>
+                    <div style="color:#00eeff;font-size:24px;font-weight:900;text-shadow:0 0 12px #00aaff;">+5 Saldırı Hızı</div>
+                    <div style="color:rgba(255,255,255,0.55);font-size:11px;margin-top:8px;">Anında Hız Artışı</div>
+                </div>
+            </div>
+            <p style="color:rgba(255,255,255,0.3);font-size:11px;font-family:'Orbitron',sans-serif;letter-spacing:1px;">
+                BİRİNİ SEÇ — SADECE BİR KEZ
+            </p>
+        </div>
+    </div>
+    <style>
+    @keyframes bonusShimmer { 0%{background-position:0% center} 100%{background-position:400% center} }
+    @keyframes bonusCardPulse1 { 0%,100%{box-shadow:0 0 28px rgba(255,120,0,0.45)} 50%{box-shadow:0 0 44px rgba(255,150,0,0.65)} }
+    @keyframes bonusCardPulse2 { 0%,100%{box-shadow:0 0 28px rgba(0,200,255,0.45)} 50%{box-shadow:0 0 44px rgba(0,220,255,0.65)} }
+    </style>
 </div>
 
 <script>
@@ -1760,6 +1820,7 @@
         else if (id === 'str') { _drawSprite_Phantom(ctx, size); _drawWeapon_Dark(ctx, size); }
         else if (id === 'fig') { _drawSprite_Titan(ctx, size); _drawWeapon_Laser(ctx, size); }
         else if (id === 'leg') { _drawSprite_Celestial(ctx, size); _drawWeapon_Staff(ctx, size); }
+        else if (id === 'mys') { _drawSprite_Voidlord(ctx, size); _drawWeapon_BombLauncher(ctx, size); }
         else _drawSprite_Recon(ctx, size);
         ctx.restore();
     }
@@ -1823,6 +1884,70 @@
         }
         ctx.restore();
     }
+
+    // ── VOIDLORD in-game top-down sprite ─────────────────────────────────────
+    function _drawSprite_Voidlord(ctx, s) {
+        // Treads
+        ctx.fillStyle='#071a0f';
+        ctx.beginPath(); ctx.roundRect(-s*1.1,-s*0.95,s*2.2,s*0.4,s*0.1); ctx.fill();
+        ctx.beginPath(); ctx.roundRect(-s*1.1, s*0.55,s*2.2,s*0.4,s*0.1); ctx.fill();
+        ctx.fillStyle='#005528';
+        for(let i=0;i<4;i++){
+            ctx.fillRect(-s*0.9+i*s*0.52,-s*0.9,s*0.22,s*0.36);
+            ctx.fillRect(-s*0.9+i*s*0.52, s*0.54,s*0.22,s*0.36);
+        }
+        // Hull
+        ctx.fillStyle='#0a1f12';
+        ctx.beginPath(); ctx.ellipse(0,0,s*1.0,s*0.70,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#003d1a';
+        ctx.beginPath(); ctx.ellipse(0,0,s*0.75,s*0.50,0,0,Math.PI*2); ctx.fill();
+        // Void core glow
+        const vg=ctx.createRadialGradient(0,-s*0.1,0,0,-s*0.1,s*0.34);
+        vg.addColorStop(0,'#ccffee'); vg.addColorStop(0.4,'#00ff88'); vg.addColorStop(1,'rgba(0,150,60,0)');
+        ctx.globalAlpha=0.9+Math.sin(_spriteT*0.15)*0.1;
+        ctx.fillStyle=vg; ctx.beginPath(); ctx.arc(0,-s*0.1,s*0.34,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
+        // Glowing eyes
+        ctx.fillStyle='#00ff88';
+        ctx.beginPath(); ctx.ellipse(-s*0.2,-s*0.05,s*0.1,s*0.055,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse( s*0.2,-s*0.05,s*0.1,s*0.055,0,0,Math.PI*2); ctx.fill();
+        // Orbit dots
+        ctx.globalAlpha=0.7;
+        for(let i=0;i<4;i++){
+            const a=_spriteT*0.1+i*Math.PI*0.5;
+            ctx.fillStyle='#00ff99';
+            ctx.beginPath(); ctx.arc(Math.cos(a)*s*0.96,Math.sin(a)*s*0.65,s*0.09,0,Math.PI*2); ctx.fill();
+        }
+        ctx.globalAlpha=1;
+    }
+
+    // ── VOIDLORD Bomb Launcher weapon overlay ────────────────────────────────
+    function _drawWeapon_BombLauncher(ctx, s) {
+        ctx.save();
+        // Upper barrel
+        ctx.fillStyle='#1a2e1e';
+        ctx.fillRect(s*0.42,-s*0.32,s*1.25,s*0.21);
+        // Lower barrel
+        ctx.fillRect(s*0.42, s*0.11,s*1.25,s*0.21);
+        // Barrel tips
+        ctx.fillStyle='#00aa44';
+        ctx.fillRect(s*1.58,-s*0.38,s*0.15,s*0.34);
+        ctx.fillRect(s*1.58, s*0.05,s*0.15,s*0.34);
+        // Bombs
+        ctx.fillStyle='#0d1a0f';
+        ctx.beginPath(); ctx.arc(s*1.60,-s*0.21,s*0.20,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(s*1.60, s*0.22,s*0.20,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#00ff88';
+        ctx.beginPath(); ctx.arc(s*1.60,-s*0.21,s*0.08,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(s*1.60, s*0.22,s*0.08,0,Math.PI*2); ctx.fill();
+        // Fuse spark
+        ctx.globalAlpha=0.7+Math.sin(_spriteT*0.35)*0.3;
+        ctx.fillStyle='#ffdd00';
+        ctx.beginPath(); ctx.arc(s*1.73,-s*0.21+Math.sin(_spriteT*0.4)*s*0.06,s*0.07,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(s*1.73, s*0.22+Math.sin(_spriteT*0.4+1.2)*s*0.06,s*0.07,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
 
     // ── RECON — cyan scout tank (matches original game feel) ──────────────
     function _drawSprite_Recon(ctx, s) {
@@ -2371,32 +2496,39 @@
             draw: drawMktRecon
         },
         {
-            id:'mus', name:'CRUSHER', hp:500, armor:5, price:500, color:'#ff3333',
+            id:'mus', name:'CRUSHER', hp:500, armor:5, price:2500, color:'#ff3333',
             rarity:'uncommon', speed:2.9, dmgBonus:5,
             desc:'Alev makinasıyla donatılmış dev kırmızı savaşçı. Düşmanları yakar ve kaçırır!',
             special:'🔥 Alev Makinası — Yanan düşmanlar kaçar',
             draw: drawMktCrusher
         },
         {
-            id:'str', name:'PHANTOM', hp:650, armor:10, price:1000, color:'#bc13fe',
+            id:'str', name:'PHANTOM', hp:650, armor:10, price:10000, color:'#bc13fe',
             rarity:'rare', speed:4.4, dmgBonus:8,
             desc:'Kara büyü fırlatıcı gölge. Solucanlar yerden çıkarak düşmanları yutar!',
             special:'🌑 Kara Büyü — Solucan summoning',
             draw: drawMktPhantom
         },
         {
-            id:'fig', name:'TITAN', hp:750, armor:15, price:2000, color:'#ffcc00',
-            rarity:'epic', speed:2.6, dmgBonus:12,
+            id:'fig', name:'TITAN', hp:750, armor:15, price:50000, color:'#ffcc00',
+            rarity:'epic', speed:3.4, dmgBonus:12,
             desc:'Altın zırhlı titan. Işın silahıyla tüm düşmanları tek hamlede deler!',
             special:'⚡ Işın Silahı — Tüm düşmanları deler',
             draw: drawMktTitan
         },
         {
-            id:'leg', name:'CELESTIAL', hp:1000, armor:25, price:5000, color:'#ffffff',
+            id:'leg', name:'CELESTIAL', hp:1000, armor:25, price:100000, color:'#ffffff',
             rarity:'legendary', speed:4.0, dmgBonus:20,
             desc:'Melek asalı tanrısal varlık. Düşmanlara patlama, kendine atınca can kazanır!',
             special:'✨ Melek Asası — Hasar veya iyileştirme',
             draw: drawMktCelestial
+        },
+        {
+            id:'mys', name:'VOIDLORD', hp:1800, armor:50, price:250000, color:'#00ff99',
+            rarity:'mythic', speed:3.7, dmgBonus:40,
+            desc:'Yokluğun Efendisi. Çift bomba atar — her bomba ikinci kez parçalanarak zincirleme patlar!',
+            special:'💣 Zincirleme Bomba — Parçalara ayrılır ve tekrar patlar',
+            draw: drawMktVoidlord
         }
     ];
 
@@ -2835,6 +2967,76 @@
         ctx.restore();
     }
 
+    // ── VOIDLORD — Mythic market preview ─────────────────────────────────────
+    function drawMktVoidlord(ctx, cx, cy, sz, t) {
+        const s = sz;
+        ctx.save();
+        // Pulsing void aura
+        ctx.globalAlpha = 0.15 + Math.sin(t*0.05)*0.08;
+        const aura = ctx.createRadialGradient(cx,cy,0,cx,cy,s*3.2);
+        aura.addColorStop(0,'#00ff99'); aura.addColorStop(0.6,'rgba(0,200,80,0.3)'); aura.addColorStop(1,'transparent');
+        ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(cx,cy,s*3.2,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
+
+        // Orbit rings
+        for(let r=0;r<3;r++){
+            const ang=t*0.03+r*Math.PI*0.66;
+            ctx.save(); ctx.globalAlpha=0.2+Math.sin(t*0.07+r)*0.1;
+            ctx.strokeStyle='#00ff99'; ctx.lineWidth=1.5;
+            ctx.beginPath(); ctx.ellipse(cx,cy,s*(2.0+r*0.4),s*(0.65+r*0.15),ang,0,Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
+        // Dark body hull
+        ctx.fillStyle='#071a0f';
+        ctx.beginPath(); ctx.ellipse(cx,cy+s*0.12,s*1.35,s*0.88,0,0,Math.PI*2); ctx.fill();
+        // Armor plates — dark green
+        [[0,-0.5,0.58,0.28],[0.52,0.22,0.44,0.24],[-0.52,0.22,0.44,0.24],[0,0.52,0.72,0.21]].forEach(([ox,oy,rw,rh],pi)=>{
+            const shade=['#003d1a','#005528','#007a3a','#004d22'][pi];
+            ctx.fillStyle=shade;
+            ctx.beginPath(); ctx.ellipse(cx+ox*s,cy+oy*s,rw*s,rh*s,0,0,Math.PI*2); ctx.fill();
+        });
+        // Void core crystal
+        ctx.globalAlpha=0.88+Math.sin(t*0.14)*0.12;
+        const gem=ctx.createRadialGradient(cx,cy-s*0.22,0,cx,cy-s*0.22,s*0.5);
+        gem.addColorStop(0,'#ffffff'); gem.addColorStop(0.3,'#00ffaa'); gem.addColorStop(0.7,'#00aa55'); gem.addColorStop(1,'transparent');
+        ctx.fillStyle=gem; ctx.beginPath(); ctx.arc(cx,cy-s*0.22,s*0.5,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
+        // Double bomb launcher
+        ctx.fillStyle='#1a2e1e';
+        ctx.fillRect(cx+s*0.65,cy-s*0.38,s*1.35,s*0.25);
+        ctx.fillRect(cx+s*0.65,cy+s*0.13,s*1.35,s*0.25);
+        ctx.fillStyle='#00aa44';
+        ctx.fillRect(cx+s*1.88,cy-s*0.44,s*0.17,s*0.37);
+        ctx.fillRect(cx+s*1.88,cy+s*0.07,s*0.17,s*0.37);
+        // Bombs
+        ctx.fillStyle='#0d1a0f';
+        ctx.beginPath(); ctx.arc(cx+s*1.88,cy-s*0.25,s*0.22,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+s*1.88,cy+s*0.25,s*0.22,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#00ff88';
+        ctx.beginPath(); ctx.arc(cx+s*1.88,cy-s*0.25,s*0.1,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+s*1.88,cy+s*0.25,s*0.1,0,Math.PI*2); ctx.fill();
+        // Fuse sparks
+        ctx.globalAlpha=0.7+Math.sin(t*0.35)*0.3;
+        ctx.fillStyle='#ffdd00';
+        ctx.beginPath(); ctx.arc(cx+s*2.02,cy-s*0.25+Math.sin(t*0.4)*s*0.06,s*0.08,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx+s*2.02,cy+s*0.25+Math.sin(t*0.4+1)*s*0.06,s*0.08,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
+        // Orbit particles
+        for(let i=0;i<6;i++){
+            const oa=t*0.06+i*Math.PI/3;
+            const ox=cx+Math.cos(oa)*s*1.55, oy=cy+Math.sin(oa)*s*0.72;
+            ctx.fillStyle=i%2?'#00ff99':'#aaffcc';
+            ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(ox,oy,s*0.11,0,Math.PI*2); ctx.fill();
+        }
+        ctx.globalAlpha=1;
+        // Glowing eye slits
+        ctx.fillStyle='#00ff88';
+        ctx.beginPath(); ctx.ellipse(cx-s*0.28,cy-s*0.52,s*0.18,s*0.09,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx+s*0.28,cy-s*0.52,s*0.18,s*0.09,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+
     // =====================================================================
     // ========== MARKET LOGIC =============================================
     // =====================================================================
@@ -2923,7 +3125,7 @@
         row.innerHTML = '';
         _stopMktCharAnims();
 
-        const rarityLabel = {common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',epic:'EPIC',legendary:'LEGENDARY'};
+        const rarityLabel = {common:'COMMON',uncommon:'UNCOMMON',rare:'RARE',epic:'EPIC',legendary:'LEGENDARY',mythic:'✦ MYTHİC ✦'};
 
         CHARS.forEach(c => {
             const isOwned = gameState.ownedChars.includes(c.id);
@@ -3024,10 +3226,10 @@
             charBaseArmor: charData.armor, baseArmor: charData.armor,
             equipArmor: initEquipArmor,
             currentArmor: Math.min(400, initEquipArmor + charData.armor),
-            speed: charData.speed || 3.5, dmg: 30 + (charData.dmgBonus||0), shootSpeed: 300, crit: 0, bounce: 0, upgrades: [], color: charData.color,
+            speed: charData.speed || 3.5, dmg: 50 + (charData.dmgBonus||0), shootSpeed: 300, crit: 0, bounce: 0, upgrades: [], color: charData.color, _dmgCount: 0, _spdCount: 0,
             angle: 0, charId: charData.id
         };
-        enemies = []; bullets = []; particles = []; _activeLasers = []; _worms = []; _angelBursts = []; _laserSparks = [];
+        enemies = []; bullets = []; particles = []; _activeLasers = []; _worms = []; _angelBursts = []; _bombBursts = []; _laserSparks = [];
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('chapter-menu-screen').style.display = 'none';
         document.getElementById('market-btn').style.display = 'none';
@@ -3053,16 +3255,22 @@
             ann.style.display = 'none';
             restartBattleMusic();
             nextWave();
+            // Fresh-start bonus: sadece yeni bir session başlarken göster
+            setTimeout(_checkShowBonus, 1200);
         }, 2000);
     }
 
     function resetGame() {
+        // Mevcut bölümü koru — ölünce aynı bölüme dön
+        const savedChapter = gameState.chapter || 1;
         if (isGuest) {
             gameState.gold = 0;
             gameState.ownedChars = ['std'];
             gameState.selectedChar = 'std';
-            gameState.chapter = 1;
+            gameState.chapter = 1; // misafir her zaman 1. bölümden başlar
         }
+        // Kayıtlı kullanıcı için bölümü koru
+        if (!isGuest) gameState.chapter = savedChapter;
         document.getElementById('death-screen').style.display = 'none';
         document.getElementById('market-btn').style.display = 'block';
         document.getElementById('inventory-btn').style.display = 'block';
@@ -3155,7 +3363,7 @@
     function addXP(val, type, isBossDeath) {
         const xpReward = isBossDeath ? 25 : 10;
         gameState.xp += xpReward;
-        const goldPlus = isBossDeath ? 5 : 1;
+        const goldPlus = isBossDeath ? 50 : 5;
         gameState.gold += goldPlus;
         updateGoldUI(); saveUser();
         updateEnemyCountUI();
@@ -3168,24 +3376,112 @@
         }
     }
 
-    function showUpgrades() {
+    // ════════════════════════════════════════════════════════════
+    // FRESH START BONUS SYSTEM
+    // Gösterim koşulu:
+    //  • Sayfa ilk yüklendiğinde (F5 / yeniden giriş)
+    //  • Oyuncunun _dmgCount=0 VE _spdCount=0 (hiç upgrade birikmemiş)
+    //  • Zaten bir bölümün ortasında ilerliyorsa GÖSTERME (chapter>1 + wave>0 değil)
+    // ════════════════════════════════════════════════════════════
+    let _bonusGivenThisSession = false;  // sayfa başına bir kez
+
+    function _checkShowBonus() {
+        if (_bonusGivenThisSession) return;
+        // Sadece sıfır upgrade ile yeni başlayan durumda göster
+        const freshStats = (player._dmgCount || 0) === 0 && (player._spdCount || 0) === 0;
+        if (!freshStats) return;
+        _bonusGivenThisSession = true;   // Bu session'da bir daha gösterme
+        gameState.isRunning = false;
+        stopBattleMusic();
+        _startBonusParticles();
+        const bs = document.getElementById('bonus-screen');
+        bs.style.display = 'flex';
+    }
+
+    function claimBonus(type) {
+        const bs = document.getElementById('bonus-screen');
+        bs.style.display = 'none';
+        _stopBonusParticles();
+        if (type === 'dmg') {
+            player.dmg += 20;
+            player._dmgCount = 1; // say it as 1 stack so it doesn't show again
+            player.upgrades.push('🎁 +20 Başlangıç Hasarı');
+        } else {
+            // +5 saldırı hızı = 5 speed stack (her biri 50ms)
+            player.shootSpeed = Math.max(50, player.shootSpeed - 250);
+            player._spdCount = 5;
+            player.upgrades.push('🎁 +5 Başlangıç Hızı');
+        }
+        updateStats();
+        gameState.isRunning = true;
+        restartBattleMusic();
+    }
+
+    let _bonusParticleAF = null;
+    function _startBonusParticles() {
+        const cnv = document.getElementById('bonus-particles');
+        if (!cnv) return;
+        const pc = cnv.getContext('2d');
+        const N = 80;
+        const cols = ['#ffcc00','#ff44cc','#00f2ff','#bc13fe','#ffffff','#44ffaa'];
+        const pts = Array.from({length:N}, () => ({
+            x: Math.random()*1250, y: Math.random()*800,
+            vx: (Math.random()-0.5)*1.1, vy: -(Math.random()*1.2+0.3),
+            r: Math.random()*3+0.6,
+            life: Math.random(), maxLife: Math.random()*0.7+0.3,
+            col: cols[Math.floor(Math.random()*cols.length)]
+        }));
+        function draw() {
+            pc.clearRect(0,0,1250,800);
+            pts.forEach(p => {
+                p.x+=p.vx; p.y+=p.vy; p.life+=0.008;
+                if (p.y < -10 || p.life > p.maxLife) {
+                    p.x=Math.random()*1250; p.y=810; p.life=0;
+                    p.maxLife=Math.random()*0.7+0.3;
+                    p.col=cols[Math.floor(Math.random()*cols.length)];
+                }
+                const a = Math.sin(p.life/p.maxLife*Math.PI)*0.85;
+                pc.globalAlpha=a; pc.fillStyle=p.col;
+                pc.beginPath(); pc.arc(p.x,p.y,p.r,0,Math.PI*2); pc.fill();
+            });
+            pc.globalAlpha=1;
+            _bonusParticleAF = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+    function _stopBonusParticles() {
+        if (_bonusParticleAF) { cancelAnimationFrame(_bonusParticleAF); _bonusParticleAF=null; }
+        const cnv = document.getElementById('bonus-particles');
+        if (cnv) cnv.getContext('2d').clearRect(0,0,1250,800);
+    }
+
+        function showUpgrades() {
         gameState.isRunning = false;
         const screen = document.getElementById('upgrade-screen');
         const box = document.getElementById('upgrade-options');
         screen.style.display = 'flex';
         box.innerHTML = '';
+        // Hasar max 100 kez, Hız max 10 kez birikebilir
+        const dmgCount  = player._dmgCount  || 0;
+        const spdCount  = player._spdCount  || 0;
         const opts = [
-    {t: "+6 Hasar", f: () => player.dmg += 6},
-    {t: "+0.5 Hız", f: () => player.shootSpeed = Math.max(50, player.shootSpeed - 50)},
-    {t: "+25 Max HP", f: () => { player.maxHp += 25; player.hp = Math.min(player.hp + 25, player.maxHp); }},
-    {t: "+2 Kritik", f: () => player.crit += 0.1},
-    {t: "+1 Seken", f: () => player.bounce += 1}
-];
+            {t: "+6 Hasar"  + (dmgCount>=100?" (MAX)":""), disabled: dmgCount>=100,
+             f: () => { if(dmgCount<100){ player.dmg += 6; player._dmgCount = dmgCount+1; } }},
+            {t: "+0.5 Hız"  + (spdCount>=10?" (MAX)":""),  disabled: spdCount>=10,
+             f: () => { if(spdCount<10){ player.shootSpeed = Math.max(50, player.shootSpeed - 50); player._spdCount = spdCount+1; } }},
+            {t: "+30 Max HP",    disabled: false, f: () => { player.maxHp += 30; player.hp = Math.min(player.hp + 30, player.maxHp); }},
+            {t: "+1 Seken",      disabled: false, f: () => player.bounce += 1}
+        ];
         opts.forEach(o => {
             const d = document.createElement('div');
-            d.className = 'char-card'; d.style.cursor = 'pointer';
+            d.className = 'char-card'; d.style.cursor = o.disabled ? 'not-allowed' : 'pointer';
+            d.style.opacity = o.disabled ? '0.4' : '1';
             d.innerText = o.t;
-            d.onclick = () => { o.f(); player.upgrades.push(o.t); updateStats(); screen.style.display='none'; gameState.isRunning=true; };
+            d.onclick = () => {
+                if (o.disabled) return;
+                o.f(); player.upgrades.push(o.t); updateStats();
+                screen.style.display='none'; gameState.isRunning=true;
+            };
             box.appendChild(d);
         });
     }
@@ -3240,11 +3536,20 @@
                 _fireLaser(ang);
                 playSound('laser_shoot');
             } else if (cid === 'leg') {
-                // CELESTIAL — Melek asası: patlayan büyü (sol tık=hasar, sağ tık=can)
+                // CELESTIAL — Melek asası
                 bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang)*9, vy:Math.sin(ang)*9,
                     b:0, d: Math.random()<player.crit?player.dmg*2.5:player.dmg*1.5,
                     type:'angel', size:10, life:1.0 });
                 playSound('angel_shoot');
+            } else if (cid === 'mys') {
+                // VOIDLORD — Çift bomba, hafif açı farkıyla
+                for (let bb=0; bb<2; bb++) {
+                    const bOff = (bb===0) ? -0.13 : 0.13;
+                    bullets.push({ x:player.x, y:player.y,
+                        vx:Math.cos(ang+bOff)*7, vy:Math.sin(ang+bOff)*7,
+                        b:0, d: player.dmg, type:'bomb', size:13, life:1.0 });
+                }
+                playSound('bomb_shoot');
             } else {
                 // RECON — Normal mermi
                 bullets.push({ x:player.x, y:player.y, vx:Math.cos(ang)*8, vy:Math.sin(ang)*8,
@@ -3304,11 +3609,40 @@
                 ag.addColorStop(0,'#fff'); ag.addColorStop(0.4,'#aaddff'); ag.addColorStop(0.8,'#4488ff'); ag.addColorStop(1,'transparent');
                 ctx.fillStyle=ag;
                 ctx.beginPath(); ctx.arc(b.x,b.y,b.size||10,0,Math.PI*2); ctx.fill();
-                // Halo ring
                 ctx.globalAlpha = b.life*0.6;
                 ctx.strokeStyle='#ffffaa'; ctx.lineWidth=1.5;
                 ctx.beginPath(); ctx.arc(b.x,b.y,(b.size||10)*1.8,0,Math.PI*2); ctx.stroke();
                 ctx.restore();
+            } else if (b.type === 'bomb') {
+                ctx.save();
+                ctx.globalAlpha = b.life;
+                // Bomba gövdesi
+                const bmg = ctx.createRadialGradient(b.x-b.size*0.3,b.y-b.size*0.3,0,b.x,b.y,b.size);
+                bmg.addColorStop(0,'#aaffcc'); bmg.addColorStop(0.4,'#00cc55'); bmg.addColorStop(0.8,'#003311'); bmg.addColorStop(1,'transparent');
+                ctx.fillStyle=bmg; ctx.beginPath(); ctx.arc(b.x,b.y,b.size,0,Math.PI*2); ctx.fill();
+                // Glow
+                ctx.globalAlpha = b.life*0.35;
+                ctx.fillStyle='#00ff88'; ctx.beginPath(); ctx.arc(b.x,b.y,b.size*1.8,0,Math.PI*2); ctx.fill();
+                // Fitil
+                ctx.globalAlpha=b.life*(0.7+Math.sin(_spriteT*0.45)*0.3);
+                ctx.strokeStyle='#666'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.moveTo(b.x+b.size*0.5,b.y-b.size*0.5);
+                ctx.quadraticCurveTo(b.x+b.size*0.85,b.y-b.size*0.9,b.x+b.size*0.75,b.y-b.size*0.75); ctx.stroke();
+                ctx.fillStyle='#ffdd00'; ctx.beginPath(); ctx.arc(b.x+b.size*0.75,b.y-b.size*0.75,2.5,0,Math.PI*2); ctx.fill();
+                ctx.restore();
+            } else if (b.type === 'shrapnel') {
+                ctx.save(); ctx.globalAlpha=b.life;
+                ctx.fillStyle='#00ff88'; ctx.beginPath(); ctx.arc(b.x,b.y,b.size||5,0,Math.PI*2); ctx.fill();
+                ctx.restore();
+                // Shrapnel düşmanlara çarpar
+                for(let ei2=enemies.length-1;ei2>=0;ei2--){
+                    if(Math.hypot(b.x-enemies[ei2].x,b.y-enemies[ei2].y)<enemies[ei2].size+(b.size||5)){
+                        enemies[ei2].hp -= b.d;
+                        if(i < bullets.length) bullets.splice(i,1);
+                        if(enemies[ei2].hp<=0){ addXP(0,enemies[ei2].boss?'BOSS':'ZOMBİ',enemies[ei2].boss); enemies.splice(ei2,1); updateEnemyCountUI(); }
+                        break;
+                    }
+                }
             } else {
                 ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, 7); ctx.fill();
             }
@@ -3423,6 +3757,12 @@
                         bullets.splice(bi, 1);
                         break;
                     }
+                    // Bomba — VOIDLORD: önce büyük patlama, sonra parçalara ayrılıp tekrar patlar
+                    if (bul.type === 'bomb') {
+                        _bombExplode(bul.x, bul.y, bul.d, false);
+                        bullets.splice(bi, 1);
+                        break;
+                    }
                     if (bul.type !== 'laser') bullets.splice(bi, 1);
                     if (e.hp <= 0) {
                         addXP(0, e.boss?'BOSS':'ZOMBİ', e.boss);
@@ -3475,6 +3815,7 @@
         // Special effect updates
         _updateWorms(ctx);
         _updateAngelBursts(ctx);
+        _updateBombBursts(ctx);
         _updateLaserSparks(ctx);
         if(enemies.length === 0 && gameState.isRunning) nextWave();
         animationId = requestAnimationFrame(loop);
@@ -3633,6 +3974,59 @@
                         e3.hp -= ab.dmg;
                         if (e3.hp<=0) { addXP(0,e3.boss?'BOSS':'ZOMBİ',e3.boss); enemies.splice(ei,1); updateEnemyCountUI(); if(e3.boss)playSound('boss_hit');else playSound('hit'); }
                     }
+                }
+            }
+        }
+    }
+
+    // ── BOMB EXPLOSION (VOIDLORD — zincirleme) ──────────────────────────────
+    let _bombBursts = [];
+    function _bombExplode(x, y, dmg, isChain) {
+        const r = isChain ? 52 : 88;
+        _bombBursts.push({ x, y, r:0, maxR:r, life:1.0, dmg, hit:false, chain:!isChain });
+        playSound('bomb_explode');
+        // Shrapnel fragments — 8 küçük mermi etrafa saçılır
+        for(let s=0;s<8;s++){
+            const a=Math.random()*Math.PI*2;
+            const sp=2.5+Math.random()*3;
+            bullets.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+                b:0, d:dmg*0.45, type:'shrapnel', size:5, life:0.75 });
+        }
+    }
+    function _updateBombBursts(ctx) {
+        for(let ai=_bombBursts.length-1;ai>=0;ai--){
+            const ab=_bombBursts[ai];
+            ab.life -= 0.048; ab.r += 5;
+            if(ab.life<=0){ _bombBursts.splice(ai,1); continue; }
+            // Outer shockwave ring
+            ctx.save();
+            ctx.globalAlpha = ab.life*0.75;
+            ctx.strokeStyle = ab.chain ? '#00ff88' : '#ffaa00';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(ab.x,ab.y,ab.r,0,Math.PI*2); ctx.stroke();
+            // Inner fireball
+            const fg=ctx.createRadialGradient(ab.x,ab.y,0,ab.x,ab.y,ab.r*0.65);
+            fg.addColorStop(0,'rgba(255,255,200,0.95)');
+            fg.addColorStop(0.3, ab.chain ? 'rgba(0,255,140,0.65)' : 'rgba(255,140,0,0.65)');
+            fg.addColorStop(0.7, ab.chain ? 'rgba(0,100,40,0.3)' : 'rgba(180,50,0,0.3)');
+            fg.addColorStop(1,'transparent');
+            ctx.globalAlpha = ab.life*0.85;
+            ctx.fillStyle=fg; ctx.beginPath(); ctx.arc(ab.x,ab.y,ab.r*0.65,0,Math.PI*2); ctx.fill();
+            ctx.restore();
+            // Hit enemies once
+            if(!ab.hit && ab.r>22){
+                ab.hit=true;
+                for(let ei=enemies.length-1;ei>=0;ei--){
+                    const en=enemies[ei];
+                    if(Math.hypot(en.x-ab.x,en.y-ab.y)<ab.maxR){
+                        en.hp -= ab.dmg;
+                        if(en.hp<=0){ addXP(0,en.boss?'BOSS':'ZOMBİ',en.boss); enemies.splice(ei,1); updateEnemyCountUI(); if(en.boss)playSound('boss_hit');else playSound('hit'); }
+                    }
+                }
+                // Zincir: 200ms sonra ikinci küçük patlama
+                if(ab.chain){
+                    const ca=Math.random()*Math.PI*2, cd=45+Math.random()*35;
+                    setTimeout(()=>_bombExplode(ab.x+Math.cos(ca)*cd, ab.y+Math.sin(ca)*cd, ab.dmg*0.65, true), 200);
                 }
             }
         }
@@ -3828,6 +4222,53 @@
                     [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.35,0.15),i*60));
                 } catch(e) {}
                 break;
+
+            // ── VOIDLORD — Bomba atış sesi (chunk + whoosh) ──
+            case 'bomb_shoot':
+                try {
+                    const bsO=audioCtx.createOscillator(); const bsG=audioCtx.createGain();
+                    bsO.type='sawtooth'; bsO.frequency.setValueAtTime(140,audioCtx.currentTime);
+                    bsO.frequency.exponentialRampToValueAtTime(55,audioCtx.currentTime+0.22);
+                    bsG.gain.setValueAtTime(0.28,audioCtx.currentTime); bsG.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.22);
+                    bsO.connect(bsG); bsG.connect(audioCtx.destination); bsO.start(); bsO.stop(audioCtx.currentTime+0.22);
+                    // Chunk noise
+                    const bsN=audioCtx.createBuffer(1,audioCtx.sampleRate*0.12,audioCtx.sampleRate);
+                    const bsD=bsN.getChannelData(0);
+                    for(let i=0;i<bsD.length;i++) bsD[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*0.035));
+                    const bsSrc=audioCtx.createBufferSource(); bsSrc.buffer=bsN;
+                    const bsF=audioCtx.createBiquadFilter(); bsF.type='lowpass'; bsF.frequency.value=450;
+                    const bsGn=audioCtx.createGain(); bsGn.gain.setValueAtTime(0.32,audioCtx.currentTime);
+                    bsSrc.connect(bsF); bsF.connect(bsGn); bsGn.connect(audioCtx.destination);
+                    bsSrc.start(); bsSrc.stop(audioCtx.currentTime+0.12);
+                } catch(e) {}
+                break;
+
+            // ── VOIDLORD — Bomba patlama sesi (BOOM + crack) ──
+            case 'bomb_explode':
+                try {
+                    // Sub-bass boom
+                    const beO=audioCtx.createOscillator(); const beG=audioCtx.createGain();
+                    beO.type='sine'; beO.frequency.setValueAtTime(110,audioCtx.currentTime);
+                    beO.frequency.exponentialRampToValueAtTime(18,audioCtx.currentTime+0.55);
+                    beG.gain.setValueAtTime(0.55,audioCtx.currentTime); beG.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.55);
+                    beO.connect(beG); beG.connect(audioCtx.destination); beO.start(); beO.stop(audioCtx.currentTime+0.55);
+                    // Noise burst
+                    const beN=audioCtx.createBuffer(1,audioCtx.sampleRate*0.4,audioCtx.sampleRate);
+                    const beD=beN.getChannelData(0);
+                    for(let i=0;i<beD.length;i++) beD[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*0.09));
+                    const beSrc=audioCtx.createBufferSource(); beSrc.buffer=beN;
+                    const beF=audioCtx.createBiquadFilter(); beF.type='lowpass'; beF.frequency.value=900;
+                    const beGn=audioCtx.createGain(); beGn.gain.setValueAtTime(0.6,audioCtx.currentTime); beGn.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
+                    beSrc.connect(beF); beF.connect(beGn); beGn.connect(audioCtx.destination);
+                    beSrc.start(); beSrc.stop(audioCtx.currentTime+0.4);
+                    // High crack
+                    const bcO=audioCtx.createOscillator(); const bcG=audioCtx.createGain();
+                    bcO.type='sawtooth'; bcO.frequency.setValueAtTime(900,audioCtx.currentTime);
+                    bcO.frequency.exponentialRampToValueAtTime(160,audioCtx.currentTime+0.22);
+                    bcG.gain.setValueAtTime(0.22,audioCtx.currentTime); bcG.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.22);
+                    bcO.connect(bcG); bcG.connect(audioCtx.destination); bcO.start(); bcO.stop(audioCtx.currentTime+0.22);
+                } catch(e) {}
+                break;
         }
     }
 
@@ -3897,149 +4338,68 @@
     let melodySeqIdx = 0;
     let bassSeqIdx = 0;
 
-    // ── ACTION MUSIC PROFILES ─────────────────────────────────────────────
-    // Designed for intense top-down shooter combat feel.
-    // Phrygian/Locrian scales for tension; distorted bass; heavy kick.
+    // ════════════════════════════════════════════════════════════════════════
+    // BATTLE MUSIC ENGINE v3 — WAR RAVE
+    // Savaşı hissettiren, gazlandıran, her arenaya özel müzik sistemi.
+    // Teknik: Web Audio API, setTimeout-loop, 4 ritim pattern (rave/stomp/march/doom)
+    // Her profil: BPM, kick/snare/hihat/bass/melody seviyeleri, skala, bas notalari,
+    //             dalga tipleri, filtre frekansları, reverb flag.
+    // ════════════════════════════════════════════════════════════════════════
     const MUSIC_PROFILES = {
-        // Spring: fast upbeat, energetic minor with power chords
-        spring: {
-            bpm:158, kV:0.42, sV:0.28, hV:0.11, bV:0.26, mV:0.1,
-            scale:[220,261.6,293.7,329.6,392,440,523.3,587.3],
-            bass:[55,65.4,73.4,82.4,98],
-            bT:'sawtooth', mT:'square',
-            hF:9500, sF:1100, kF:175, kD:0.2,
-            pat:'blitz', rev:false
-        },
-        // Summer: blazing fast, hypnotic riff loop
-        summer: {
-            bpm:175, kV:0.48, sV:0.32, hV:0.13, bV:0.3, mV:0.11,
-            scale:[196,220,261.6,293.7,329.6,392,440,523.3],
-            bass:[49,55,65.4,73.4,87.3],
-            bT:'sawtooth', mT:'sawtooth',
-            hF:11000, sF:900, kF:165, kD:0.16,
-            pat:'blitz', rev:false
-        },
-        // Autumn: heavy mid-tempo, dark groove, distorted riff
-        autumn: {
-            bpm:138, kV:0.45, sV:0.3, hV:0.09, bV:0.28, mV:0.09,
-            scale:[207.7,233.1,261.6,293.7,329.6,349.2,392,415.3],
-            bass:[51.9,58.3,65.4,73.4,82.4],
-            bT:'sawtooth', mT:'square',
-            hF:8000, sF:1300, kF:155, kD:0.24,
-            pat:'stomp', rev:false
-        },
-        // Winter: slow doom metal feel, grinding bass
-        winter: {
-            bpm:118, kV:0.44, sV:0.26, hV:0.07, bV:0.3, mV:0.08,
-            scale:[174.6,196,220,233.1,261.6,293.7,311.1,349.2],
-            bass:[43.7,49,55,58.3,65.4],
-            bT:'sawtooth', mT:'square',
-            hF:6500, sF:1500, kF:140, kD:0.3,
-            pat:'doom', rev:true
-        },
+        spring: { bpm:172, kV:0.46, sV:0.32, hV:0.13, bV:0.30, mV:0.12,
+            scale:[220,261.6,293.7,329.6,392,440,523.3,587.3], bass:[55,65.4,82.4,98,110],
+            bT:'sawtooth',mT:'square', hF:9800,sF:1100,kF:178,kD:0.17, pat:'rave', rev:false },
+        summer: { bpm:190, kV:0.52, sV:0.36, hV:0.15, bV:0.34, mV:0.13,
+            scale:[196,220,261.6,293.7,349.2,392,440,523.3], bass:[49,55,65.4,73.4,87.3],
+            bT:'sawtooth',mT:'sawtooth', hF:11500,sF:880,kF:170,kD:0.14, pat:'rave', rev:false },
+        autumn: { bpm:155, kV:0.48, sV:0.34, hV:0.11, bV:0.32, mV:0.10,
+            scale:[207.7,233.1,261.6,293.7,329.6,349.2,392,415.3], bass:[51.9,58.3,65.4,73.4,82.4],
+            bT:'sawtooth',mT:'square', hF:8200,sF:1250,kF:160,kD:0.22, pat:'stomp', rev:false },
+        winter: { bpm:132, kV:0.50, sV:0.30, hV:0.08, bV:0.34, mV:0.09,
+            scale:[174.6,196,220,233.1,261.6,293.7,311.1,349.2], bass:[43.7,49,55,58.3,65.4],
+            bT:'sawtooth',mT:'square', hF:6800,sF:1500,kF:148,kD:0.28, pat:'doom', rev:true },
     };
-
-    // Arena overrides — each arena has a distinct combat sound
     Object.assign(MUSIC_PROFILES, {
-        // Forest: tribal drums + organic riff
-        forest: { bpm:148, kV:0.44, sV:0.28, hV:0.1, bV:0.26, mV:0.09,
-            scale:[196,220,246.9,261.6,293.7,329.6,392,440], bass:[49,55,61.7,65.4],
-            bT:'triangle', mT:'square', hF:8500, sF:1200, kF:160, kD:0.22, pat:'stomp', rev:false },
-        // Desert: punchy, dry, rapid fire
-        desert: { bpm:166, kV:0.46, sV:0.3, hV:0.12, bV:0.28, mV:0.1,
-            scale:[220,246.9,261.6,293.7,349.2,392,440,493.9], bass:[55,61.7,65.4,73.4],
-            bT:'sawtooth', mT:'sawtooth', hF:10000, sF:950, kF:172, kD:0.17, pat:'blitz', rev:false },
-        // Ice: sharp metallic, cold riff
-        ice: { bpm:145, kV:0.4, sV:0.25, hV:0.1, bV:0.24, mV:0.09,
-            scale:[233.1,261.6,311.1,349.2,369.9,415.3,466.2,523.3], bass:[58.3,65.4,77.8,87.3],
-            bT:'square', mT:'square', hF:13000, sF:1800, kF:145, kD:0.22, pat:'stomp', rev:true },
-        // Space: industrial techno, mechanical beats
-        space: { bpm:162, kV:0.44, sV:0.28, hV:0.12, bV:0.26, mV:0.09,
-            scale:[220,246.9,277.2,311.1,349.2,392,440,493.9], bass:[55,61.7,69.3,73.4],
-            bT:'sawtooth', mT:'square', hF:12000, sF:1600, kF:160, kD:0.18, pat:'blitz', rev:false },
-        // Cyber: maximum aggression, 4-on-the-floor techno
-        cyber: { bpm:185, kV:0.52, sV:0.36, hV:0.15, bV:0.34, mV:0.13,
-            scale:[233.1,261.6,293.7,329.6,392,440,493.9,587.3], bass:[58.3,65.4,73.4,82.4],
-            bT:'sawtooth', mT:'sawtooth', hF:14000, sF:800, kF:185, kD:0.14, pat:'blitz', rev:false },
-        // Toxic: groovy but dark, swampy
-        toxic: { bpm:142, kV:0.46, sV:0.3, hV:0.1, bV:0.3, mV:0.09,
-            scale:[196,220,233.1,261.6,293.7,311.1,349.2,392], bass:[49,55,58.3,65.4],
-            bT:'sawtooth', mT:'square', hF:7500, sF:1100, kF:155, kD:0.24, pat:'stomp', rev:false },
-        // Haunted: dissonant, chaotic
-        haunted: { bpm:128, kV:0.42, sV:0.28, hV:0.08, bV:0.28, mV:0.09,
-            scale:[207.7,220,233.1,261.6,277.2,311.1,329.6,349.2], bass:[51.9,55,58.3,65.4],
-            bT:'sawtooth', mT:'square', hF:7000, sF:1400, kF:145, kD:0.3, pat:'doom', rev:true },
-        // Military: march + metal hybrid
-        military: { bpm:152, kV:0.5, sV:0.38, hV:0.1, bV:0.3, mV:0.08,
-            scale:[196,220,246.9,261.6,293.7,329.6,349.2,392], bass:[49,55,61.7,65.4],
-            bT:'square', mT:'square', hF:9000, sF:1200, kF:165, kD:0.2, pat:'march', rev:false },
-        // Volcano: molten heavy metal
-        volcano: { bpm:162, kV:0.54, sV:0.34, hV:0.12, bV:0.36, mV:0.1,
-            scale:[174.6,196,220,246.9,261.6,293.7,349.2,392], bass:[43.7,49,55,61.7],
-            bT:'sawtooth', mT:'sawtooth', hF:10500, sF:850, kF:170, kD:0.17, pat:'blitz', rev:false },
-        // Frozen: grinding slow doom
-        frozen: { bpm:122, kV:0.46, sV:0.28, hV:0.08, bV:0.32, mV:0.08,
-            scale:[174.6,196,207.7,233.1,261.6,277.2,311.1,349.2], bass:[43.7,49,51.9,58.3],
-            bT:'sawtooth', mT:'square', hF:6000, sF:1600, kF:138, kD:0.32, pat:'doom', rev:true },
-        // Jungle: tribal + electric
-        jungle: { bpm:155, kV:0.46, sV:0.32, hV:0.12, bV:0.28, mV:0.1,
-            scale:[196,220,246.9,261.6,293.7,349.2,392,440], bass:[49,55,61.7,65.4],
-            bT:'triangle', mT:'sawtooth', hF:9000, sF:1100, kF:165, kD:0.2, pat:'stomp', rev:false },
-        // Factory: industrial grind, mechanical
-        factory: { bpm:172, kV:0.5, sV:0.34, hV:0.14, bV:0.32, mV:0.1,
-            scale:[220,233.1,261.6,293.7,311.1,349.2,392,415.3], bass:[55,58.3,65.4,73.4],
-            bT:'sawtooth', mT:'square', hF:11000, sF:950, kF:178, kD:0.15, pat:'blitz', rev:false },
-        // Alien: dissonant + fast, unsettling
-        alien: { bpm:148, kV:0.44, sV:0.3, hV:0.11, bV:0.28, mV:0.1,
-            scale:[207.7,233.1,246.9,261.6,293.7,329.6,349.2,392], bass:[51.9,58.3,61.7,69.3],
-            bT:'sawtooth', mT:'square', hF:12500, sF:1700, kF:155, kD:0.2, pat:'stomp', rev:true },
-        // Neon: hyper fast EDM combat
-        neon: { bpm:190, kV:0.5, sV:0.34, hV:0.16, bV:0.32, mV:0.13,
-            scale:[233.1,261.6,293.7,349.2,392,440,523.3,587.3], bass:[58.3,65.4,73.4,87.3],
-            bT:'sawtooth', mT:'sawtooth', hF:14000, sF:750, kF:188, kD:0.13, pat:'blitz', rev:false },
-        // Sandstorm: driving, punchy
-        sandstorm: { bpm:158, kV:0.46, sV:0.3, hV:0.11, bV:0.28, mV:0.09,
-            scale:[220,246.9,261.6,293.7,329.6,392,440,493.9], bass:[55,61.7,65.4,73.4],
-            bT:'sawtooth', mT:'square', hF:9500, sF:1050, kF:168, kD:0.19, pat:'blitz', rev:false },
-        // Dungeon: slow grinding metal, heavy
-        dungeon: { bpm:124, kV:0.48, sV:0.3, hV:0.08, bV:0.32, mV:0.09,
-            scale:[174.6,196,207.7,233.1,261.6,277.2,311.1,329.6], bass:[43.7,49,51.9,58.3],
-            bT:'sawtooth', mT:'square', hF:6500, sF:1500, kF:142, kD:0.3, pat:'doom', rev:true },
-        // Sky: fast, soaring
-        sky: { bpm:168, kV:0.44, sV:0.28, hV:0.12, bV:0.26, mV:0.1,
-            scale:[246.9,277.2,311.1,369.9,415.3,440,493.9,554.4], bass:[61.7,69.3,77.8,92.5],
-            bT:'triangle', mT:'square', hF:11000, sF:1400, kF:165, kD:0.18, pat:'blitz', rev:false },
-        // Crystal: sharp glassy attacks
-        crystal: { bpm:145, kV:0.4, sV:0.26, hV:0.1, bV:0.24, mV:0.1,
-            scale:[277.2,311.1,369.9,415.3,466.2,523.3,587.3,659.3], bass:[69.3,77.8,92.5,103.8],
-            bT:'square', mT:'sine', hF:15000, sF:2200, kF:145, kD:0.22, pat:'stomp', rev:true },
-        // Ruins: dark mid-pace, war drums
-        ruins: { bpm:138, kV:0.5, sV:0.34, hV:0.09, bV:0.3, mV:0.09,
-            scale:[196,220,233.1,261.6,293.7,311.1,349.2,392], bass:[49,55,58.3,65.4],
-            bT:'sawtooth', mT:'square', hF:7500, sF:1200, kF:155, kD:0.26, pat:'stomp', rev:false },
-        // Ancient: epic war chant, big drums
-        ancient: { bpm:144, kV:0.52, sV:0.36, hV:0.1, bV:0.32, mV:0.1,
-            scale:[196,220,246.9,261.6,293.7,329.6,392,440], bass:[49,55,61.7,65.4],
-            bT:'sawtooth', mT:'square', hF:8000, sF:1200, kF:162, kD:0.22, pat:'march', rev:false },
-        // Lava: crushing metal riff
-        lava: { bpm:165, kV:0.54, sV:0.34, hV:0.12, bV:0.36, mV:0.11,
-            scale:[174.6,196,220,233.1,261.6,293.7,329.6,349.2], bass:[43.7,49,55,58.3],
-            bT:'sawtooth', mT:'sawtooth', hF:10000, sF:900, kF:172, kD:0.17, pat:'blitz', rev:false },
+        forest:    { bpm:160, kV:0.46, sV:0.32, hV:0.12, bV:0.29, mV:0.11, scale:[196,220,246.9,261.6,293.7,329.6,392,440],    bass:[49,55,61.7,65.4],     bT:'triangle',mT:'square',    hF:8800, sF:1200,kF:165,kD:0.21, pat:'stomp', rev:false },
+        desert:    { bpm:178, kV:0.50, sV:0.34, hV:0.14, bV:0.32, mV:0.12, scale:[220,246.9,261.6,293.7,349.2,392,440,493.9],  bass:[55,61.7,65.4,73.4],   bT:'sawtooth',mT:'sawtooth',  hF:10500,sF:950, kF:175,kD:0.15, pat:'rave',  rev:false },
+        ice:       { bpm:150, kV:0.44, sV:0.28, hV:0.10, bV:0.27, mV:0.10, scale:[233.1,261.6,311.1,349.2,369.9,415.3,466.2,523.3], bass:[58.3,65.4,77.8,87.3],bT:'square',mT:'square',  hF:13500,sF:1800,kF:150,kD:0.23, pat:'stomp', rev:true  },
+        space:     { bpm:170, kV:0.48, sV:0.32, hV:0.13, bV:0.29, mV:0.11, scale:[220,246.9,277.2,311.1,349.2,392,440,493.9],  bass:[55,61.7,69.3,73.4],   bT:'sawtooth',mT:'square',    hF:12500,sF:1600,kF:168,kD:0.18, pat:'rave',  rev:false },
+        cyber:     { bpm:196, kV:0.56, sV:0.40, hV:0.17, bV:0.38, mV:0.15, scale:[233.1,261.6,293.7,329.6,392,440,493.9,587.3],bass:[58.3,65.4,73.4,82.4],  bT:'sawtooth',mT:'sawtooth',  hF:14500,sF:800, kF:192,kD:0.12, pat:'rave',  rev:false },
+        toxic:     { bpm:152, kV:0.50, sV:0.34, hV:0.12, bV:0.34, mV:0.11, scale:[196,220,233.1,261.6,293.7,311.1,349.2,392],  bass:[49,55,58.3,65.4],     bT:'sawtooth',mT:'square',    hF:7800, sF:1100,kF:160,kD:0.23, pat:'stomp', rev:false },
+        haunted:   { bpm:138, kV:0.46, sV:0.30, hV:0.09, bV:0.32, mV:0.10, scale:[207.7,220,233.1,261.6,277.2,311.1,329.6,349.2],bass:[51.9,55,58.3,65.4], bT:'sawtooth',mT:'square',    hF:7200, sF:1400,kF:148,kD:0.30, pat:'doom',  rev:true  },
+        military:  { bpm:162, kV:0.54, sV:0.42, hV:0.12, bV:0.34, mV:0.10, scale:[196,220,246.9,261.6,293.7,329.6,349.2,392],  bass:[49,55,61.7,65.4],     bT:'square', mT:'square',     hF:9200, sF:1200,kF:170,kD:0.19, pat:'march', rev:false },
+        volcano:   { bpm:172, kV:0.58, sV:0.38, hV:0.14, bV:0.40, mV:0.12, scale:[174.6,196,220,246.9,261.6,293.7,349.2,392],  bass:[43.7,49,55,61.7],     bT:'sawtooth',mT:'sawtooth',  hF:11000,sF:860, kF:178,kD:0.16, pat:'rave',  rev:false },
+        frozen:    { bpm:128, kV:0.50, sV:0.30, hV:0.08, bV:0.36, mV:0.09, scale:[174.6,196,207.7,233.1,261.6,277.2,311.1,349.2],bass:[43.7,49,51.9,58.3], bT:'sawtooth',mT:'square',    hF:6200, sF:1600,kF:142,kD:0.32, pat:'doom',  rev:true  },
+        jungle:    { bpm:165, kV:0.50, sV:0.36, hV:0.14, bV:0.31, mV:0.12, scale:[196,220,246.9,261.6,293.7,349.2,392,440],    bass:[49,55,61.7,65.4],     bT:'triangle',mT:'sawtooth',  hF:9200, sF:1100,kF:170,kD:0.19, pat:'stomp', rev:false },
+        factory:   { bpm:182, kV:0.54, sV:0.38, hV:0.16, bV:0.36, mV:0.12, scale:[220,233.1,261.6,293.7,311.1,349.2,392,415.3],bass:[55,58.3,65.4,73.4],   bT:'sawtooth',mT:'square',    hF:11500,sF:960, kF:183,kD:0.14, pat:'rave',  rev:false },
+        alien:     { bpm:158, kV:0.48, sV:0.34, hV:0.13, bV:0.31, mV:0.12, scale:[207.7,233.1,246.9,261.6,293.7,329.6,349.2,392],bass:[51.9,58.3,61.7,69.3],bT:'sawtooth',mT:'square',   hF:13000,sF:1700,kF:160,kD:0.20, pat:'stomp', rev:true  },
+        neon:      { bpm:200, kV:0.54, sV:0.38, hV:0.18, bV:0.36, mV:0.15, scale:[233.1,261.6,293.7,349.2,392,440,523.3,587.3],bass:[58.3,65.4,73.4,87.3],  bT:'sawtooth',mT:'sawtooth',  hF:14500,sF:760, kF:196,kD:0.12, pat:'rave',  rev:false },
+        sandstorm: { bpm:168, kV:0.50, sV:0.34, hV:0.13, bV:0.31, mV:0.11, scale:[220,246.9,261.6,293.7,329.6,392,440,493.9],  bass:[55,61.7,65.4,73.4],   bT:'sawtooth',mT:'square',    hF:9800, sF:1050,kF:172,kD:0.18, pat:'rave',  rev:false },
+        dungeon:   { bpm:136, kV:0.52, sV:0.34, hV:0.09, bV:0.36, mV:0.10, scale:[174.6,196,207.7,233.1,261.6,277.2,311.1,329.6],bass:[43.7,49,51.9,58.3], bT:'sawtooth',mT:'square',    hF:6800, sF:1500,kF:148,kD:0.29, pat:'doom',  rev:true  },
+        sky:       { bpm:178, kV:0.48, sV:0.31, hV:0.14, bV:0.29, mV:0.12, scale:[246.9,277.2,311.1,369.9,415.3,440,493.9,554.4],bass:[61.7,69.3,77.8,92.5],bT:'triangle',mT:'square',   hF:11500,sF:1400,kF:170,kD:0.16, pat:'rave',  rev:false },
+        crystal:   { bpm:150, kV:0.44, sV:0.29, hV:0.11, bV:0.27, mV:0.12, scale:[277.2,311.1,369.9,415.3,466.2,523.3,587.3,659.3],bass:[69.3,77.8,92.5,103.8],bT:'square',mT:'sine',    hF:15500,sF:2200,kF:150,kD:0.21, pat:'stomp', rev:true  },
+        ruins:     { bpm:148, kV:0.54, sV:0.38, hV:0.10, bV:0.34, mV:0.11, scale:[196,220,233.1,261.6,293.7,311.1,349.2,392],  bass:[49,55,58.3,65.4],     bT:'sawtooth',mT:'square',    hF:7800, sF:1200,kF:160,kD:0.25, pat:'stomp', rev:false },
+        ancient:   { bpm:155, kV:0.56, sV:0.40, hV:0.11, bV:0.36, mV:0.12, scale:[196,220,246.9,261.6,293.7,329.6,392,440],    bass:[49,55,61.7,65.4],     bT:'sawtooth',mT:'square',    hF:8200, sF:1200,kF:168,kD:0.21, pat:'march', rev:false },
+        lava:      { bpm:176, kV:0.58, sV:0.38, hV:0.14, bV:0.40, mV:0.13, scale:[174.6,196,220,233.1,261.6,293.7,329.6,349.2],bass:[43.7,49,55,58.3],     bT:'sawtooth',mT:'sawtooth',  hF:10500,sF:910, kF:178,kD:0.15, pat:'rave',  rev:false },
     });
 
-    // ── RIFF PATTERNS (more musical, aggressive) ──────────────────────────
-    // Each entry: array of scale indices played per beat
+    // ── RIFF SEQUENCES — 32 adım, agresif melodiler ──────────────────────────
+    // Her sayı = scale dizisindeki index (0-7)
     const RIFF = {
-        blitz:  [0,3,5,3,0,3,5,7, 2,5,7,5,2,5,3,0, 4,7,5,3,4,2,0,3, 0,5,3,7,5,0,3,5],
-        stomp:  [0,0,5,0,3,0,5,3, 2,2,4,2,5,2,4,0, 0,3,0,5,3,0,7,5, 5,3,0,2,0,3,5,0],
-        march:  [0,2,5,2,0,3,5,0, 3,5,3,0,2,0,3,5, 0,3,2,5,0,2,5,3, 2,0,5,3,0,5,2,0],
-        doom:   [0,0,0,3,0,0,5,3, 0,0,2,0,3,5,3,0, 0,5,0,3,5,0,2,0, 3,0,5,3,0,2,0,5],
+        // Rave: hızlı minor pentatonik koşu — yükselip alçalan agresif motif
+        rave:  [0,3,5,7,5,3,7,5, 2,5,7,9,7,5,9,7, 0,5,3,7,5,0,3,5, 4,7,5,3,7,4,0,3],
+        // Stomp: ağır, tekrarlayan, nefes kesen groove
+        stomp: [0,0,5,3,0,5,3,7, 2,2,4,5,2,4,5,0, 0,3,5,0,7,3,5,0, 5,3,0,5,3,7,0,5],
+        // March: askerî yürüyüş ritmi, kararlı ve hedefli
+        march: [0,2,5,3,0,3,5,7, 5,3,0,2,5,3,0,5, 0,5,2,3,0,5,3,0, 3,5,0,2,5,0,3,5],
+        // Doom: yavaş, ağır, korku hissettiren
+        doom:  [0,0,0,5,3,0,5,0, 0,2,0,3,0,5,3,0, 0,5,0,0,3,5,0,3, 5,0,3,5,0,3,0,5],
     };
     const BASS_RIFF = {
-        blitz:  [0,2,0,3,1,0,2,3],
-        stomp:  [0,0,2,0,1,2,0,1],
-        march:  [0,1,2,0,3,1,0,2],
-        doom:   [0,0,1,0,2,0,1,0],
+        rave:  [0,2,1,3,2,3,1,2],
+        stomp: [0,0,2,1,0,1,2,0],
+        march: [0,1,2,0,3,0,1,2],
+        doom:  [0,0,1,0,2,0,1,0],
     };
 
     function getMusicProfile() {
@@ -4073,183 +4433,191 @@
 
     function scheduleBeat() {
         if (!battleMusicRunning) return;
-        if (!gameState.isRunning) {
-            battleMusicTimeout = setTimeout(scheduleBeat, 100);
-            return;
-        }
+        if (!gameState.isRunning) { battleMusicTimeout = setTimeout(scheduleBeat, 100); return; }
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         const p = getMusicProfile();
         const beatMs = (60 / p.bpm) * 1000;
         const now = audioCtx.currentTime;
-        const pat = p.pat || 'blitz';
+        const pat = p.pat || 'rave';
+        const b4 = beatCount % 4, b8 = beatCount % 8, b16 = beatCount % 16, b32 = beatCount % 32;
 
-        // ── KICK (powerful, always on 1 & 3; blitz adds sub-beats) ──
-        const b4 = beatCount % 4;
-        const b8 = beatCount % 8;
-        const b16 = beatCount % 16;
+        // ── KICK — her pattern'a özel vuruş şablonu ──
         const isKick = pat === 'doom'  ? (b8 === 0 || b8 === 6) :
-                       pat === 'march' ? (b4 === 0 || b4 === 2 || (b8===5)) :
-                       pat === 'blitz' ? (b4 === 0 || b4 === 2 || b8===5 || b16===11) :
-                                          (b4 === 0 || b4 === 2);
+                       pat === 'march' ? (b4 === 0 || b4 === 2 || b8 === 5) :
+                       pat === 'stomp' ? (b4 === 0 || b4 === 2 || b8 === 5) :
+                        /* rave */       (b4 === 0 || b4 === 2 || b8 === 5 || b16 === 11);
         if (isKick) _kick(now, p);
 
-        // ── SNARE (punchy backbeat; doom has slow snare) ──
+        // ── SNARE — güçlü backbeat ──
         const isSnare = pat === 'doom'  ? (b8 === 3 || b8 === 7) :
                         pat === 'march' ? (b4 === 1 || b4 === 3) :
-                                          (b4 === 1 || b4 === 3);
+                                           (b4 === 1 || b4 === 3);
         if (isSnare) _snare(now, p);
 
-        // ── OPEN HI-HAT on beat 3.5 for groove ──
-        const isOpenHat = (b8 === 6);
+        // ── EXTRA GHOST SNARE — 16. vuruşta flam/rulo ──
+        if (b16 === 14 && pat !== 'doom') {
+            setTimeout(() => _snare(audioCtx.currentTime, p), beatMs * 0.5);
+        }
+
+        // ── HI-HAT — pattern'a göre ──
+        const isOpenHat = (b8 === 6) || (pat === 'rave' && b16 === 14);
         _hihat(now, p, beatCount, isOpenHat);
 
-        // ── DISTORTED BASS RIFF (every beat) ──
-        const bSeq = BASS_RIFF[pat] || BASS_RIFF.blitz;
-        const bIdx = p.bass[(bassSeqIdx % bSeq.length) % p.bass.length];
-        // Use the riff pattern index
+        // ── DISTORTED BASS ──
+        const bSeq = BASS_RIFF[pat] || BASS_RIFF.rave;
         const bNote = p.bass[bSeq[bassSeqIdx % bSeq.length] % p.bass.length];
         _bass(now, bNote, p);
         bassSeqIdx++;
 
-        // ── MELODY RIFF (every beat, pattern-driven) ──
-        const mSeq = RIFF[pat] || RIFF.blitz;
+        // ── MELODY RIFF ──
+        const mSeq = RIFF[pat] || RIFF.rave;
         const mNote = p.scale[mSeq[melodySeqIdx % mSeq.length] % p.scale.length];
-        _melody(now, mNote * (p.melodyOctave||2), p);
+        _melody(now, mNote * (p.melodyOctave || 2), p);
         melodySeqIdx++;
 
-        // ── POWER CHORD ACCENT every 8 beats ──
+        // ── POWER CHORD her 8 vuruşta bir ──
         if (b8 === 7) _chord(now, p);
+
+        // ── DOUBLE KICK fill her 32 vuruşta ──
+        if (b32 === 30) {
+            const tk = beatMs / 1000;
+            [0, tk*0.25, tk*0.5, tk*0.75].forEach(dt => {
+                setTimeout(() => _kick(audioCtx.currentTime, p), dt * 1000);
+            });
+        }
 
         beatCount++;
         battleMusicTimeout = setTimeout(scheduleBeat, beatMs);
     }
 
+    // ── KICK (sub-bass + click) ───────────────────────────────────────────────
     function _kick(t, p) {
         try {
-            // Sub-bass layer
-            const o1 = audioCtx.createOscillator();
-            const g1 = audioCtx.createGain();
-            o1.connect(g1); g1.connect(audioCtx.destination);
-            o1.type = 'sine';
-            o1.frequency.setValueAtTime(p.kF || 170, t);
-            o1.frequency.exponentialRampToValueAtTime(28, t + (p.kD||0.2));
-            g1.gain.setValueAtTime((p.kV||0.45)*0.7, t);
-            g1.gain.exponentialRampToValueAtTime(0.001, t+(p.kD||0.2));
-            o1.start(t); o1.stop(t+(p.kD||0.2));
-            // Click layer
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*0.008, audioCtx.sampleRate);
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(p.kF || 170, t);
+            o.frequency.exponentialRampToValueAtTime(26, t + (p.kD || 0.20));
+            g.gain.setValueAtTime((p.kV || 0.46) * 0.8, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + (p.kD || 0.20));
+            o.start(t); o.stop(t + (p.kD || 0.20));
+            // Click transient
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.009, audioCtx.sampleRate);
             const d = buf.getChannelData(0);
-            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*0.002));
-            const src = audioCtx.createBufferSource(); src.buffer=buf;
-            const gK = audioCtx.createGain(); gK.gain.value=(p.kV||0.45)*0.6;
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.002));
+            const src = audioCtx.createBufferSource(); src.buffer = buf;
+            const gK = audioCtx.createGain(); gK.gain.value = (p.kV || 0.46) * 0.7;
             src.connect(gK); gK.connect(audioCtx.destination);
-            src.start(t); src.stop(t+0.01);
-        } catch(e) {}
+            src.start(t); src.stop(t + 0.011);
+        } catch (e) {}
     }
 
+    // ── SNARE (noise + tone body) ─────────────────────────────────────────────
     function _snare(t, p) {
         try {
-            const dur = 0.18;
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*dur, audioCtx.sampleRate);
+            const dur = 0.19;
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
             const d = buf.getChannelData(0);
-            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*0.05));
-            const src = audioCtx.createBufferSource(); src.buffer=buf;
-            // Bandpass + slight distortion via waveshaper
-            const f = audioCtx.createBiquadFilter(); f.type='bandpass';
-            f.frequency.value = p.sF||1200; f.Q.value=1.2;
-            const g = audioCtx.createGain(); g.gain.setValueAtTime(p.sV||0.28, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.055));
+            const src = audioCtx.createBufferSource(); src.buffer = buf;
+            const f = audioCtx.createBiquadFilter(); f.type = 'bandpass';
+            f.frequency.value = p.sF || 1200; f.Q.value = 1.3;
+            const g = audioCtx.createGain(); g.gain.setValueAtTime(p.sV || 0.30, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + dur);
             src.connect(f); f.connect(g); g.connect(audioCtx.destination);
-            // Snare tone body
-            const o = audioCtx.createOscillator();
-            const og = audioCtx.createGain();
-            o.type='triangle'; o.frequency.value=180;
-            og.gain.setValueAtTime((p.sV||0.28)*0.4, t);
-            og.gain.exponentialRampToValueAtTime(0.001, t+0.07);
-            o.connect(og); og.connect(audioCtx.destination);
-            o.start(t); o.stop(t+0.07);
-            src.start(t); src.stop(t+dur);
-        } catch(e) {}
+            // Snare body tone
+            const o = audioCtx.createOscillator(); const og = audioCtx.createGain();
+            o.type = 'triangle'; o.frequency.value = 195;
+            og.gain.setValueAtTime((p.sV || 0.30) * 0.45, t);
+            og.gain.exponentialRampToValueAtTime(0.001, t + 0.075);
+            o.connect(og); og.connect(audioCtx.destination); o.start(t); o.stop(t + 0.075);
+            src.start(t); src.stop(t + dur);
+        } catch (e) {}
     }
 
+    // ── HI-HAT (closed / open) ────────────────────────────────────────────────
     function _hihat(t, p, beat, isOpen) {
         try {
-            const dur = isOpen ? 0.12 : 0.025;
-            const vol = (beat%2===0 ? (p.hV||0.1) : (p.hV||0.1)*0.55);
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*dur, audioCtx.sampleRate);
+            const dur = isOpen ? 0.13 : 0.026;
+            const vol = beat % 2 === 0 ? (p.hV || 0.11) : (p.hV || 0.11) * 0.55;
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
             const d = buf.getChannelData(0);
-            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(isOpen ? Math.exp(-i/(audioCtx.sampleRate*0.05)) : (1-i/d.length));
-            const src = audioCtx.createBufferSource(); src.buffer=buf;
-            const f = audioCtx.createBiquadFilter(); f.type='highpass';
-            f.frequency.value = p.hF||9000;
+            for (let i = 0; i < d.length; i++)
+                d[i] = (Math.random() * 2 - 1) * (isOpen ? Math.exp(-i / (audioCtx.sampleRate * 0.055)) : (1 - i / d.length));
+            const src = audioCtx.createBufferSource(); src.buffer = buf;
+            const f = audioCtx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = p.hF || 9000;
             const g = audioCtx.createGain(); g.gain.setValueAtTime(vol, t);
-            if(isOpen) g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+            if (isOpen) g.gain.exponentialRampToValueAtTime(0.001, t + dur);
             src.connect(f); f.connect(g); g.connect(audioCtx.destination);
-            src.start(t); src.stop(t+dur);
-        } catch(e) {}
+            src.start(t); src.stop(t + dur);
+        } catch (e) {}
     }
 
+    // ── BASS (distorted sawtooth + lowpass) ───────────────────────────────────
     function _bass(t, freq, p) {
         try {
-            const dur = 0.22;
+            const dur = 0.24;
             const o = audioCtx.createOscillator();
-            // Waveshaper for distortion
             const ws = audioCtx.createWaveShaper();
             const curve = new Float32Array(256);
-            for(let i=0;i<256;i++){const x=i*2/256-1; curve[i]=x<0?-Math.pow(-x,0.7):Math.pow(x,0.7);}
-            ws.curve=curve; ws.oversample='2x';
-            const lp = audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=500;
+            for (let i = 0; i < 256; i++) {
+                const x = i * 2 / 256 - 1;
+                curve[i] = x < 0 ? -Math.pow(-x, 0.68) : Math.pow(x, 0.68);
+            }
+            ws.curve = curve; ws.oversample = '2x';
+            const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
             const g = audioCtx.createGain();
-            o.type=p.bT||'sawtooth'; o.frequency.value=freq;
-            g.gain.setValueAtTime(p.bV||0.28, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+            o.type = p.bT || 'sawtooth'; o.frequency.value = freq;
+            g.gain.setValueAtTime(p.bV || 0.30, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + dur);
             o.connect(ws); ws.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
-            o.start(t); o.stop(t+dur);
-        } catch(e) {}
+            o.start(t); o.stop(t + dur);
+        } catch (e) {}
     }
 
+    // ── MELODY (highpass square/saw + optional delay reverb) ──────────────────
     function _melody(t, freq, p) {
         try {
             const dur = 0.14;
             const o = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            o.type=p.mT||'square'; o.frequency.value=freq;
-            // HP filter for bite
-            const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=300;
+            o.type = p.mT || 'square'; o.frequency.value = freq;
+            const hp = audioCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 320;
             o.connect(hp); hp.connect(g);
-            if(p.rev){
-                const delay=audioCtx.createDelay(0.5); delay.delayTime.value=0.1;
-                const dg=audioCtx.createGain(); dg.gain.value=0.18;
+            if (p.rev) {
+                const delay = audioCtx.createDelay(0.5); delay.delayTime.value = 0.1;
+                const dg = audioCtx.createGain(); dg.gain.value = 0.20;
                 g.connect(audioCtx.destination);
                 g.connect(delay); delay.connect(dg); dg.connect(audioCtx.destination);
             } else {
                 g.connect(audioCtx.destination);
             }
-            g.gain.setValueAtTime(p.mV||0.1, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t+dur);
-            o.start(t); o.stop(t+dur);
-        } catch(e) {}
+            g.gain.setValueAtTime(p.mV || 0.11, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+            o.start(t); o.stop(t + dur);
+        } catch (e) {}
     }
 
+    // ── POWER CHORD (root + fifth + octave) ───────────────────────────────────
     function _chord(t, p) {
-        // Power chord: root + fifth + octave
         try {
-            const root = p.scale[0]*2;
-            const fifth = root * 1.5;
+            const root = p.scale[0] * 2;
+            const fifth = root * 1.498; // perfect fifth
             const oct = root * 2;
             [root, fifth, oct].forEach((freq, i) => {
                 const o = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
-                o.type='sawtooth'; o.frequency.value=freq;
-                const lp=audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=800;
+                o.type = 'sawtooth'; o.frequency.value = freq;
+                const lp = audioCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
                 o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
-                const tt=t+i*0.01;
-                g.gain.setValueAtTime((p.mV||0.1)*0.8, tt);
-                g.gain.exponentialRampToValueAtTime(0.001, tt+0.25);
-                o.start(tt); o.stop(tt+0.28);
+                const tt = t + i * 0.010;
+                g.gain.setValueAtTime((p.mV || 0.11) * 0.95, tt);
+                g.gain.exponentialRampToValueAtTime(0.001, tt + 0.28);
+                o.start(tt); o.stop(tt + 0.30);
             });
-        } catch(e) {}
+        } catch (e) {}
     }
 
     function playAccent(t, p) { _chord(t, p); }
