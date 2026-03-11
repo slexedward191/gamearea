@@ -2129,10 +2129,19 @@
     };
 
     if (!isGuest && currentUser) {
-        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
-        if (users[currentUser]) {
-            gameState = users[currentUser].state;
-        }
+        try {
+            let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+            if (users[currentUser] && users[currentUser].state) {
+                const saved = users[currentUser].state;
+                // Deep merge — preserve all saved fields, ensure required fields exist
+                gameState = Object.assign({}, gameState, saved);
+                // Validate critical fields
+                if (!gameState.chapter || gameState.chapter < 1) gameState.chapter = 1;
+                if (!gameState.ownedChars || !Array.isArray(gameState.ownedChars)) gameState.ownedChars = ['std'];
+                if (!gameState.selectedChar) gameState.selectedChar = 'std';
+                if (typeof gameState.gold !== 'number') gameState.gold = 0;
+            }
+        } catch(e) { console.warn('State load error:', e); }
     }
 
     const WAVES_PER_CHAPTER = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
@@ -2160,9 +2169,7 @@
     }
 
     function showChapterMenu() {
-        // Bölüm menüsünü göstermeden önce en son kaydedilmiş bölüm durumunu yükle
-        initializeGameState();
-
+        // gameState sayfa yüklendiğinde zaten yüklü — tekrar yüklemeye gerek yok
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('chapter-menu-screen').style.display = 'flex';
         renderChapterGrid();
@@ -2272,10 +2279,18 @@
     }
 
     function saveUser() {
-        if (isGuest) return;
-        let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
-        users[currentUser].state = gameState;
-        localStorage.setItem('gf_users', JSON.stringify(users));
+        if (isGuest || !currentUser) return;
+        try {
+            let users = JSON.parse(localStorage.getItem('gf_users') || '{}');
+            if (!users[currentUser]) return;
+            // Save a clean copy — strip transient runtime flags
+            const toSave = Object.assign({}, gameState);
+            delete toSave.isRunning;
+            delete toSave._pendingChapterComplete;
+            toSave.wave = 0; // Her zaman 0'dan başlasın
+            users[currentUser].state = toSave;
+            localStorage.setItem('gf_users', JSON.stringify(users));
+        } catch(e) { console.warn('saveUser error:', e); }
     }
 
     function showStart() {
@@ -2942,10 +2957,9 @@
     let player = {};
 
     function startGame() {
-        // Oyun başlamadan önce bölüm durumunu yükle
-        initializeGameState();
-
-        const charData = CHARS.find(c => c.id === gameState.selectedChar);
+        // gameState zaten sayfa yüklendiğinde doğru şekilde yüklendi.
+        // Burada tekrar yüklememek gerekiyor — chapter üzerine yazılmasın.
+        const charData = CHARS.find(c => c.id === gameState.selectedChar) || CHARS[0];
         player = {
             x: 625, y: 400, hp: charData.hp, maxHp: charData.hp, armor: charData.armor,
             speed: 3.5, dmg: 30, shootSpeed: 300, crit: 0, bounce: 0, upgrades: [], color: charData.color,
@@ -3360,144 +3374,164 @@
         } catch(e) {}
     }
 
-    // --- BATTLE MUSIC ENGINE ---
+    // --- BATTLE MUSIC ENGINE (ACTION v2) ---
     let battleMusicNodes = [];
     let battleMusicRunning = false;
     let battleMusicTimeout = null;
     let beatCount = 0;
     let currentMusicStyle = null;
+    let melodySeqIdx = 0;
+    let bassSeqIdx = 0;
 
-    // ── MUSIC PROFILES per season/arena ─────────────────────────────────────
-    // Each profile has: bpm, scale (freqs), bassRoot, kickVol, snareVol,
-    //   hihatStyle, melodyVol, bassVol, feel
+    // ── ACTION MUSIC PROFILES ─────────────────────────────────────────────
+    // Designed for intense top-down shooter combat feel.
+    // Phrygian/Locrian scales for tension; distorted bass; heavy kick.
     const MUSIC_PROFILES = {
-        // Spring: bright, hopeful, upbeat – major pentatonic, medium BPM
+        // Spring: fast upbeat, energetic minor with power chords
         spring: {
-            bpm: 128, kickVol: 0.28, snareVol: 0.16, hihatVol: 0.06,
-            bassVol: 0.15, melodyVol: 0.08,
-            scale: [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3],
-            bassScale: [65.4, 73.4, 82.4, 98.0, 110.0],
-            melodyOctave: 2, bassType: 'triangle', melodyType: 'sine',
-            hihatFreq: 8000, snareFreq: 1200,
-            kickFreq: 160, kickDecay: 0.28,
-            pattern: 'bounce',  // bouncy 16th note hi-hat
-            reverb: false
+            bpm:158, kV:0.42, sV:0.28, hV:0.11, bV:0.26, mV:0.1,
+            scale:[220,261.6,293.7,329.6,392,440,523.3,587.3],
+            bass:[55,65.4,73.4,82.4,98],
+            bT:'sawtooth', mT:'square',
+            hF:9500, sF:1100, kF:175, kD:0.2,
+            pat:'blitz', rev:false
         },
-        // Summer: hot, intense, fast – dorian mode, high BPM
+        // Summer: blazing fast, hypnotic riff loop
         summer: {
-            bpm: 152, kickVol: 0.35, snareVol: 0.22, hihatVol: 0.09,
-            bassVol: 0.2, melodyVol: 0.07,
-            scale: [220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0, 440.0],
-            bassScale: [55.0, 61.7, 65.4, 73.4, 82.4, 87.3],
-            melodyOctave: 2, bassType: 'sawtooth', melodyType: 'square',
-            hihatFreq: 9000, snareFreq: 900,
-            kickFreq: 140, kickDecay: 0.22,
-            pattern: 'driving',  // straight 8th intense
-            reverb: false
+            bpm:175, kV:0.48, sV:0.32, hV:0.13, bV:0.3, mV:0.11,
+            scale:[196,220,261.6,293.7,329.6,392,440,523.3],
+            bass:[49,55,65.4,73.4,87.3],
+            bT:'sawtooth', mT:'sawtooth',
+            hF:11000, sF:900, kF:165, kD:0.16,
+            pat:'blitz', rev:false
         },
-        // Autumn: melancholic, moody – natural minor, medium-low BPM
+        // Autumn: heavy mid-tempo, dark groove, distorted riff
         autumn: {
-            bpm: 112, kickVol: 0.3, snareVol: 0.18, hihatVol: 0.055,
-            bassVol: 0.17, melodyVol: 0.065,
-            scale: [220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 415.3, 440.0],
-            bassScale: [55.0, 61.7, 65.4, 73.4, 82.4],
-            melodyOctave: 2, bassType: 'triangle', melodyType: 'triangle',
-            hihatFreq: 6000, snareFreq: 1400,
-            kickFreq: 120, kickDecay: 0.35,
-            pattern: 'swing',   // slight swing feel
-            reverb: true
+            bpm:138, kV:0.45, sV:0.3, hV:0.09, bV:0.28, mV:0.09,
+            scale:[207.7,233.1,261.6,293.7,329.6,349.2,392,415.3],
+            bass:[51.9,58.3,65.4,73.4,82.4],
+            bT:'sawtooth', mT:'square',
+            hF:8000, sF:1300, kF:155, kD:0.24,
+            pat:'stomp', rev:false
         },
-        // Winter: cold, sparse, haunting – phrygian scale, slow BPM
+        // Winter: slow doom metal feel, grinding bass
         winter: {
-            bpm: 96, kickVol: 0.25, snareVol: 0.14, hihatVol: 0.04,
-            bassVol: 0.14, melodyVol: 0.055,
-            scale: [233.1, 261.6, 277.2, 311.1, 349.2, 369.9, 415.3, 466.2],
-            bassScale: [58.3, 65.4, 69.3, 77.8, 87.3],
-            melodyOctave: 2, bassType: 'sine', melodyType: 'sine',
-            hihatFreq: 5000, snareFreq: 1600,
-            kickFreq: 100, kickDecay: 0.45,
-            pattern: 'sparse',  // half-time, airy
-            reverb: true
+            bpm:118, kV:0.44, sV:0.26, hV:0.07, bV:0.3, mV:0.08,
+            scale:[174.6,196,220,233.1,261.6,293.7,311.1,349.2],
+            bass:[43.7,49,55,58.3,65.4],
+            bT:'sawtooth', mT:'square',
+            hF:6500, sF:1500, kF:140, kD:0.3,
+            pat:'doom', rev:true
         },
-        // Arena overrides – when seasonEffect is false we use arena-specific feel
-        lava:    { ...null },  // filled below
-        space:   { ...null },
-        cyber:   { ...null },
-        military:{ ...null },
-        volcano: { ...null },
-        factory: { ...null },
-        alien:   { ...null },
-        neon:    { ...null },
-        dungeon: { ...null },
-        crystal: { ...null },
-        ancient: { ...null },
     };
 
-    // Arena-specific overrides
+    // Arena overrides — each arena has a distinct combat sound
     Object.assign(MUSIC_PROFILES, {
-        lava: { bpm:144, kickVol:0.38, snareVol:0.2, hihatVol:0.08, bassVol:0.22, melodyVol:0.07,
-            scale:[174.6,196.0,220.0,246.9,261.6,293.7,349.2,392.0],
-            bassScale:[43.7,49.0,55.0,61.7],
-            melodyOctave:2, bassType:'sawtooth', melodyType:'square',
-            hihatFreq:9500, snareFreq:800, kickFreq:155, kickDecay:0.2, pattern:'driving', reverb:false },
-        space: { bpm:105, kickVol:0.28, snareVol:0.16, hihatVol:0.04, bassVol:0.12, melodyVol:0.06,
-            scale:[220.0,233.1,261.6,277.2,311.1,349.2,369.9,415.3],
-            bassScale:[55.0,58.3,65.4,73.4],
-            melodyOctave:2, bassType:'sine', melodyType:'sine',
-            hihatFreq:12000, snareFreq:2000, kickFreq:80, kickDecay:0.5, pattern:'sparse', reverb:true },
-        cyber: { bpm:160, kickVol:0.38, snareVol:0.24, hihatVol:0.1, bassVol:0.2, melodyVol:0.09,
-            scale:[233.1,261.6,293.7,311.1,349.2,415.3,440.0,466.2],
-            bassScale:[58.3,65.4,73.4,77.8],
-            melodyOctave:2, bassType:'sawtooth', melodyType:'square',
-            hihatFreq:11000, snareFreq:700, kickFreq:180, kickDecay:0.15, pattern:'driving', reverb:false },
-        military: { bpm:136, kickVol:0.4, snareVol:0.28, hihatVol:0.07, bassVol:0.18, melodyVol:0.05,
-            scale:[196.0,220.0,246.9,261.6,293.7,329.6,349.2,392.0],
-            bassScale:[49.0,55.0,61.7,65.4],
-            melodyOctave:2, bassType:'square', melodyType:'square',
-            hihatFreq:8500, snareFreq:1100, kickFreq:150, kickDecay:0.25, pattern:'march', reverb:false },
-        volcano: { bpm:148, kickVol:0.42, snareVol:0.22, hihatVol:0.08, bassVol:0.24, melodyVol:0.07,
-            scale:[174.6,195.0,220.0,246.9,261.6,293.7,329.6,349.2],
-            bassScale:[43.7,49.0,55.0,61.7],
-            melodyOctave:2, bassType:'sawtooth', melodyType:'sawtooth',
-            hihatFreq:10000, snareFreq:900, kickFreq:160, kickDecay:0.2, pattern:'driving', reverb:false },
-        factory: { bpm:156, kickVol:0.4, snareVol:0.25, hihatVol:0.09, bassVol:0.2, melodyVol:0.065,
-            scale:[220.0,233.1,261.6,293.7,311.1,349.2,392.0,415.3],
-            bassScale:[55.0,58.3,65.4,73.4],
-            melodyOctave:2, bassType:'square', melodyType:'square',
-            hihatFreq:9000, snareFreq:1000, kickFreq:170, kickDecay:0.18, pattern:'driving', reverb:false },
-        alien: { bpm:118, kickVol:0.3, snareVol:0.18, hihatVol:0.06, bassVol:0.15, melodyVol:0.07,
-            scale:[207.7,233.1,246.9,277.2,311.1,329.6,369.9,415.3],
-            bassScale:[51.9,58.3,61.7,69.3],
-            melodyOctave:2, bassType:'triangle', melodyType:'sine',
-            hihatFreq:13000, snareFreq:1800, kickFreq:90, kickDecay:0.4, pattern:'sparse', reverb:true },
-        neon: { bpm:168, kickVol:0.36, snareVol:0.2, hihatVol:0.1, bassVol:0.18, melodyVol:0.09,
-            scale:[233.1,261.6,293.7,329.6,349.2,392.0,440.0,493.9],
-            bassScale:[58.3,65.4,73.4,82.4],
-            melodyOctave:2, bassType:'sawtooth', melodyType:'square',
-            hihatFreq:12000, snareFreq:700, kickFreq:175, kickDecay:0.15, pattern:'driving', reverb:false },
-        dungeon: { bpm:100, kickVol:0.32, snareVol:0.18, hihatVol:0.05, bassVol:0.18, melodyVol:0.06,
-            scale:[196.0,207.7,233.1,246.9,261.6,293.7,311.1,349.2],
-            bassScale:[49.0,51.9,58.3,61.7],
-            melodyOctave:2, bassType:'triangle', melodyType:'triangle',
-            hihatFreq:5500, snareFreq:1500, kickFreq:110, kickDecay:0.42, pattern:'swing', reverb:true },
-        crystal: { bpm:120, kickVol:0.26, snareVol:0.15, hihatVol:0.05, bassVol:0.13, melodyVol:0.08,
-            scale:[277.2,311.1,329.6,369.9,415.3,440.0,493.9,554.4],
-            bassScale:[69.3,77.8,82.4,92.5],
-            melodyOctave:2, bassType:'sine', melodyType:'sine',
-            hihatFreq:14000, snareFreq:2200, kickFreq:90, kickDecay:0.38, pattern:'bounce', reverb:true },
-        ancient: { bpm:126, kickVol:0.33, snareVol:0.2, hihatVol:0.06, bassVol:0.17, melodyVol:0.07,
-            scale:[220.0,247.0,261.6,293.7,329.6,349.2,392.0,440.0],
-            bassScale:[55.0,61.7,65.4,73.4],
-            melodyOctave:2, bassType:'triangle', melodyType:'triangle',
-            hihatFreq:7000, snareFreq:1300, kickFreq:130, kickDecay:0.32, pattern:'march', reverb:false },
+        // Forest: tribal drums + organic riff
+        forest: { bpm:148, kV:0.44, sV:0.28, hV:0.1, bV:0.26, mV:0.09,
+            scale:[196,220,246.9,261.6,293.7,329.6,392,440], bass:[49,55,61.7,65.4],
+            bT:'triangle', mT:'square', hF:8500, sF:1200, kF:160, kD:0.22, pat:'stomp', rev:false },
+        // Desert: punchy, dry, rapid fire
+        desert: { bpm:166, kV:0.46, sV:0.3, hV:0.12, bV:0.28, mV:0.1,
+            scale:[220,246.9,261.6,293.7,349.2,392,440,493.9], bass:[55,61.7,65.4,73.4],
+            bT:'sawtooth', mT:'sawtooth', hF:10000, sF:950, kF:172, kD:0.17, pat:'blitz', rev:false },
+        // Ice: sharp metallic, cold riff
+        ice: { bpm:145, kV:0.4, sV:0.25, hV:0.1, bV:0.24, mV:0.09,
+            scale:[233.1,261.6,311.1,349.2,369.9,415.3,466.2,523.3], bass:[58.3,65.4,77.8,87.3],
+            bT:'square', mT:'square', hF:13000, sF:1800, kF:145, kD:0.22, pat:'stomp', rev:true },
+        // Space: industrial techno, mechanical beats
+        space: { bpm:162, kV:0.44, sV:0.28, hV:0.12, bV:0.26, mV:0.09,
+            scale:[220,246.9,277.2,311.1,349.2,392,440,493.9], bass:[55,61.7,69.3,73.4],
+            bT:'sawtooth', mT:'square', hF:12000, sF:1600, kF:160, kD:0.18, pat:'blitz', rev:false },
+        // Cyber: maximum aggression, 4-on-the-floor techno
+        cyber: { bpm:185, kV:0.52, sV:0.36, hV:0.15, bV:0.34, mV:0.13,
+            scale:[233.1,261.6,293.7,329.6,392,440,493.9,587.3], bass:[58.3,65.4,73.4,82.4],
+            bT:'sawtooth', mT:'sawtooth', hF:14000, sF:800, kF:185, kD:0.14, pat:'blitz', rev:false },
+        // Toxic: groovy but dark, swampy
+        toxic: { bpm:142, kV:0.46, sV:0.3, hV:0.1, bV:0.3, mV:0.09,
+            scale:[196,220,233.1,261.6,293.7,311.1,349.2,392], bass:[49,55,58.3,65.4],
+            bT:'sawtooth', mT:'square', hF:7500, sF:1100, kF:155, kD:0.24, pat:'stomp', rev:false },
+        // Haunted: dissonant, chaotic
+        haunted: { bpm:128, kV:0.42, sV:0.28, hV:0.08, bV:0.28, mV:0.09,
+            scale:[207.7,220,233.1,261.6,277.2,311.1,329.6,349.2], bass:[51.9,55,58.3,65.4],
+            bT:'sawtooth', mT:'square', hF:7000, sF:1400, kF:145, kD:0.3, pat:'doom', rev:true },
+        // Military: march + metal hybrid
+        military: { bpm:152, kV:0.5, sV:0.38, hV:0.1, bV:0.3, mV:0.08,
+            scale:[196,220,246.9,261.6,293.7,329.6,349.2,392], bass:[49,55,61.7,65.4],
+            bT:'square', mT:'square', hF:9000, sF:1200, kF:165, kD:0.2, pat:'march', rev:false },
+        // Volcano: molten heavy metal
+        volcano: { bpm:162, kV:0.54, sV:0.34, hV:0.12, bV:0.36, mV:0.1,
+            scale:[174.6,196,220,246.9,261.6,293.7,349.2,392], bass:[43.7,49,55,61.7],
+            bT:'sawtooth', mT:'sawtooth', hF:10500, sF:850, kF:170, kD:0.17, pat:'blitz', rev:false },
+        // Frozen: grinding slow doom
+        frozen: { bpm:122, kV:0.46, sV:0.28, hV:0.08, bV:0.32, mV:0.08,
+            scale:[174.6,196,207.7,233.1,261.6,277.2,311.1,349.2], bass:[43.7,49,51.9,58.3],
+            bT:'sawtooth', mT:'square', hF:6000, sF:1600, kF:138, kD:0.32, pat:'doom', rev:true },
+        // Jungle: tribal + electric
+        jungle: { bpm:155, kV:0.46, sV:0.32, hV:0.12, bV:0.28, mV:0.1,
+            scale:[196,220,246.9,261.6,293.7,349.2,392,440], bass:[49,55,61.7,65.4],
+            bT:'triangle', mT:'sawtooth', hF:9000, sF:1100, kF:165, kD:0.2, pat:'stomp', rev:false },
+        // Factory: industrial grind, mechanical
+        factory: { bpm:172, kV:0.5, sV:0.34, hV:0.14, bV:0.32, mV:0.1,
+            scale:[220,233.1,261.6,293.7,311.1,349.2,392,415.3], bass:[55,58.3,65.4,73.4],
+            bT:'sawtooth', mT:'square', hF:11000, sF:950, kF:178, kD:0.15, pat:'blitz', rev:false },
+        // Alien: dissonant + fast, unsettling
+        alien: { bpm:148, kV:0.44, sV:0.3, hV:0.11, bV:0.28, mV:0.1,
+            scale:[207.7,233.1,246.9,261.6,293.7,329.6,349.2,392], bass:[51.9,58.3,61.7,69.3],
+            bT:'sawtooth', mT:'square', hF:12500, sF:1700, kF:155, kD:0.2, pat:'stomp', rev:true },
+        // Neon: hyper fast EDM combat
+        neon: { bpm:190, kV:0.5, sV:0.34, hV:0.16, bV:0.32, mV:0.13,
+            scale:[233.1,261.6,293.7,349.2,392,440,523.3,587.3], bass:[58.3,65.4,73.4,87.3],
+            bT:'sawtooth', mT:'sawtooth', hF:14000, sF:750, kF:188, kD:0.13, pat:'blitz', rev:false },
+        // Sandstorm: driving, punchy
+        sandstorm: { bpm:158, kV:0.46, sV:0.3, hV:0.11, bV:0.28, mV:0.09,
+            scale:[220,246.9,261.6,293.7,329.6,392,440,493.9], bass:[55,61.7,65.4,73.4],
+            bT:'sawtooth', mT:'square', hF:9500, sF:1050, kF:168, kD:0.19, pat:'blitz', rev:false },
+        // Dungeon: slow grinding metal, heavy
+        dungeon: { bpm:124, kV:0.48, sV:0.3, hV:0.08, bV:0.32, mV:0.09,
+            scale:[174.6,196,207.7,233.1,261.6,277.2,311.1,329.6], bass:[43.7,49,51.9,58.3],
+            bT:'sawtooth', mT:'square', hF:6500, sF:1500, kF:142, kD:0.3, pat:'doom', rev:true },
+        // Sky: fast, soaring
+        sky: { bpm:168, kV:0.44, sV:0.28, hV:0.12, bV:0.26, mV:0.1,
+            scale:[246.9,277.2,311.1,369.9,415.3,440,493.9,554.4], bass:[61.7,69.3,77.8,92.5],
+            bT:'triangle', mT:'square', hF:11000, sF:1400, kF:165, kD:0.18, pat:'blitz', rev:false },
+        // Crystal: sharp glassy attacks
+        crystal: { bpm:145, kV:0.4, sV:0.26, hV:0.1, bV:0.24, mV:0.1,
+            scale:[277.2,311.1,369.9,415.3,466.2,523.3,587.3,659.3], bass:[69.3,77.8,92.5,103.8],
+            bT:'square', mT:'sine', hF:15000, sF:2200, kF:145, kD:0.22, pat:'stomp', rev:true },
+        // Ruins: dark mid-pace, war drums
+        ruins: { bpm:138, kV:0.5, sV:0.34, hV:0.09, bV:0.3, mV:0.09,
+            scale:[196,220,233.1,261.6,293.7,311.1,349.2,392], bass:[49,55,58.3,65.4],
+            bT:'sawtooth', mT:'square', hF:7500, sF:1200, kF:155, kD:0.26, pat:'stomp', rev:false },
+        // Ancient: epic war chant, big drums
+        ancient: { bpm:144, kV:0.52, sV:0.36, hV:0.1, bV:0.32, mV:0.1,
+            scale:[196,220,246.9,261.6,293.7,329.6,392,440], bass:[49,55,61.7,65.4],
+            bT:'sawtooth', mT:'square', hF:8000, sF:1200, kF:162, kD:0.22, pat:'march', rev:false },
+        // Lava: crushing metal riff
+        lava: { bpm:165, kV:0.54, sV:0.34, hV:0.12, bV:0.36, mV:0.11,
+            scale:[174.6,196,220,233.1,261.6,293.7,329.6,349.2], bass:[43.7,49,55,58.3],
+            bT:'sawtooth', mT:'sawtooth', hF:10000, sF:900, kF:172, kD:0.17, pat:'blitz', rev:false },
     });
 
+    // ── RIFF PATTERNS (more musical, aggressive) ──────────────────────────
+    // Each entry: array of scale indices played per beat
+    const RIFF = {
+        blitz:  [0,3,5,3,0,3,5,7, 2,5,7,5,2,5,3,0, 4,7,5,3,4,2,0,3, 0,5,3,7,5,0,3,5],
+        stomp:  [0,0,5,0,3,0,5,3, 2,2,4,2,5,2,4,0, 0,3,0,5,3,0,7,5, 5,3,0,2,0,3,5,0],
+        march:  [0,2,5,2,0,3,5,0, 3,5,3,0,2,0,3,5, 0,3,2,5,0,2,5,3, 2,0,5,3,0,5,2,0],
+        doom:   [0,0,0,3,0,0,5,3, 0,0,2,0,3,5,3,0, 0,5,0,3,5,0,2,0, 3,0,5,3,0,2,0,5],
+    };
+    const BASS_RIFF = {
+        blitz:  [0,2,0,3,1,0,2,3],
+        stomp:  [0,0,2,0,1,2,0,1],
+        march:  [0,1,2,0,3,1,0,2],
+        doom:   [0,0,1,0,2,0,1,0],
+    };
+
     function getMusicProfile() {
-        // Prefer arena-specific if seasonEffect is false
         if (currentArena && !currentArena.seasonEffect && MUSIC_PROFILES[currentArena.id]) {
             return MUSIC_PROFILES[currentArena.id];
         }
-        // Otherwise use season
         const s = currentSeason ? currentSeason.id : 'spring';
         return MUSIC_PROFILES[s] || MUSIC_PROFILES.spring;
     }
@@ -3505,9 +3539,7 @@
     function startBattleMusic() {
         if (battleMusicRunning) return;
         battleMusicRunning = true;
-        beatCount = 0;
-        melodySeqIdx = 0;
-        bassSeqIdx = 0;
+        beatCount = 0; melodySeqIdx = 0; bassSeqIdx = 0;
         currentMusicStyle = null;
         scheduleBeat();
     }
@@ -3525,25 +3557,6 @@
         battleMusicNodes = [];
     }
 
-    // Melodic sequences per pattern style
-    const MELODY_SEQUENCES = {
-        bounce:  [0,2,4,2,5,4,2,0, 3,5,7,5,4,2,0,2],
-        driving: [0,0,3,0,5,3,0,5, 2,2,4,2,7,4,2,4],
-        swing:   [0,3,2,5,4,2,3,0, 5,3,4,2,0,3,2,0],
-        sparse:  [0,4,7,4,5,3,0,0, 2,5,4,7,3,0,0,0],
-        march:   [0,0,2,0,3,2,0,3, 5,3,2,0,3,5,3,0],
-    };
-    const BASS_SEQUENCES = {
-        bounce:  [0,0,2,0,1,0,2,1],
-        driving: [0,2,0,3,0,1,3,0],
-        swing:   [0,1,0,2,1,0,1,2],
-        sparse:  [0,0,1,0,2,0,1,0],
-        march:   [0,2,1,0,2,1,0,1],
-    };
-
-    let melodySeqIdx = 0;
-    let bassSeqIdx = 0;
-
     function scheduleBeat() {
         if (!battleMusicRunning) return;
         if (!gameState.isRunning) {
@@ -3553,162 +3566,179 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
 
         const p = getMusicProfile();
-        const bpm = p.bpm;
-        const beatMs = (60 / bpm) * 1000;
-        const t = audioCtx.currentTime;
-        const pat = p.pattern || 'driving';
+        const beatMs = (60 / p.bpm) * 1000;
+        const now = audioCtx.currentTime;
+        const pat = p.pat || 'blitz';
 
-        // ── KICK ──
-        const doKick = pat === 'march'   ? (beatCount % 4 === 0 || beatCount % 4 === 2) :
-                       pat === 'sparse'  ? (beatCount % 8 === 0 || beatCount % 8 === 4) :
-                       pat === 'bounce'  ? (beatCount % 4 === 0 || beatCount % 4 === 2) :
-                                           (beatCount % 4 === 0 || beatCount % 4 === 2);
-        if (doKick) playKick(t, p);
+        // ── KICK (powerful, always on 1 & 3; blitz adds sub-beats) ──
+        const b4 = beatCount % 4;
+        const b8 = beatCount % 8;
+        const b16 = beatCount % 16;
+        const isKick = pat === 'doom'  ? (b8 === 0 || b8 === 6) :
+                       pat === 'march' ? (b4 === 0 || b4 === 2 || (b8===5)) :
+                       pat === 'blitz' ? (b4 === 0 || b4 === 2 || b8===5 || b16===11) :
+                                          (b4 === 0 || b4 === 2);
+        if (isKick) _kick(now, p);
 
-        // ── SNARE ──
-        const doSnare = pat === 'sparse' ? (beatCount % 8 === 2 || beatCount % 8 === 6) :
-                        pat === 'march'  ? (beatCount % 4 === 1 || beatCount % 4 === 3) :
-                                           (beatCount % 4 === 1 || beatCount % 4 === 3);
-        if (doSnare) playSnare(t, p);
+        // ── SNARE (punchy backbeat; doom has slow snare) ──
+        const isSnare = pat === 'doom'  ? (b8 === 3 || b8 === 7) :
+                        pat === 'march' ? (b4 === 1 || b4 === 3) :
+                                          (b4 === 1 || b4 === 3);
+        if (isSnare) _snare(now, p);
 
-        // ── HI-HAT ──
-        const doHat = pat === 'sparse'  ? (beatCount % 2 === 0) :
-                      pat === 'driving' ? true :
-                      pat === 'bounce'  ? true :
-                                          true;
-        if (doHat) playHihat(t, p, beatCount);
+        // ── OPEN HI-HAT on beat 3.5 for groove ──
+        const isOpenHat = (b8 === 6);
+        _hihat(now, p, beatCount, isOpenHat);
 
-        // ── BASS ──
-        const bassDo = pat === 'sparse' ? (beatCount % 2 === 0) : (beatCount % 1 === 0);
-        if (bassDo) {
-            const seq = BASS_SEQUENCES[pat] || BASS_SEQUENCES.driving;
-            const idx = bassSeqIdx % seq.length;
-            const noteIdx = seq[idx] % p.bassScale.length;
-            playBassNote(t, p.bassScale[noteIdx], p);
-            bassSeqIdx++;
-        }
+        // ── DISTORTED BASS RIFF (every beat) ──
+        const bSeq = BASS_RIFF[pat] || BASS_RIFF.blitz;
+        const bIdx = p.bass[(bassSeqIdx % bSeq.length) % p.bass.length];
+        // Use the riff pattern index
+        const bNote = p.bass[bSeq[bassSeqIdx % bSeq.length] % p.bass.length];
+        _bass(now, bNote, p);
+        bassSeqIdx++;
 
-        // ── MELODY (every 2 beats) ──
-        if (beatCount % 2 === 0) {
-            const seq = MELODY_SEQUENCES[pat] || MELODY_SEQUENCES.driving;
-            const idx = melodySeqIdx % seq.length;
-            const noteIdx = seq[idx] % p.scale.length;
-            const freq = p.scale[noteIdx] * p.melodyOctave;
-            playMelodyNote(t, freq, p);
-            melodySeqIdx++;
-        }
+        // ── MELODY RIFF (every beat, pattern-driven) ──
+        const mSeq = RIFF[pat] || RIFF.blitz;
+        const mNote = p.scale[mSeq[melodySeqIdx % mSeq.length] % p.scale.length];
+        _melody(now, mNote * (p.melodyOctave||2), p);
+        melodySeqIdx++;
 
-        // ── EXTRA: accent / fill every 16 beats ──
-        if (beatCount % 16 === 15) {
-            playAccent(t, p);
-        }
+        // ── POWER CHORD ACCENT every 8 beats ──
+        if (b8 === 7) _chord(now, p);
 
         beatCount++;
         battleMusicTimeout = setTimeout(scheduleBeat, beatMs);
     }
 
-    function playKick(t, p) {
+    function _kick(t, p) {
         try {
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            o.type = 'sine';
-            o.frequency.setValueAtTime(p.kickFreq || 150, t);
-            o.frequency.exponentialRampToValueAtTime(0.01, t + (p.kickDecay || 0.3));
-            g.gain.setValueAtTime(p.kickVol || 0.32, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t + (p.kickDecay || 0.3));
-            o.start(t); o.stop(t + (p.kickDecay || 0.3));
+            // Sub-bass layer
+            const o1 = audioCtx.createOscillator();
+            const g1 = audioCtx.createGain();
+            o1.connect(g1); g1.connect(audioCtx.destination);
+            o1.type = 'sine';
+            o1.frequency.setValueAtTime(p.kF || 170, t);
+            o1.frequency.exponentialRampToValueAtTime(28, t + (p.kD||0.2));
+            g1.gain.setValueAtTime((p.kV||0.45)*0.7, t);
+            g1.gain.exponentialRampToValueAtTime(0.001, t+(p.kD||0.2));
+            o1.start(t); o1.stop(t+(p.kD||0.2));
+            // Click layer
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*0.008, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*0.002));
+            const src = audioCtx.createBufferSource(); src.buffer=buf;
+            const gK = audioCtx.createGain(); gK.gain.value=(p.kV||0.45)*0.6;
+            src.connect(gK); gK.connect(audioCtx.destination);
+            src.start(t); src.stop(t+0.01);
         } catch(e) {}
     }
 
-    function playSnare(t, p) {
+    function _snare(t, p) {
+        try {
+            const dur = 0.18;
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*dur, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(audioCtx.sampleRate*0.05));
+            const src = audioCtx.createBufferSource(); src.buffer=buf;
+            // Bandpass + slight distortion via waveshaper
+            const f = audioCtx.createBiquadFilter(); f.type='bandpass';
+            f.frequency.value = p.sF||1200; f.Q.value=1.2;
+            const g = audioCtx.createGain(); g.gain.setValueAtTime(p.sV||0.28, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+            src.connect(f); f.connect(g); g.connect(audioCtx.destination);
+            // Snare tone body
+            const o = audioCtx.createOscillator();
+            const og = audioCtx.createGain();
+            o.type='triangle'; o.frequency.value=180;
+            og.gain.setValueAtTime((p.sV||0.28)*0.4, t);
+            og.gain.exponentialRampToValueAtTime(0.001, t+0.07);
+            o.connect(og); og.connect(audioCtx.destination);
+            o.start(t); o.stop(t+0.07);
+            src.start(t); src.stop(t+dur);
+        } catch(e) {}
+    }
+
+    function _hihat(t, p, beat, isOpen) {
+        try {
+            const dur = isOpen ? 0.12 : 0.025;
+            const vol = (beat%2===0 ? (p.hV||0.1) : (p.hV||0.1)*0.55);
+            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*dur, audioCtx.sampleRate);
+            const d = buf.getChannelData(0);
+            for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(isOpen ? Math.exp(-i/(audioCtx.sampleRate*0.05)) : (1-i/d.length));
+            const src = audioCtx.createBufferSource(); src.buffer=buf;
+            const f = audioCtx.createBiquadFilter(); f.type='highpass';
+            f.frequency.value = p.hF||9000;
+            const g = audioCtx.createGain(); g.gain.setValueAtTime(vol, t);
+            if(isOpen) g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+            src.connect(f); f.connect(g); g.connect(audioCtx.destination);
+            src.start(t); src.stop(t+dur);
+        } catch(e) {}
+    }
+
+    function _bass(t, freq, p) {
+        try {
+            const dur = 0.22;
+            const o = audioCtx.createOscillator();
+            // Waveshaper for distortion
+            const ws = audioCtx.createWaveShaper();
+            const curve = new Float32Array(256);
+            for(let i=0;i<256;i++){const x=i*2/256-1; curve[i]=x<0?-Math.pow(-x,0.7):Math.pow(x,0.7);}
+            ws.curve=curve; ws.oversample='2x';
+            const lp = audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=500;
+            const g = audioCtx.createGain();
+            o.type=p.bT||'sawtooth'; o.frequency.value=freq;
+            g.gain.setValueAtTime(p.bV||0.28, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+            o.connect(ws); ws.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+            o.start(t); o.stop(t+dur);
+        } catch(e) {}
+    }
+
+    function _melody(t, freq, p) {
         try {
             const dur = 0.14;
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1) * Math.exp(-i/(audioCtx.sampleRate*0.04));
-            const src = audioCtx.createBufferSource(); src.buffer = buf;
-            const f = audioCtx.createBiquadFilter(); f.type='bandpass';
-            f.frequency.value = p.snareFreq || 1200; f.Q.value = 0.9;
-            const g = audioCtx.createGain(); g.gain.setValueAtTime(p.snareVol||0.18, t);
-            src.connect(f); f.connect(g); g.connect(audioCtx.destination);
-            src.start(t); src.stop(t+dur);
-        } catch(e) {}
-    }
-
-    function playHihat(t, p, beat) {
-        try {
-            // Driving/bounce: 16th note off-beats get softer hat
-            const isOffbeat = beat % 2 !== 0;
-            const vol = (p.hihatVol||0.07) * (isOffbeat ? 0.5 : 1.0);
-            const dur = p.pattern==='sparse' ? 0.06 : 0.03;
-            const buf = audioCtx.createBuffer(1, audioCtx.sampleRate*dur, audioCtx.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1) * (1 - i/data.length);
-            const src = audioCtx.createBufferSource(); src.buffer = buf;
-            const f = audioCtx.createBiquadFilter(); f.type='highpass';
-            f.frequency.value = p.hihatFreq || 8000;
-            const g = audioCtx.createGain(); g.gain.setValueAtTime(vol, t);
-            src.connect(f); f.connect(g); g.connect(audioCtx.destination);
-            src.start(t); src.stop(t+dur);
-        } catch(e) {}
-    }
-
-    function playBassNote(t, freq, p) {
-        try {
-            const dur = p.pattern==='sparse' ? 0.4 : p.pattern==='driving' ? 0.18 : 0.28;
             const o = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            // Low-pass for warmth
-            const lp = audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=400;
-            o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
-            o.type = p.bassType || 'triangle';
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(p.bassVol||0.18, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t+dur);
-            o.start(t); o.stop(t+dur);
-        } catch(e) {}
-    }
-
-    function playMelodyNote(t, freq, p) {
-        try {
-            const dur = p.pattern==='sparse' ? 0.5 : 0.2;
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            // For reverb arenas, add a quick delay echo
-            if (p.reverb) {
-                const delay = audioCtx.createDelay(0.5);
-                delay.delayTime.value = 0.18;
-                const dg = audioCtx.createGain(); dg.gain.value = 0.2;
-                o.connect(g); g.connect(audioCtx.destination);
+            o.type=p.mT||'square'; o.frequency.value=freq;
+            // HP filter for bite
+            const hp = audioCtx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=300;
+            o.connect(hp); hp.connect(g);
+            if(p.rev){
+                const delay=audioCtx.createDelay(0.5); delay.delayTime.value=0.1;
+                const dg=audioCtx.createGain(); dg.gain.value=0.18;
+                g.connect(audioCtx.destination);
                 g.connect(delay); delay.connect(dg); dg.connect(audioCtx.destination);
             } else {
-                o.connect(g); g.connect(audioCtx.destination);
+                g.connect(audioCtx.destination);
             }
-            o.type = p.melodyType || 'sine';
-            o.frequency.value = freq;
-            g.gain.setValueAtTime(p.melodyVol||0.07, t);
+            g.gain.setValueAtTime(p.mV||0.1, t);
             g.gain.exponentialRampToValueAtTime(0.001, t+dur);
             o.start(t); o.stop(t+dur);
         } catch(e) {}
     }
 
-    function playAccent(t, p) {
-        // A fill / accent chord at phrase end
+    function _chord(t, p) {
+        // Power chord: root + fifth + octave
         try {
-            const notes = [p.scale[0]*2, p.scale[2]*2, p.scale[4]*2];
-            notes.forEach((freq, i) => {
+            const root = p.scale[0]*2;
+            const fifth = root * 1.5;
+            const oct = root * 2;
+            [root, fifth, oct].forEach((freq, i) => {
                 const o = audioCtx.createOscillator();
                 const g = audioCtx.createGain();
-                o.connect(g); g.connect(audioCtx.destination);
-                o.type = 'sine'; o.frequency.value = freq;
-                const tt = t + i*0.03;
-                g.gain.setValueAtTime((p.melodyVol||0.07)*0.7, tt);
-                g.gain.exponentialRampToValueAtTime(0.001, tt+0.35);
-                o.start(tt); o.stop(tt+0.35);
+                o.type='sawtooth'; o.frequency.value=freq;
+                const lp=audioCtx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=800;
+                o.connect(lp); lp.connect(g); g.connect(audioCtx.destination);
+                const tt=t+i*0.01;
+                g.gain.setValueAtTime((p.mV||0.1)*0.8, tt);
+                g.gain.exponentialRampToValueAtTime(0.001, tt+0.25);
+                o.start(tt); o.stop(tt+0.28);
             });
         } catch(e) {}
     }
+
+    function playAccent(t, p) { _chord(t, p); }
 
     // Play season sound when season changes
     let lastSeasonId = null;
@@ -4464,6 +4494,7 @@
         playSound('chapter_complete');
         checkSeasonSound();
         gameState._pendingChapterComplete = true;
+        saveUser(); // Bölüm tamamlandığında hemen kaydet
         showChestReward(gameState.chapter);
     }
 
