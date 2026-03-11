@@ -53,7 +53,8 @@
         #mkt-wrap {
             position: relative; z-index: 2; width: 100%; height: 100%;
             display: flex; flex-direction: column;
-            align-items: center; padding: 20px 24px 14px; box-sizing: border-box;
+            align-items: center; padding: 14px 20px 10px; box-sizing: border-box;
+            overflow: hidden;
         }
         #mkt-topbar {
             width: 100%; display: flex; align-items: center;
@@ -81,11 +82,18 @@
         }
         #mkt-close:hover { background: #ff1e3c; color: #fff; }
         #mkt-cards {
-            display: flex; gap: 16px; justify-content: center; align-items: flex-end;
-            width: 100%; flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 170px);
+            gap: 14px;
+            justify-content: center;
+            align-items: start;
+            width: 100%;
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 4px 8px;
         }
         .mkt-card {
-            position: relative; flex-shrink: 0; width: 186px;
+            position: relative; width: 100%;
             background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(0,0,0,0.65));
             border: 2px solid rgba(255,255,255,0.12);
             border-radius: 18px; display: flex; flex-direction: column;
@@ -133,7 +141,7 @@
         @keyframes mktCrown { 0%,100%{transform:translateY(0) rotate(-8deg)} 50%{transform:translateY(-4px) rotate(8deg)} }
         .mkt-sel-glow { position:absolute; inset:0; border-radius:16px; pointer-events:none; background:linear-gradient(180deg,rgba(255,204,0,0.1),transparent 55%); opacity:0; transition:opacity 0.3s; }
         .mkt-card.mkt-selected .mkt-sel-glow { opacity:1; }
-        .mkt-cnv-wrap { width:130px; height:148px; position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:8px; }
+        .mkt-cnv-wrap { width:110px; height:120px; position:relative; display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
         .mkt-cnv-wrap canvas { display:block; }
         .mkt-cnv-glow { position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:0; transition:opacity 0.3s; }
         .mkt-card:hover .mkt-cnv-glow { opacity:1; }
@@ -2308,7 +2316,7 @@
 
     let gameState = {
         isRunning: false, wave: 0, xp: 0, xpRequired: 50, level: 1,
-        gold: 0, ownedChars: ['std'], selectedChar: 'std', chapter: 1
+        gold: 0, ownedChars: ['std'], selectedChar: 'std', chapter: 1, maxChapter: 1
     };
 
     if (!isGuest && currentUser) {
@@ -2320,6 +2328,8 @@
                 gameState = Object.assign({}, gameState, saved);
                 // Validate critical fields
                 if (!gameState.chapter || gameState.chapter < 1) gameState.chapter = 1;
+                if (!gameState.maxChapter || gameState.maxChapter < 1) gameState.maxChapter = gameState.chapter;
+                if (gameState.maxChapter < gameState.chapter) gameState.maxChapter = gameState.chapter;
                 if (!gameState.ownedChars || !Array.isArray(gameState.ownedChars)) gameState.ownedChars = ['std'];
                 if (!gameState.selectedChar) gameState.selectedChar = 'std';
                 if (typeof gameState.gold !== 'number') gameState.gold = 0;
@@ -2366,10 +2376,10 @@
         if (isGuest) {
             statusEl.innerHTML = t('guestWarning');
         } else {
-            statusEl.innerHTML = `${t('welcomeBack')} <span style="color:var(--neon-gold)">${currentUser}</span> - ${t('continueGame')} ${gameState.chapter}. ${t('chapterPrefix')}!`;
+            statusEl.innerHTML = `${t('welcomeBack')} <span style="color:var(--neon-gold)">${currentUser}</span> - En yüksek bölüm: <span style="color:var(--neon-purple)">${gameState.maxChapter || gameState.chapter}</span>. ${t('chapterPrefix')}`;
         }
 
-        const maxUnlocked = isGuest ? 1 : gameState.chapter;
+        const maxUnlocked = isGuest ? 1 : (gameState.maxChapter || gameState.chapter);
 
         for (let i = 1; i <= TOTAL_CHAPTERS; i++) {
             const waves = WAVES_PER_CHAPTER[i - 1];
@@ -2416,6 +2426,10 @@
         }
 
         gameState.chapter = chapterNum;
+        // maxChapter'ı koru - seçilen bölüm önceki ilerlemeyi silmesin
+        if (!gameState.maxChapter || gameState.maxChapter < 1) gameState.maxChapter = 1;
+        // maxChapter sadece yeni bölüm açılınca artar, geriye gidince düşmez
+        if (chapterNum > gameState.maxChapter) gameState.maxChapter = chapterNum;
         gameState.wave = 0;
         gameState.xp = 0;
         gameState.xpRequired = 50;
@@ -3104,10 +3118,10 @@
 
     function _animChar(canvas, charDef) {
         const ctx2 = canvas.getContext('2d');
-        const cx=65, cy=78, sz=30;
+        const cx=55, cy=60, sz=24;
         let t=0;
         function draw() {
-            ctx2.clearRect(0,0,130,155);
+            ctx2.clearRect(0,0,110,120);
             t++;
             charDef.draw(ctx2, cx, cy, sz, t);
             _mktCharAnims[charDef.id] = requestAnimationFrame(draw);
@@ -3140,7 +3154,7 @@
                 <div class="mkt-badge">${rarityLabel[c.rarity]}</div>
                 <div class="mkt-crown">👑</div>
                 <div class="mkt-cnv-wrap">
-                    <canvas width="130" height="155" id="mkt-cnv-${c.id}"></canvas>
+                    <canvas width="110" height="120" id="mkt-cnv-${c.id}"></canvas>
                     <div class="mkt-cnv-glow" style="background:radial-gradient(ellipse at 50% 80%,${c.color}33,transparent 70%)"></div>
                 </div>
                 <div class="mkt-name">${c.name}</div>
@@ -3324,6 +3338,10 @@
 
     function nextChapter() {
         gameState.chapter++;
+        // maxChapter'ı güncelle — yeni bölüm açıldı
+        if (!gameState.maxChapter || gameState.chapter > gameState.maxChapter) {
+            gameState.maxChapter = gameState.chapter;
+        }
         gameState.wave = 0;
 
         // Bölüm değiştiğinde arena ve mevsim temasını güncelle
